@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RtsLite</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Raylib">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Novolis.Math.Arrays" />
+    <PackageReference Include="Novolis.Simulation.Kinematics" />
+    <PackageReference Include="Novolis.Simulation.View" />
+    <PackageReference Include="Novolis.Simulation.World" />
+  </ItemGroup>
+</Project>

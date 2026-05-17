@@ -15,6 +15,7 @@
     <PackageVersion Include="Novolis.Math.Geometry" Version="0.3.0-local" />
     <PackageVersion Include="Novolis.Physics.Ballistics" Version="0.4.0-local" />
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Physics.Joints" Version="0.4.0-local" />
     <PackageVersion Include="Novolis.Raylib" Version="0.4.0-local" />
     <PackageVersion Include="Novolis.Simulation.Kinematics" Version="0.4.0-local" />
     <PackageVersion Include="Novolis.Simulation.View" Version="0.4.0-local" />
