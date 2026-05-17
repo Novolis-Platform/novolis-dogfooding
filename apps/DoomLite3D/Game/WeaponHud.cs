@@ -22,9 +22,16 @@ internal sealed class WeaponHud
         }
     }
 
-    public void Draw(RayGameContext ctx, PlayerCombatState combat, int aliveEnemies)
+    public void Draw(
+        RayGameContext ctx,
+        PlayerCombatState combat,
+        int aliveEnemies,
+        LevelMap level,
+        PlayerController player,
+        EnemySystem enemies)
     {
         DrawHealthBar(ctx, combat);
+        MinimapHud.Draw(ctx, level, player, enemies);
         DrawCrosshair(ctx, combat);
         DrawWeapon(ctx, combat);
         DrawAmmo(ctx, combat);
@@ -111,7 +118,7 @@ internal sealed class WeaponHud
 
         ctx.HudText($"Enemies: {aliveEnemies}", 16, 40, 18, Color.FromArgb(255, 200, 200, 180));
         ctx.HudText(
-            "WASD move | Mouse look | Space/LMB shoot | R reload | F1 restart | Esc quit",
+            "WASD move | Space jump | Mouse/Ctrl shoot | R reload | F1 new maze | Esc quit",
             16,
             62,
             14,

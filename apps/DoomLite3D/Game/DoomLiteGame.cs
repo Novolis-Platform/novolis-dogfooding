@@ -11,7 +11,7 @@ internal sealed class DoomLiteGame
     private static readonly Color Ambient = Color.FromArgb(255, 28, 24, 30);
     private static readonly Color MuzzleFlash = Color.FromArgb(255, 255, 220, 120);
 
-    private readonly LevelMap _level = LevelMap.CreateDefault();
+    private LevelMap _level = null!;
     private readonly PlayerController _player = new();
     private readonly EnemySystem _enemies = new();
     private readonly WeaponHud _hud = new();
@@ -23,16 +23,14 @@ internal sealed class DoomLiteGame
         ctx.DisableCursor();
         _enemies.Initialize(ctx);
         _hud.Initialize(ctx);
-        _physicsWorld = WallGridPhysics.BuildWorld(_level.Walls, LevelMap.CellSize, LevelMap.WallHeight);
-        _player.SetPhysicsWorld(_physicsWorld);
-        ResetLevel();
+        RegenerateLevel();
     }
 
     public void Update(RayGameContext ctx)
     {
         // raylib KEY_F1 = 290
         if (ctx.IsKeyPressed((KeyboardKey)290))
-            ResetLevel();
+            RegenerateLevel();
 
         if (ctx.IsKeyPressed(KeyboardKey.R))
             _combat.TryStartReload();
@@ -41,7 +39,7 @@ internal sealed class DoomLiteGame
 
         var canAct = !_combat.IsDead;
         _player.Update(ctx, _level, canAct);
-        _enemies.Update(ctx, _player, _combat);
+        _enemies.Update(ctx, _level, _physicsWorld, _player, _combat);
 
         ctx.Clear(Ambient);
         var camera = _player.BuildRaylibCamera();
@@ -50,7 +48,7 @@ internal sealed class DoomLiteGame
         _enemies.Draw(ctx, camera);
         DrawMuzzleBolt(ctx, camera);
         ctx.EndWorld();
-        _hud.Draw(ctx, _combat, _enemies.CountAlive());
+        _hud.Draw(ctx, _combat, _enemies.CountAlive(), _level, _player, _enemies);
     }
 
     private void DrawMuzzleBolt(RayGameContext ctx, Novolis.Raylib.Rendering.Camera camera)
@@ -58,13 +56,16 @@ internal sealed class DoomLiteGame
         if (_combat.MuzzleFlashTimer <= 0f)
             return;
 
-        var origin = _player.Camera.GetEyePosition(1.6f);
+        var origin = _player.EyePosition;
         var end = origin + _player.Camera.GetLookDirection() * 2.5f;
         ctx.DrawBolt(origin, end, MuzzleFlash);
     }
 
-    private void ResetLevel()
+    private void RegenerateLevel()
     {
+        _level = LevelMap.CreateRandom();
+        _physicsWorld = WallGridPhysics.BuildWorld(_level.Walls, LevelMap.CellSize, LevelMap.WallHeight);
+        _player.SetPhysicsWorld(_physicsWorld);
         _player.Reset(_level);
         _enemies.Reset(_level);
         _combat.Reset();

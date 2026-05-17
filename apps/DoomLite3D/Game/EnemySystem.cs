@@ -1,9 +1,13 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
+using Novolis.Math.Geometry;
+using Novolis.Physics.Abstractions;
+using Novolis.Physics.Collision.Simple;
 using Novolis.Raylib.Game;
 using Novolis.Raylib.Interact;
 using Novolis.Raylib.Rendering;
+using RayCamera = Novolis.Raylib.Rendering.Camera;
 
 namespace DoomLite3D.Game;
 
@@ -20,6 +24,9 @@ internal sealed class EnemySystem
 {
     private const float BillboardSize = 2.2f;
     private const float MaxShootRange = 18f;
+    private const float ChaseRange = 12f;
+    private const float ChaseSpeed = 1.8f;
+    private const float EnemyRadius = 0.45f;
 
     private readonly List<Enemy> _enemies = [];
     private Texture[] _sprites = [];
@@ -61,13 +68,19 @@ internal sealed class EnemySystem
         }
     }
 
-    public void Update(RayGameContext ctx, PlayerController player, PlayerCombatState combat)
+    public void Update(
+        RayGameContext ctx,
+        LevelMap level,
+        IStaticWorld? physicsWorld,
+        PlayerController player,
+        PlayerCombatState combat)
     {
         if (combat.IsDead)
             return;
 
         var dt = ctx.DeltaSeconds;
         var playerPos = player.Camera.Position;
+        var playerXZ = new Vector2(playerPos.X, playerPos.Z);
 
         foreach (var enemy in _enemies)
         {
@@ -76,34 +89,76 @@ internal sealed class EnemySystem
 
             enemy.MeleeCooldown = Math.Max(0f, enemy.MeleeCooldown - dt);
 
-            var toPlayer = playerPos - enemy.Position;
-            toPlayer.Y = 0f;
+            var enemyXZ = new Vector2(enemy.Position.X, enemy.Position.Z);
+            var toPlayer = playerXZ - enemyXZ;
             var dist = toPlayer.Length();
-            if (dist > 0.05f && dist < 12f)
+            var hasLos = GridCollision2D.HasLineOfSight(level.Walls, enemyXZ, playerXZ, LevelMap.CellSize);
+
+            if (hasLos && dist > 0.05f && dist < ChaseRange)
             {
-                var step = Vector3.Normalize(toPlayer) * (1.8f * dt);
-                enemy.Position += step;
+                var step = Vector2.Normalize(toPlayer) * (ChaseSpeed * dt);
+                var moved = TryMoveEnemy(level, physicsWorld, enemy, enemyXZ, step);
+                enemy.Position = new Vector3(moved.X, enemy.Position.Y, moved.Y);
             }
 
-            if (dist <= PlayerCombatState.EnemyMeleeRange && enemy.MeleeCooldown <= 0f)
+            if (hasLos && dist <= PlayerCombatState.EnemyMeleeRange && enemy.MeleeCooldown <= 0f)
             {
                 combat.TakeDamage(PlayerCombatState.EnemyMeleeDamage);
                 enemy.MeleeCooldown = PlayerCombatState.EnemyMeleeCooldown;
             }
         }
 
-        var wantsFire = ctx.IsKeyPressed(KeyboardKey.Space)
-            || ctx.IsMousePressed(MouseButton.Left)
-            || ctx.IsMouseDown(MouseButton.Left);
+        var wantsFire = ctx.IsMousePressed(MouseButton.Left)
+            || ctx.IsMouseDown(MouseButton.Left)
+            || ctx.IsKeyPressed(KeyboardKey.LeftControl)
+            || ctx.IsKeyDown(KeyboardKey.LeftControl);
 
         if (!wantsFire || !combat.TryConsumeShot())
             return;
 
-        if (TryHit(player, combat))
+        if (TryHit(level, player, combat))
             combat.RegisterHit();
     }
 
-    public void Draw(RayGameContext ctx, Camera camera)
+    private Vector2 TryMoveEnemy(
+        LevelMap level,
+        IStaticWorld? physicsWorld,
+        Enemy self,
+        Vector2 position,
+        Vector2 delta)
+    {
+        if (delta.LengthSquared() < 1e-12f)
+            return position;
+
+        var next = physicsWorld is null
+            ? GridCollision2D.TryMove(level.Walls, position, delta, EnemyRadius, LevelMap.CellSize)
+            : GridPhysicsMovement.TryMove(physicsWorld, position, delta, EnemyRadius, centerY: 0.9);
+
+        if (!OverlapsOtherEnemy(self, next))
+            return next;
+
+        return position;
+    }
+
+    private bool OverlapsOtherEnemy(Enemy self, Vector2 position)
+    {
+        var minDist = EnemyRadius * 2f;
+        var minDistSq = minDist * minDist;
+
+        foreach (var other in _enemies)
+        {
+            if (!other.Alive || ReferenceEquals(other, self))
+                continue;
+
+            var otherXZ = new Vector2(other.Position.X, other.Position.Z);
+            if (Vector2.DistanceSquared(position, otherXZ) < minDistSq)
+                return true;
+        }
+
+        return false;
+    }
+
+    public void Draw(RayGameContext ctx, RayCamera camera)
     {
         foreach (var enemy in _enemies.OrderByDescending(e => e.Position.Z))
         {
@@ -124,14 +179,19 @@ internal sealed class EnemySystem
 
     public int CountAlive() => _enemies.Count(e => e.Alive);
 
-    private bool TryHit(PlayerController player, PlayerCombatState combat)
+    private bool TryHit(LevelMap level, PlayerController player, PlayerCombatState combat)
     {
         var ray = player.GetLookRay();
+        var originXZ = new Vector2(ray.Origin.X, ray.Origin.Z);
         var hitAny = false;
 
         foreach (var enemy in _enemies)
         {
             if (!enemy.Alive)
+                continue;
+
+            var targetXZ = new Vector2(enemy.Position.X, enemy.Position.Z);
+            if (!GridCollision2D.HasLineOfSight(level.Walls, originXZ, targetXZ, LevelMap.CellSize))
                 continue;
 
             if (!CombatRaycast.TryHitEnemyXZ(
