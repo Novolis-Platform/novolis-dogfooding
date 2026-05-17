@@ -8,7 +8,6 @@
     </PackageReference>
     <PackageReference Include="Novolis.Math.Arrays" />
     <PackageReference Include="Novolis.Simulation.World.Builders" />
-    <PackageReference Include="Novolis.Simulation.View" />
     <PackageReference Include="Novolis.Physics.Collision.Simple" />
   </ItemGroup>
 </Project>

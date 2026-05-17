@@ -22,12 +22,20 @@ internal sealed class RoomWorld
 
     public Vector3 RoomCenter { get; }
 
-    private RoomWorld(DenseGrid<byte> walls, BvhStaticWorld simulationWalls, BvhStaticWorld collisionWorld, Vector3 roomCenter)
+    public RoomInteriorBounds InteriorBounds { get; }
+
+    private RoomWorld(
+        DenseGrid<byte> walls,
+        BvhStaticWorld simulationWalls,
+        BvhStaticWorld collisionWorld,
+        Vector3 roomCenter,
+        RoomInteriorBounds interiorBounds)
     {
         Walls = walls;
         SimulationWallColumns = simulationWalls;
         CollisionWorld = collisionWorld;
         RoomCenter = roomCenter;
+        InteriorBounds = interiorBounds;
     }
 
     public static RoomWorld Create()
@@ -42,7 +50,8 @@ internal sealed class RoomWorld
             WallHeight);
         var collisionWorld = BuildEnclosedRoom(walls, cells);
         var roomCenter = new Vector3(GridSize * CellSize * 0.5f, WallHeight * 0.5f, GridSize * CellSize * 0.5f);
-        return new RoomWorld(walls, simulationWalls, collisionWorld, roomCenter);
+        var interior = RoomInteriorBounds.ForRoom(GridSize, CellSize, WallHeight, Ball.Radius);
+        return new RoomWorld(walls, simulationWalls, collisionWorld, roomCenter, interior);
     }
 
     private static DenseGrid<byte> BuildPerimeterGrid()

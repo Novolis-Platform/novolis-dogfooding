@@ -25,7 +25,7 @@ Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **sourc
 | MathGridDemo | `Novolis.Math.Arrays` |
 | RaylibHello | `Novolis.Raylib` |
 | DoomLite3D | Raylib, Math, **Simulation** (World, View, Kinematics) |
-| BouncingBall | Raylib, Math.Arrays, **Simulation** (World.Builders, View), Physics.Collision.Simple |
+| BouncingBall | Raylib, Math.Arrays, **Simulation** (World.Builders), Physics.Collision.Simple |
 | WireFishViewer | Avalonia, Transports, Messaging (some still project-ref until packed) |
 
 ## CI

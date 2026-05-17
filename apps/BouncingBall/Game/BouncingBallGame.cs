@@ -7,44 +7,79 @@ namespace BouncingBall.Game;
 
 internal sealed class BouncingBallGame
 {
+    private const int WireframeBallLimit = 48;
+
     private static readonly Color Background = Color.FromArgb(255, 18, 22, 32);
-    private static readonly Color BallFill = Color.FromArgb(255, 90, 200, 255);
-    private static readonly Color BallWire = Color.FromArgb(255, 200, 240, 255);
     private static readonly Color WallWire = Color.FromArgb(255, 70, 90, 120);
     private static readonly Color HudText = Color.FromArgb(255, 210, 220, 235);
 
     private RoomWorld _room = null!;
-    private BallSimulation _ball = null!;
-    private readonly OrbitCamera _camera = new();
+    private BallWorld _balls = null!;
+    private FixedRoomCamera _camera = null!;
 
     public void Initialize(RayGameContext ctx)
     {
         _room = RoomWorld.Create();
-        _ball = BallSimulation.CreateDefault(_room);
-        _camera.Follow(_ball.Position);
+        _balls = new BallWorld(_room.CollisionWorld);
+        _balls.BindRoom(_room);
+        _balls.SpawnBall(_room);
+        _camera = new FixedRoomCamera(_room.RoomCenter);
     }
 
     public void Update(RayGameContext ctx)
     {
-        if (ctx.IsKeyPressed(KeyboardKey.R))
-        {
-            _ball.Reset(_room);
-            _camera.ResetLook();
-        }
+        HandleSpawnInput(ctx);
 
-        _camera.Update(ctx);
-        _ball.Step(ctx.DeltaSeconds);
-        _camera.Follow(_ball.Position);
+        if (ctx.IsKeyPressed(KeyboardKey.R))
+            _balls.ClearAndSpawnOne(_room);
+
+        if (ctx.IsKeyPressed((KeyboardKey)290))
+            DiagnosticsHud.Toggle();
+
+        _balls.Step(ctx.DeltaSeconds);
 
         ctx.Clear(Background);
         var camera = _camera.BuildRaylibCamera();
         ctx.BeginWorld(camera);
         DrawWalls(ctx);
-        ctx.DrawGlowSphere(_ball.Position, BallSimulation.Radius, BallFill);
-        ctx.DrawGlowSphereWires(_ball.Position, BallSimulation.Radius, BallWire);
+        DrawBalls(ctx);
         ctx.EndWorld();
 
-        ctx.Text($"Speed: {_ball.Speed:F2} m/s  |  g + air drag  |  Drag: orbit  |  R: reset", 16, 16, 20, HudText);
+        ctx.Text(
+            "B +1  |  Ctrl+B +10  |  Ctrl+Shift+B +100  |  R reset  |  F3 diag",
+            16,
+            16,
+            18,
+            HudText);
+        DiagnosticsHud.Draw(ctx, _balls);
+    }
+
+    private void HandleSpawnInput(RayGameContext ctx)
+    {
+        if (!ctx.IsKeyPressed(KeyboardKey.B))
+            return;
+
+        var ctrl = ctx.IsKeyDown(KeyboardKey.LeftControl);
+        var shift = ctx.IsKeyDown(KeyboardKey.LeftShift);
+        if (ctrl && shift)
+            _balls.SpawnBalls(_room, 100);
+        else if (ctrl)
+            _balls.SpawnBalls(_room, 10);
+        else
+            _balls.SpawnBall(_room);
+    }
+
+    private void DrawBalls(RayGameContext ctx)
+    {
+        var drawWires = _balls.BallCount <= WireframeBallLimit;
+        for (var i = 0; i < _balls.BallCount; i++)
+        {
+            var ball = _balls.Balls[i];
+            var (fill, wire) = BallColors.ForIndex(i);
+            ctx.DrawGlowSphere(ball.Position, Ball.Radius, fill);
+            if (drawWires)
+                ctx.DrawGlowSphereWires(ball.Position, Ball.Radius, wire);
+        }
     }
 
     private void DrawWalls(RayGameContext ctx)
