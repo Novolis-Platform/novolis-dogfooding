@@ -363,14 +363,16 @@ internal sealed class EnemySystem
                     ShotLosClearance))
                 continue;
 
-            if (!CombatRaycast.TryHitEnemyXZ(
+            if (!PlanarOccupancy.TryRaycastDisc(
                     ray.Origin,
                     ray.Direction,
                     enemy.Position,
                     maxRange,
                     enemy.HitRadius,
-                    out var hitDistance))
+                    out var discHit))
                 continue;
+
+            var hitDistance = discHit.DistanceAlongRay;
 
             if (PlanarOccupancy.TryRaycastWall(
                     level.Walls,

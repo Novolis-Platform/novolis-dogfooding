@@ -24,9 +24,9 @@ Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **sourc
 |-----|-------------------|
 | MathGridDemo | `Novolis.Math.Arrays` |
 | RaylibHello | `Novolis.Raylib` |
-| DoomLite3D | Raylib, Math, **Simulation** (World, View, Kinematics) |
-| BouncingBall | Raylib, Math.Arrays, **Simulation** (World.Builders), Physics.Collision.Simple |
-| ArtillerySimulator | Raylib, **Physics.Ballistics** (drag + terrain sweep), Physics.Collision.Simple |
+| DoomLite3D | Raylib, Math, Simulation.World + View + Kinematics (PackageReference) |
+| BouncingBall | Raylib, Math.Arrays, Simulation.World + World.Builders, Physics.Collision.Simple (PackageReference) |
+| ArtillerySimulator | Raylib, Physics.Ballistics, Physics.Collision.Simple, Simulation.World + World.Builders + View (PackageReference) |
 | BridgeCommander | **Novolis.Commands** (Engine, Queueing, Abstractions) via sibling project ref; Hex1b TUI |
 | WireFishViewer | Avalonia, Transports, Messaging (some still project-ref until packed) |
 

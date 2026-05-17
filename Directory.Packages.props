@@ -13,13 +13,13 @@
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
     <PackageVersion Include="Novolis.Math.Arrays" Version="0.3.0-local" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Physics.Ballistics" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Raylib" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Simulation.Kinematics" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Simulation.View" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Simulation.World" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Simulation.World.Builders" Version="0.3.0-local" />
+    <PackageVersion Include="Novolis.Physics.Ballistics" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Raylib" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Simulation.Kinematics" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Simulation.View" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Simulation.World" Version="0.4.0-local" />
+    <PackageVersion Include="Novolis.Simulation.World.Builders" Version="0.4.0-local" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="0.1.0-preview.1" />
     <PackageVersion Include="Novolis.Messaging.Channels" Version="0.1.0-preview.1" />
     <PackageVersion Include="Novolis.Commands.Abstractions" Version="1.0.0" />

@@ -4,10 +4,12 @@
     <RootNamespace>BouncingBall</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\novolis-physics\src\Novolis.Physics.Collision.Simple\Novolis.Physics.Collision.Simple.csproj" />
-    <ProjectReference Include="..\..\..\novolis-simulation\src\Novolis.Simulation.World.Builders\Novolis.Simulation.World.Builders.csproj" />
-    <ProjectReference Include="..\..\..\novolis-simulation\src\Novolis.Simulation.World\Novolis.Simulation.World.csproj" />
-    <ProjectReference Include="..\..\..\novolis-math\src\Novolis.Math.Arrays\Novolis.Math.Arrays.csproj" />
-    <ProjectReference Include="..\..\..\novolis-raylib\src\Novolis.Raylib.Game\Novolis.Raylib.Game.csproj" />
+    <PackageReference Include="Novolis.Raylib">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Novolis.Math.Arrays" />
+    <PackageReference Include="Novolis.Simulation.World" />
+    <PackageReference Include="Novolis.Simulation.World.Builders" />
+    <PackageReference Include="Novolis.Physics.Collision.Simple" />
   </ItemGroup>
 </Project>

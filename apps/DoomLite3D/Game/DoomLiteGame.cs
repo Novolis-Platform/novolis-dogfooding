@@ -10,6 +10,8 @@ internal sealed class DoomLiteGame
     private static readonly Color Ambient = Color.FromArgb(255, 28, 24, 30);
     private static readonly Color MuzzleFlash = Color.FromArgb(255, 255, 220, 120);
 
+    private readonly DiagnosticsOverlay _diagnostics = new();
+
     private LevelMap _level = null!;
     private readonly PlayerController _player = new();
     private readonly EnemySystem _enemies = new();
@@ -29,8 +31,7 @@ internal sealed class DoomLiteGame
         if (ctx.IsKeyPressed((KeyboardKey)290))
             RegenerateLevel();
 
-        if (ctx.IsKeyPressed((KeyboardKey)292))
-            DiagnosticsHud.Toggle();
+        _diagnostics.ToggleIfKeyPressed(ctx);
 
         if (ctx.IsKeyPressed(KeyboardKey.R))
             _combat.TryStartReload();
@@ -50,7 +51,11 @@ internal sealed class DoomLiteGame
         DrawMuzzleBolt(ctx, camera);
         ctx.EndWorld();
         _hud.Draw(ctx, _combat, _enemies.CountAlive(), _level, _player, _enemies);
-        DiagnosticsHud.Draw(ctx, _level, _enemies);
+        _diagnostics.Draw(ctx, (_, lines) =>
+        {
+            lines.Add($"Enemies {_enemies.CountAlive()}/{_enemies.CountTotal()}");
+            lines.Add($"Seed {_level.Seed}");
+        });
     }
 
     private void DrawMuzzleBolt(RayGameContext ctx, Novolis.Raylib.Rendering.Camera camera)

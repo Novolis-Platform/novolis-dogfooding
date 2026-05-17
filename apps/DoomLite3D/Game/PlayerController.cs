@@ -86,12 +86,15 @@ internal sealed class PlayerController
     public Vector3 EyePosition =>
         Camera.Position + new Vector3(0f, EyeHeight + _verticalOffset, 0f);
 
-    public RayCamera BuildRaylibCamera() =>
-        RayCamera.Perspective(
+    public RayCamera BuildRaylibCamera()
+    {
+        var pose = new ViewPose(
             EyePosition,
             EyePosition + Camera.GetLookDirection() * 10f,
             Vector3.UnitY,
             70f);
+        return RayCamera.Perspective(pose.Position, pose.Target, pose.Up, pose.FieldOfViewDegrees);
+    }
 
     public Ray3 GetLookRay()
     {

@@ -7,7 +7,10 @@
     <PackageReference Include="Novolis.Raylib">
       <ExcludeAssets>buildTransitive</ExcludeAssets>
     </PackageReference>
-    <ProjectReference Include="..\..\..\novolis-physics\src\Novolis.Physics.Ballistics\Novolis.Physics.Ballistics.csproj" />
+    <PackageReference Include="Novolis.Physics.Ballistics" />
     <PackageReference Include="Novolis.Physics.Collision.Simple" />
+    <PackageReference Include="Novolis.Simulation.World" />
+    <PackageReference Include="Novolis.Simulation.World.Builders" />
+    <PackageReference Include="Novolis.Simulation.View" />
   </ItemGroup>
 </Project>

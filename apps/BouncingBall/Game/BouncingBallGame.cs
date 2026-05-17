@@ -13,6 +13,8 @@ internal sealed class BouncingBallGame
     private static readonly Color WallWire = Color.FromArgb(255, 70, 90, 120);
     private static readonly Color HudText = Color.FromArgb(255, 210, 220, 235);
 
+    private readonly DiagnosticsOverlay _diagnostics = new();
+
     private RoomWorld _room = null!;
     private BallWorld _balls = null!;
     private FixedRoomCamera _camera = null!;
@@ -33,8 +35,7 @@ internal sealed class BouncingBallGame
         if (ctx.IsKeyPressed(KeyboardKey.R))
             _balls.ClearAndSpawnOne(_room);
 
-        if (ctx.IsKeyPressed((KeyboardKey)290))
-            DiagnosticsHud.Toggle();
+        _diagnostics.ToggleIfKeyPressed(ctx);
 
         _balls.Step(ctx.DeltaSeconds);
 
@@ -51,7 +52,31 @@ internal sealed class BouncingBallGame
             16,
             18,
             HudText);
-        DiagnosticsHud.Draw(ctx, _balls);
+        _diagnostics.Draw(ctx, AppendDiagnostics);
+    }
+
+    private void AppendDiagnostics(FrameDiagnostics _, IList<string> lines)
+    {
+        var grounded = 0;
+        var speedSum = 0f;
+        var speedMax = 0f;
+        foreach (var sphere in _balls.Spheres)
+        {
+            if (sphere.IsGrounded)
+                grounded++;
+            speedSum += sphere.Speed;
+            speedMax = MathF.Max(speedMax, sphere.Speed);
+        }
+
+        var avgSpeed = _balls.BallCount > 0 ? speedSum / _balls.BallCount : 0f;
+        lines.Add($"balls {_balls.BallCount}  active {_balls.ActiveBallCount}  sleep {_balls.SleepingBallCount}");
+        lines.Add($"grounded {grounded}  avgSpd {avgSpeed:F2}  maxSpd {speedMax:F2}");
+        lines.Add($"contacts {_balls.BallBallContactsLastFrame}  pairs {_balls.BallBallPairChecksLastFrame}");
+        lines.Add($"refl {_balls.IntegratorReflectionsLastFrame}  sub {_balls.PhysicsSubStepsLastFrame}  iters {_balls.BallBallSolveIterationsLastFrame}");
+        if (_balls.BallBallSkippedLastFrame)
+            lines.Add("sphere contact skipped (budget)");
+        if (_balls.ClampedBallsLastFrame > 0)
+            lines.Add($"clamped {_balls.ClampedBallsLastFrame}");
     }
 
     private void HandleSpawnInput(RayGameContext ctx)
