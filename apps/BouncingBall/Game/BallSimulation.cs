@@ -1,40 +1,50 @@
 using System.Numerics;
 using Novolis.Physics.Collision.Simple;
-using Novolis.Physics.Numerics;
 
 namespace BouncingBall.Game;
 
 internal sealed class BallSimulation
 {
-    public const double Radius = 0.22;
-    private const int SubStepsPerFrame = 4;
-    private const double Restitution = 0.95;
+    public const float Radius = 0.22f;
+
+    /// <summary>SI standard gravity (m/s²), +Y up.</summary>
+    private static readonly Vector3 Gravity = new(0f, -9.80665f, 0f);
+
+    private const int SubStepsPerFrame = 16;
+    private const double LinearDragPerSecond = 0.048;
+    private const double Restitution = 0.82;
+
+    private static readonly Vector3 DefaultThrowDirection =
+        Vector3.Normalize(new Vector3(2.35f, 4.05f, -2.65f));
+
+    private const float DefaultThrowSpeed = 6.5f;
 
     private readonly BvhStaticWorld _world;
-    private Vector3d _position;
-    private Vector3d _velocity;
+    private Vector3 _position;
+    private Vector3 _velocity;
 
-    public Vector3 Position => new((float)_position.X, (float)_position.Y, (float)_position.Z);
-    public Vector3 Velocity => new((float)_velocity.X, (float)_velocity.Y, (float)_velocity.Z);
-    public float Speed => (float)_velocity.Length();
+    public Vector3 Position => _position;
+    public Vector3 Velocity => _velocity;
+    public float Speed => _velocity.Length();
 
-    public BallSimulation(BvhStaticWorld world, Vector3d initialPosition, Vector3d initialVelocity)
+    public BallSimulation(BvhStaticWorld world, Vector3 initialPosition, Vector3 initialVelocity)
     {
         _world = world;
         _position = initialPosition;
         _velocity = initialVelocity;
     }
 
-    public static BallSimulation CreateDefault(RoomWorld room) =>
-        new(
-            room.CollisionWorld,
-            room.RoomCenter,
-            new Vector3d(2.5, -2.0, 1.8));
+    public static BallSimulation CreateDefault(RoomWorld room)
+    {
+        var spawn = room.RoomCenter + new Vector3(-0.8f, 1.2f, -0.6f);
+        var velocity = DefaultThrowDirection * DefaultThrowSpeed;
+        return new BallSimulation(room.CollisionWorld, spawn, velocity);
+    }
 
     public void Reset(RoomWorld room)
     {
-        _position = room.RoomCenter;
-        _velocity = new Vector3d(2.5, -2.0, 1.8);
+        _position = room.RoomCenter + new Vector3(-0.8f, 1.2f, -0.6f);
+        _velocity = DefaultThrowDirection * DefaultThrowSpeed;
     }
 
     public void Step(float deltaSeconds)
@@ -42,16 +52,15 @@ internal sealed class BallSimulation
         if (deltaSeconds <= 0f)
             return;
 
-        var subDt = deltaSeconds / SubStepsPerFrame;
-        for (var i = 0; i < SubStepsPerFrame; i++)
-        {
-            BvhStaticSphereIntegrator.AdvanceOneStep(
-                _world,
-                ref _position,
-                ref _velocity,
-                Radius,
-                subDt,
-                normalRestitution: Restitution);
-        }
+        BvhStaticSphereIntegrator.AdvanceWithUniformAccelerationAndLinearDrag(
+            _world,
+            ref _position,
+            ref _velocity,
+            Radius,
+            deltaSeconds,
+            Gravity,
+            LinearDragPerSecond,
+            substepsPerStep: SubStepsPerFrame,
+            normalRestitution: Restitution);
     }
 }

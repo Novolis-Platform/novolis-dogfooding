@@ -1,6 +1,6 @@
+using System.Numerics;
 using Novolis.Math.Arrays;
 using Novolis.Physics.Collision.Simple;
-using Novolis.Physics.Numerics;
 using Novolis.Simulation.World.Builders;
 
 namespace BouncingBall.Game;
@@ -20,9 +20,9 @@ internal sealed class RoomWorld
     /// <summary>Enclosed collision volume (walls + floor + ceiling).</summary>
     public BvhStaticWorld CollisionWorld { get; }
 
-    public Vector3d RoomCenter { get; }
+    public Vector3 RoomCenter { get; }
 
-    private RoomWorld(DenseGrid<byte> walls, BvhStaticWorld simulationWalls, BvhStaticWorld collisionWorld, Vector3d roomCenter)
+    private RoomWorld(DenseGrid<byte> walls, BvhStaticWorld simulationWalls, BvhStaticWorld collisionWorld, Vector3 roomCenter)
     {
         Walls = walls;
         SimulationWallColumns = simulationWalls;
@@ -41,7 +41,7 @@ internal sealed class RoomWorld
             CellSize,
             WallHeight);
         var collisionWorld = BuildEnclosedRoom(walls, cells);
-        var roomCenter = new Vector3d(GridSize * CellSize * 0.5, WallHeight * 0.5, GridSize * CellSize * 0.5);
+        var roomCenter = new Vector3(GridSize * CellSize * 0.5f, WallHeight * 0.5f, GridSize * CellSize * 0.5f);
         return new RoomWorld(walls, simulationWalls, collisionWorld, roomCenter);
     }
 
@@ -60,7 +60,7 @@ internal sealed class RoomWorld
 
     private static BvhStaticWorld BuildEnclosedRoom(DenseGrid<byte> walls, ReadOnlySpan<byte> cells)
     {
-        var verts = new List<Vector3d>();
+        var verts = new List<Vector3>();
         var tris = new List<int>();
 
         for (var y = 0u; y < walls.Height; y++)
@@ -70,10 +70,10 @@ internal sealed class RoomWorld
             if (index >= cells.Length || cells[index] == 0)
                 continue;
 
-            var cx = (x + 0.5) * CellSize;
-            var cz = (y + 0.5) * CellSize;
-            var h = WallHeight * 0.5;
-            var hx = CellSize * 0.5;
+            var cx = (x + 0.5f) * CellSize;
+            var cz = (y + 0.5f) * CellSize;
+            var h = WallHeight * 0.5f;
+            var hx = CellSize * 0.5f;
             AppendBox(verts, tris, cx, h, cz, hx, h, hx);
         }
 
@@ -81,7 +81,7 @@ internal sealed class RoomWorld
         var x1 = (GridSize - 1) * CellSize;
         var z0 = CellSize;
         var z1 = (GridSize - 1) * CellSize;
-        AppendQuad(verts, tris, new(x0, 0, z0), new(x1, 0, z0), new(x1, 0, z1), new(x0, 0, z1));
+        AppendQuad(verts, tris, new(x0, 0f, z0), new(x1, 0f, z0), new(x1, 0f, z1), new(x0, 0f, z1));
         AppendQuad(verts, tris, new(x0, WallHeight, z1), new(x1, WallHeight, z1), new(x1, WallHeight, z0), new(x0, WallHeight, z0));
 
         return new BvhStaticWorld(new StaticTriangleMesh(verts.ToArray(), tris.ToArray()));
@@ -97,14 +97,14 @@ internal sealed class RoomWorld
     }
 
     private static void AppendBox(
-        List<Vector3d> verts,
+        List<Vector3> verts,
         List<int> tris,
-        double cx,
-        double cy,
-        double cz,
-        double hx,
-        double hy,
-        double hz)
+        float cx,
+        float cy,
+        float cz,
+        float hx,
+        float hy,
+        float hz)
     {
         var x0 = cx - hx;
         var x1 = cx + hx;
@@ -121,7 +121,7 @@ internal sealed class RoomWorld
         AppendQuad(verts, tris, new(x0, y1, z0), new(x1, y1, z0), new(x1, y1, z1), new(x0, y1, z1));
     }
 
-    private static void AppendQuad(List<Vector3d> verts, List<int> tris, Vector3d a, Vector3d b, Vector3d c, Vector3d d)
+    private static void AppendQuad(List<Vector3> verts, List<int> tris, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
     {
         var o = verts.Count;
         verts.Add(a);

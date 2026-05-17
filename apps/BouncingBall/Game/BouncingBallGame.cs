@@ -40,11 +40,11 @@ internal sealed class BouncingBallGame
         var camera = _camera.BuildRaylibCamera();
         ctx.BeginWorld(camera);
         DrawWalls(ctx);
-        ctx.DrawGlowSphere(_ball.Position, (float)BallSimulation.Radius, BallFill);
-        ctx.DrawGlowSphereWires(_ball.Position, (float)BallSimulation.Radius, BallWire);
+        ctx.DrawGlowSphere(_ball.Position, BallSimulation.Radius, BallFill);
+        ctx.DrawGlowSphereWires(_ball.Position, BallSimulation.Radius, BallWire);
         ctx.EndWorld();
 
-        ctx.Text($"Speed: {_ball.Speed:F2} m/s  |  Drag: orbit  |  R: reset", 16, 16, 20, HudText);
+        ctx.Text($"Speed: {_ball.Speed:F2} m/s  |  g + air drag  |  Drag: orbit  |  R: reset", 16, 16, 20, HudText);
     }
 
     private void DrawWalls(RayGameContext ctx)
