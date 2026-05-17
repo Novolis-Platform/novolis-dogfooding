@@ -10,12 +10,13 @@ internal sealed class TerrainWorld
 {
     public float ExtentMeters => SimulationUnits.ExtentMeters;
     private const int CollisionCells = 256;
-    private const int DrawCells = 96;
+    private const int DrawCells = 128;
 
     private static readonly Color BoundaryColor = Color.FromArgb(255, 200, 180, 90);
+    private static readonly Color GroundFill = Color.FromArgb(28, 22, 38, 30);
 
-    private readonly Color _wireLow = Color.FromArgb(255, 48, 72, 44);
-    private readonly Color _wireHigh = Color.FromArgb(255, 72, 110, 58);
+    private readonly Color _wireLow = Color.FromArgb(255, 58, 88, 52);
+    private readonly Color _wireHigh = Color.FromArgb(255, 88, 132, 68);
 
     private BvhStaticWorld _collision = null!;
     private Vector3[] _drawVertices = [];
@@ -124,6 +125,9 @@ internal sealed class TerrainWorld
 
     public void Draw(RayGameContext ctx)
     {
+        var e = ExtentMeters;
+        ctx.DrawPlane(new Vector3(e * 0.5f, 0f, e * 0.5f), new Vector2(e, e), GroundFill);
+
         var stride = DrawCells + 1;
         for (var z = 0; z < DrawCells; z++)
         {
@@ -162,7 +166,7 @@ internal sealed class TerrainWorld
     private void DrawRangeBoundary(RayGameContext ctx)
     {
         var e = ExtentMeters;
-        var y = 55f;
+        var y = 120f;
         var a = new Vector3(0f, y, 0f);
         var b = new Vector3(e, y, 0f);
         var c = new Vector3(e, y, e);

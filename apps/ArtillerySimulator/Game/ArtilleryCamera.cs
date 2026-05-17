@@ -19,7 +19,7 @@ internal sealed class ArtilleryCamera
   private const float PitchLimit = MathF.PI * 0.49f;
   private const float OrbitSmoothRate = 10f;
   private const float MinOrbitDistance = 80f;
-  private const float MaxOrbitDistance = 8000f;
+  private const float MaxOrbitDistance = 24_000f;
 
   private Vector3 _freePosition;
   private float _freeYaw;

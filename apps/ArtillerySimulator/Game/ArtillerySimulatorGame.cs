@@ -66,7 +66,9 @@ internal sealed class ArtillerySimulatorGame
 
     ctx.Clear(Background);
     var barrelDir = _gun.BarrelDirection();
-    ctx.BeginWorld(_camera.Build(dt, _terrain.GunBaseline, barrelDir, _shot));
+    var cam = _camera.Build(dt, _terrain.GunBaseline, barrelDir, _shot);
+    RaylibClipPlanes.ApplyForExtent(cam.Position, _terrain.ExtentMeters);
+    ctx.BeginWorld(cam);
     _terrain.Draw(ctx);
     DrawAimPreview(ctx);
     _gun.Draw(ctx, _terrain.GunBaseline, showPivotGlow: _shot.Phase == ShotPhase.Ready);
