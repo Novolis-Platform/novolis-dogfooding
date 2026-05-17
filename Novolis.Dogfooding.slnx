@@ -2,5 +2,6 @@
   <Folder Name="/apps/">
     <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
+    <Project Path="apps/DoomLite3D/DoomLite3D.csproj" />
   </Folder>
 </Solution>
