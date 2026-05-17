@@ -6,6 +6,7 @@
     { "name": "novolis-aspire" },
     { "name": "novolis-avalonia" },
     { "name": "novolis-codegen" },
+    { "name": "novolis-commands" },
     { "name": "novolis-machinelearning" },
     { "name": "novolis-math" },
     { "name": "novolis-messaging" },

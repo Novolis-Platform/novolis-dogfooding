@@ -4,6 +4,8 @@
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
     <Project Path="apps/DoomLite3D/DoomLite3D.csproj" />
     <Project Path="apps/BouncingBall/BouncingBall.csproj" />
+    <Project Path="apps/ArtillerySimulator/ArtillerySimulator.csproj" />
+    <Project Path="apps/BridgeCommander/BridgeCommander.csproj" />
     <Project Path="apps/WireFishViewer/WireFishViewer.csproj" />
     <Project Path="apps/WireFishViewer.Tests/WireFishViewer.Tests.csproj" />
   </Folder>

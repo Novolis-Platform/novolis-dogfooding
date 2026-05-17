@@ -36,9 +36,27 @@ Or after a shallow clone:
 ./scripts/sync-submodules.ps1
 ```
 
+## Apps
+
+| App | Purpose |
+|-----|---------|
+| `BridgeCommander` | Hex1b TUI dogfood for **Novolis.Commands** (sci-fi bridge captain simulator) |
+| `BouncingBall` | Simulation + Raylib physics demo |
+| `ArtillerySimulator` | Ballistics + terrain |
+| `MathGridDemo` | Math arrays |
+| `WireFishViewer` | Packet viewer (Avalonia) |
+
+### Bridge Commander (Novolis.Commands)
+
+```powershell
+dotnet run --project apps/BridgeCommander
+```
+
+Full-screen TUI: type orders (`helm heading 270`, `tactical fire`, `belay that`), see parse/execute history, switch bridge stations, exercise ambiguity (`fire`). References `../novolis-commands` via project path.
+
 ## Adding an app
 
-1. Create `apps/YourApp/YourApp.csproj` with `ProjectReference` paths under `$(NovolisSubmoduleRoot)…`.
+1. Create `apps/YourApp/YourApp.csproj` with `ProjectReference` paths under `$(NovolisSubmoduleRoot)…` or sibling `novolis-*` repos.
 2. Add the project to `Novolis.Dogfooding.slnx`.
 3. Open a PR; CI builds all apps with submodules checked out.
 

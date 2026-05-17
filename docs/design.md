@@ -26,6 +26,8 @@ Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **sourc
 | RaylibHello | `Novolis.Raylib` |
 | DoomLite3D | Raylib, Math, **Simulation** (World, View, Kinematics) |
 | BouncingBall | Raylib, Math.Arrays, **Simulation** (World.Builders), Physics.Collision.Simple |
+| ArtillerySimulator | Raylib, **Physics.Ballistics** (drag + terrain sweep), Physics.Collision.Simple |
+| BridgeCommander | **Novolis.Commands** (Engine, Queueing, Abstractions) via sibling project ref; Hex1b TUI |
 | WireFishViewer | Avalonia, Transports, Messaging (some still project-ref until packed) |
 
 ## CI

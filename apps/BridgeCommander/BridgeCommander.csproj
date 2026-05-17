@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>BridgeCommander</RootNamespace>
+    <Description>Dogfood Novolis.Commands — sci-fi bridge captain TUI.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Hex1b" />
+    <ProjectReference Include="..\..\..\novolis-commands\src\Novolis.Commands.Abstractions\Novolis.Commands.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\novolis-commands\src\Novolis.Commands.Engine\Novolis.Commands.Engine.csproj" />
+    <ProjectReference Include="..\..\..\novolis-commands\src\Novolis.Commands.Queueing\Novolis.Commands.Queueing.csproj" />
+  </ItemGroup>
+</Project>
