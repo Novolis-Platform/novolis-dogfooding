@@ -15,6 +15,5 @@
     { "name": "novolis-storage" },
     { "name": "novolis-testing" },
     { "name": "novolis-transports" },
-    { "name": "novolis-wirefish" }
   ]
 }
