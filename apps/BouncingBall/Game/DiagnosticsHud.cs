@@ -29,12 +29,12 @@ internal static class DiagnosticsHud
         var grounded = 0;
         var speedSum = 0f;
         var speedMax = 0f;
-        foreach (var ball in world.Balls)
+        foreach (var sphere in world.Spheres)
         {
-            if (ball.IsGrounded)
+            if (sphere.IsGrounded)
                 grounded++;
-            speedSum += ball.Speed;
-            speedMax = MathF.Max(speedMax, ball.Speed);
+            speedSum += sphere.Speed;
+            speedMax = MathF.Max(speedMax, sphere.Speed);
         }
 
         var avgSpeed = world.BallCount > 0 ? speedSum / world.BallCount : 0f;

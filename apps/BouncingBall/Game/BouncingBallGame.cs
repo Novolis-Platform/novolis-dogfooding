@@ -74,11 +74,11 @@ internal sealed class BouncingBallGame
         var drawWires = _balls.BallCount <= WireframeBallLimit;
         for (var i = 0; i < _balls.BallCount; i++)
         {
-            var ball = _balls.Balls[i];
+            var sphere = _balls.Spheres[i];
             var (fill, wire) = BallColors.ForIndex(i);
-            ctx.DrawGlowSphere(ball.Position, Ball.Radius, fill);
+            ctx.DrawGlowSphere(sphere.Position, SphereRadius.Value, fill);
             if (drawWires)
-                ctx.DrawGlowSphereWires(ball.Position, Ball.Radius, wire);
+                ctx.DrawGlowSphereWires(sphere.Position, SphereRadius.Value, wire);
         }
     }
 
