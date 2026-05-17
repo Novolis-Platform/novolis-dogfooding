@@ -39,22 +39,22 @@ internal sealed class PlayerController
         if (!allowMovement)
             return;
 
-        var move = Vector2.Zero;
+        var move = Vector3.Zero;
         if (ctx.IsKeyDown(KeyboardKey.W))
-            move += new Vector2(Camera.GetForwardXZ().X, Camera.GetForwardXZ().Z);
+            move += Camera.GetForwardXZ();
         if (ctx.IsKeyDown(KeyboardKey.S))
-            move -= new Vector2(Camera.GetForwardXZ().X, Camera.GetForwardXZ().Z);
+            move -= Camera.GetForwardXZ();
         if (ctx.IsKeyDown(KeyboardKey.A))
-            move += new Vector2(Camera.GetRightXZ().X, Camera.GetRightXZ().Z);
+            move += Camera.GetRightXZ();
         if (ctx.IsKeyDown(KeyboardKey.D))
-            move -= new Vector2(Camera.GetRightXZ().X, Camera.GetRightXZ().Z);
+            move -= Camera.GetRightXZ();
 
         if (move.LengthSquared() > 1e-6f)
         {
-            move = Vector2.Normalize(move) * (MoveSpeed * ctx.DeltaSeconds);
-            var pos = new Vector2(Camera.Position.X, Camera.Position.Z);
+            move = Vector3.Normalize(move) * (MoveSpeed * ctx.DeltaSeconds);
+            var pos = new Vector3(Camera.Position.X, 0f, Camera.Position.Z);
             pos = PlanarAgent.Move(level.Walls, pos, move, PlayerRadius, LevelMap.CellSize);
-            Camera.Position = new Vector3(pos.X, 0f, pos.Y);
+            Camera.Position = pos;
         }
 
         UpdateJump(ctx);

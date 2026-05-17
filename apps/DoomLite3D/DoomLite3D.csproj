@@ -6,11 +6,11 @@
     <PackageReference Include="Novolis.Raylib">
       <ExcludeAssets>buildTransitive</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Novolis.Math.Arrays" />
-    <PackageReference Include="Novolis.Math.Geometry" />
-    <PackageReference Include="Novolis.Simulation.World" />
-    <PackageReference Include="Novolis.Simulation.View" />
-    <PackageReference Include="Novolis.Simulation.Kinematics" />
+    <ProjectReference Include="..\..\..\novolis-math\src\Novolis.Math.Arrays\Novolis.Math.Arrays.csproj" />
+    <ProjectReference Include="..\..\..\novolis-math\src\Novolis.Math.Geometry\Novolis.Math.Geometry.csproj" />
+    <ProjectReference Include="..\..\..\novolis-simulation\src\Novolis.Simulation.World\Novolis.Simulation.World.csproj" />
+    <ProjectReference Include="..\..\..\novolis-simulation\src\Novolis.Simulation.View\Novolis.Simulation.View.csproj" />
+    <ProjectReference Include="..\..\..\novolis-simulation\src\Novolis.Simulation.Kinematics\Novolis.Simulation.Kinematics.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />

@@ -90,7 +90,7 @@ internal sealed class EnemySystem
             var isBoss = spawn.Kind == EnemyKind.Boss;
             var radius = isBoss ? BossRadius : GruntRadius;
             var world = level.CellToWorld(spawn.Cell.X, spawn.Cell.Y, 0.9f);
-            var xz = new Vector2(world.X, world.Z);
+            var xz = new Vector3(world.X, 0f, world.Z);
             if (PlanarOccupancy.OverlapsWall(level.Walls, xz, radius, LevelMap.CellSize))
                 continue;
 
@@ -101,7 +101,7 @@ internal sealed class EnemySystem
             var maxHealth = isBoss ? BossHealth : GruntHealth;
             _enemies.Add(new Enemy
             {
-                Position = new Vector3(xz.X, world.Y, xz.Y),
+                Position = new Vector3(xz.X, world.Y, xz.Z),
                 Kind = spawn.Kind,
                 SpriteIndex = spawn.SpriteIndex,
                 Health = maxHealth,
@@ -126,7 +126,7 @@ internal sealed class EnemySystem
 
         var dt = ctx.DeltaSeconds;
         var playerPos = player.Camera.Position;
-        var playerXZ = new Vector2(playerPos.X, playerPos.Z);
+        var playerXZ = new Vector3(playerPos.X, 0f, playerPos.Z);
 
         foreach (var enemy in _enemies)
         {
@@ -136,7 +136,7 @@ internal sealed class EnemySystem
             enemy.MeleeCooldown = Math.Max(0f, enemy.MeleeCooldown - dt);
             enemy.RangedCooldown = Math.Max(0f, enemy.RangedCooldown - dt);
 
-            var enemyXZ = new Vector2(enemy.Position.X, enemy.Position.Z);
+            var enemyXZ = new Vector3(enemy.Position.X, 0f, enemy.Position.Z);
             var toPlayer = playerXZ - enemyXZ;
             var dist = toPlayer.Length();
             var losClearance = enemy.MoveRadius;
@@ -149,9 +149,9 @@ internal sealed class EnemySystem
 
             if (hasLos && dist > 0.05f && dist < ChaseRange)
             {
-                var step = Vector2.Normalize(toPlayer) * (enemy.ChaseSpeed * dt);
+                var step = Vector3.Normalize(toPlayer) * (enemy.ChaseSpeed * dt);
                 var moved = TryMoveEnemy(level, enemy, enemyXZ, step);
-                enemy.Position = new Vector3(moved.X, enemy.Position.Y, moved.Y);
+                enemy.Position = new Vector3(moved.X, enemy.Position.Y, moved.Z);
             }
 
             if (enemy.Kind == EnemyKind.Boss
@@ -215,12 +215,12 @@ internal sealed class EnemySystem
             var prev = bolt.Position;
             bolt.Position += bolt.Velocity * dt;
 
-            var prevXZ = new Vector2(prev.X, prev.Z);
-            var posXZ = new Vector2(bolt.Position.X, bolt.Position.Z);
+            var prevXZ = new Vector3(prev.X, 0f, prev.Z);
+            var posXZ = new Vector3(bolt.Position.X, 0f, bolt.Position.Z);
             var deltaXZ = posXZ - prevXZ;
             if (deltaXZ.LengthSquared() > 1e-8f)
             {
-                var dirXZ = Vector2.Normalize(deltaXZ);
+                var dirXZ = Vector3.Normalize(deltaXZ);
                 var stepDist = deltaXZ.Length();
                 if (PlanarOccupancy.TryRaycastWall(
                         level.Walls,
@@ -244,11 +244,10 @@ internal sealed class EnemySystem
         }
     }
 
-    private Vector2 TryMoveEnemy(
+    private Vector3 TryMoveEnemy(
         LevelMap level,
         Enemy self,
-        Vector2 position,
-        Vector2 delta)
+        Vector3 position, Vector3 delta)
     {
         if (delta.LengthSquared() < 1e-12f)
             return ResolveEnemyPosition(level, self, position);
@@ -260,7 +259,7 @@ internal sealed class EnemySystem
         {
             var step = remaining;
             if (step.Length() > maxStep)
-                step = Vector2.Normalize(step) * maxStep;
+                step = Vector3.Normalize(step) * maxStep;
 
             var next = PlanarOccupancy.TryMove(level.Walls, pos, step, self.MoveRadius, LevelMap.CellSize);
             if (!OverlapsOtherEnemy(self, next, self.MoveRadius))
@@ -272,10 +271,10 @@ internal sealed class EnemySystem
         return ResolveEnemyPosition(level, self, pos);
     }
 
-    private static Vector2 ResolveEnemyPosition(LevelMap level, Enemy self, Vector2 position) =>
+    private static Vector3 ResolveEnemyPosition(LevelMap level, Enemy self, Vector3 position) =>
         PlanarOccupancy.PushOutOfWalls(level.Walls, position, self.MoveRadius, LevelMap.CellSize);
 
-    private bool OverlapsOtherEnemy(Enemy self, Vector2 position, float radius)
+    private bool OverlapsOtherEnemy(Enemy self, Vector3 position, float radius)
     {
         var minDist = radius * 2f;
         var minDistSq = minDist * minDist;
@@ -285,8 +284,8 @@ internal sealed class EnemySystem
             if (!other.Alive || ReferenceEquals(other, self))
                 continue;
 
-            var otherXZ = new Vector2(other.Position.X, other.Position.Z);
-            if (Vector2.DistanceSquared(position, otherXZ) < minDistSq)
+            var otherXZ = new Vector3(other.Position.X, 0f, other.Position.Z);
+            if (Vector3.DistanceSquared(position, otherXZ) < minDistSq)
                 return true;
         }
 
@@ -333,8 +332,8 @@ internal sealed class EnemySystem
     private bool TryHit(LevelMap level, PlayerController player, PlayerCombatState combat)
     {
         var ray = player.GetLookRay();
-        var originXZ = new Vector2(ray.Origin.X, ray.Origin.Z);
-        var dirXZ = new Vector2(ray.Direction.X, ray.Direction.Z);
+        var originXZ = new Vector3(ray.Origin.X, 0f, ray.Origin.Z);
+        var dirXZ = new Vector3(ray.Direction.X, 0f, ray.Direction.Z);
 
         var maxRange = MaxShootRange;
         if (PlanarOccupancy.TryRaycastWall(
@@ -355,7 +354,7 @@ internal sealed class EnemySystem
             if (!enemy.Alive)
                 continue;
 
-            var targetXZ = new Vector2(enemy.Position.X, enemy.Position.Z);
+            var targetXZ = new Vector3(enemy.Position.X, 0f, enemy.Position.Z);
             if (!PlanarOccupancy.HasLineOfSight(
                     level.Walls,
                     originXZ,

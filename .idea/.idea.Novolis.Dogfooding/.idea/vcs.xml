@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-analyzers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-aspire" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-avalonia" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-codegen" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-machinelearning" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-math" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-messaging" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-physics" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-raylib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-security" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-storage" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-testing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/novolis-transports" vcs="Git" />
+  </component>
+</project>

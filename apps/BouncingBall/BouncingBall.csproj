@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>BouncingBall</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Raylib">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Novolis.Math.Arrays" />
+    <PackageReference Include="Novolis.Simulation.World.Builders" />
+    <PackageReference Include="Novolis.Simulation.View" />
+    <PackageReference Include="Novolis.Physics.Collision.Simple" />
+  </ItemGroup>
+</Project>
