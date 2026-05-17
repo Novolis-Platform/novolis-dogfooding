@@ -2,32 +2,36 @@
 
 ## Purpose
 
-`novolis-dogfooding` validates the Novolis ecosystem **as consumers build it**: library repos stay independent and publishable; this repo composes them via submodules and project references.
+`novolis-dogfooding` validates the Novolis ecosystem **as consumers build it**: library repos publish packages; this repo consumes them via **local or nuget.org feeds** (`PackageReference` only).
 
 ## Non-goals
 
 - Publishing NuGet packages from this repository
 - Replacing per-repo unit/integration tests
-- Vendoring copies of library source (submodules stay authoritative)
+- Cross-repo `ProjectReference` for Novolis libraries (use [local NuGet feed](../../novolis-governance/docs/local-nuget-development.md) instead)
 
-## Submodule set
+## Local development
 
-`.novolis/repos.json` lists library and domain repositories. Platform infra (`novolis-workflows`, `novolis-governance`, `novolis-registry`, `novolis-install`, `novolis-template-dotnet`, `novolis-smoketest`) is excluded because they are not application dependencies.
+1. Pack libraries: `d:\novolis\scripts\pack-novolis-local.ps1`
+2. Restore using [`nuget.config`](../nuget.config) (`novolis-local` → `../artifacts/nuget-local`)
+3. `dotnet build Novolis.Dogfooding.slnx`
+
+Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **source browsing** only.
 
 ## Apps
 
-Each app under `apps/` is a minimal executable:
-
-- **MathGridDemo** — `Novolis.Math.Arrays` smoke
-- **RaylibHello** — `Novolis.Raylib` window smoke
-
-New apps should stay small and focused on one integration surface.
-
-## MSBuild
-
-- Root `Directory.Build.props` sets `IsPackable=false` and `NovolisSubmoduleRoot`.
-- Apps use `$(NovolisSubmoduleRoot)novolis-<domain>/…` project references.
+| App | Packages exercised |
+|-----|-------------------|
+| MathGridDemo | `Novolis.Math.Arrays` |
+| RaylibHello | `Novolis.Raylib` |
+| DoomLite3D | Raylib, Math, **Simulation** (World, View, Kinematics) |
+| WireFishViewer | Avalonia, Transports, Messaging (some still project-ref until packed) |
 
 ## CI
 
-GitHub Actions checks out with `submodules: recursive` and runs `dotnet build` on the solution. No `dotnet test` at this layer unless dedicated dogfood tests are added later.
+Pack dependency repos to an artifact feed, then build `Novolis.Dogfooding.slnx` with `PackageReference` restore.
+
+## Related
+
+- [simulation-layer-policy.md](../../novolis-governance/docs/simulation-layer-policy.md)
+- [local-nuget-development.md](../../novolis-governance/docs/local-nuget-development.md)

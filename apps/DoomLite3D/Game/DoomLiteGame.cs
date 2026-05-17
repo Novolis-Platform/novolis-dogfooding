@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Numerics;
-using Novolis.Physics.Collision.Simple;
 using Novolis.Raylib.Game;
 using Novolis.Raylib.Interact;
 
@@ -16,7 +15,6 @@ internal sealed class DoomLiteGame
     private readonly EnemySystem _enemies = new();
     private readonly WeaponHud _hud = new();
     private readonly PlayerCombatState _combat = new();
-    private BvhStaticWorld? _physicsWorld;
 
     public void Initialize(RayGameContext ctx)
     {
@@ -28,9 +26,11 @@ internal sealed class DoomLiteGame
 
     public void Update(RayGameContext ctx)
     {
-        // raylib KEY_F1 = 290
         if (ctx.IsKeyPressed((KeyboardKey)290))
             RegenerateLevel();
+
+        if (ctx.IsKeyPressed((KeyboardKey)292))
+            DiagnosticsHud.Toggle();
 
         if (ctx.IsKeyPressed(KeyboardKey.R))
             _combat.TryStartReload();
@@ -39,16 +39,18 @@ internal sealed class DoomLiteGame
 
         var canAct = !_combat.IsDead;
         _player.Update(ctx, _level, canAct);
-        _enemies.Update(ctx, _level, _physicsWorld, _player, _combat);
+        _enemies.Update(ctx, _level, _player, _combat);
 
         ctx.Clear(Ambient);
         var camera = _player.BuildRaylibCamera();
         ctx.BeginWorld(camera);
         LevelRenderer.Draw(ctx, camera, _level);
         _enemies.Draw(ctx, camera);
+        _enemies.DrawBolts(ctx);
         DrawMuzzleBolt(ctx, camera);
         ctx.EndWorld();
         _hud.Draw(ctx, _combat, _enemies.CountAlive(), _level, _player, _enemies);
+        DiagnosticsHud.Draw(ctx, _level, _enemies);
     }
 
     private void DrawMuzzleBolt(RayGameContext ctx, Novolis.Raylib.Rendering.Camera camera)
@@ -64,8 +66,6 @@ internal sealed class DoomLiteGame
     private void RegenerateLevel()
     {
         _level = LevelMap.CreateRandom();
-        _physicsWorld = WallGridPhysics.BuildWorld(_level.Walls, LevelMap.CellSize, LevelMap.WallHeight);
-        _player.SetPhysicsWorld(_physicsWorld);
         _player.Reset(_level);
         _enemies.Reset(_level);
         _combat.Reset();

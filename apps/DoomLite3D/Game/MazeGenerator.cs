@@ -4,42 +4,47 @@ namespace DoomLite3D.Game;
 
 internal static class MazeGenerator
 {
-    private const int Size = 35;
-    private const int LogicalSize = 11;
-    private const int NodeSpacing = 3;
+    private const int Size = 55;
+    private const int CorridorHalfWidth = 1;
     private const int CalmRoomSize = 7;
     private const int CalmRoomOriginX = 1;
     private const int CalmRoomOriginZ = 1;
-    private const int CalmExclusionRadius = 8;
-    private const int MaxDiameter = 58;
-    private const int MaxAttempts = 8;
-    private const int MinEnemySpacing = 3;
-    private const int MaxEnemies = 22;
-    private const int CalmLogicalMax = 2;
+    private const int CalmExclusionRadius = 10;
+    private const int PackRoomSize = 7;
+    private const int BossRoomSize = 9;
+    private const int PackRoomCount = 6;
+    private const int RoomMinSeparation = 10;
+    private const int SpawnRoomMinDist = 14;
+    private const int MaxDiameter = 70;
+    private const int MaxAttempts = 12;
+    private const int MinEnemySpacing = 2;
+    private const int MaxCorridorEnemies = 38;
+    private const int ScatterPercent = 45;
 
-    private static readonly (int Dx, int Dz)[] LogicalDirections = [(0, -1), (1, 0), (0, 1), (-1, 0)];
-
-    public static (DenseGrid<byte> Walls, GridIndex PlayerSpawn, List<EnemySpawn> Enemies) Generate(int? seed = null)
+    public static (DenseGrid<byte> Walls, GridIndex PlayerSpawn, List<EnemySpawn> Enemies, int Seed, List<RoomRect> Rooms) Generate(
+        int? seed = null)
     {
         var baseSeed = seed ?? Environment.TickCount;
         MazeAttempt? last = null;
 
         for (var attempt = 0; attempt < MaxAttempts; attempt++)
         {
-            var rng = new Random(HashSeed(baseSeed, attempt));
+            var attemptSeed = HashSeed(baseSeed, attempt);
+            var rng = new Random(attemptSeed);
             var maze = TryGenerate(rng);
             if (maze is null)
                 continue;
 
             if (maze.Value.Diameter <= MaxDiameter)
-                return BuildLevel(maze.Value, rng);
+                return BuildLevel(maze.Value, attemptSeed);
 
             last = maze;
         }
 
+        var fallbackSeed = HashSeed(baseSeed, 0);
         return BuildLevel(
-            last ?? TryGenerate(new Random(baseSeed)) ?? throw new InvalidOperationException("Maze generation failed."),
-            new Random(baseSeed));
+            last ?? TryGenerate(new Random(fallbackSeed)) ?? throw new InvalidOperationException("Level generation failed."),
+            fallbackSeed);
     }
 
     private static MazeAttempt? TryGenerate(Random rng)
@@ -52,158 +57,172 @@ internal static class MazeGenerator
         var spawnX = CalmRoomOriginX + CalmRoomSize / 2;
         var spawnZ = CalmRoomOriginZ + CalmRoomSize / 2;
 
-        CarveCalmRoom(walls);
+        var rooms = new List<RoomSite>();
+        CarveRect(walls, CalmRoomOriginX, CalmRoomOriginZ, CalmRoomSize, CalmRoomSize);
+        rooms.Add(new RoomSite(
+            CalmRoomOriginX,
+            CalmRoomOriginZ,
+            CalmRoomSize,
+            CalmRoomSize,
+            RoomKind.Calm,
+            spawnX,
+            spawnZ));
 
-        var visited = new bool[LogicalSize, LogicalSize];
-        var openEast = new bool[LogicalSize, LogicalSize];
-        var openSouth = new bool[LogicalSize, LogicalSize];
+        var exitZ = CalmRoomOriginZ + CalmRoomSize / 2;
+        CarveFloor(walls, CalmRoomOriginX + CalmRoomSize, exitZ);
+        CarveFloor(walls, CalmRoomOriginX + CalmRoomSize, exitZ + 1);
 
-        for (var iz = 0; iz <= CalmLogicalMax; iz++)
-        for (var ix = 0; ix <= CalmLogicalMax; ix++)
+        if (!TryPlaceRooms(rng, spawnX, spawnZ, rooms))
+            return null;
+
+        foreach (var room in rooms)
         {
-            visited[ix, iz] = true;
-            if (ix < CalmLogicalMax)
-                openEast[ix, iz] = true;
-            if (iz < CalmLogicalMax)
-                openSouth[ix, iz] = true;
-        }
-
-        var stack = new Stack<(int X, int Z)>();
-        stack.Push((CalmLogicalMax, CalmLogicalMax));
-
-        while (stack.Count > 0)
-        {
-            var (cx, cz) = stack.Peek();
-            var neighbors = new List<(int Nx, int Nz, int Dir)>();
-
-            for (var dir = 0; dir < LogicalDirections.Length; dir++)
-            {
-                var (dx, dz) = LogicalDirections[dir];
-                var nx = cx + dx;
-                var nz = cz + dz;
-                if (nx < 0 || nx >= LogicalSize || nz < 0 || nz >= LogicalSize)
-                    continue;
-                if (visited[nx, nz])
-                    continue;
-                neighbors.Add((nx, nz, dir));
-            }
-
-            if (neighbors.Count == 0)
-            {
-                stack.Pop();
+            if (room.Kind == RoomKind.Calm)
                 continue;
-            }
-
-            var pick = neighbors[rng.Next(neighbors.Count)];
-            OpenPassage(openEast, openSouth, cx, cz, pick.Nx, pick.Nz, pick.Dir);
-            visited[pick.Nx, pick.Nz] = true;
-            stack.Push((pick.Nx, pick.Nz));
+            CarveRect(walls, room.OriginX, room.OriginZ, room.Width, room.Height);
         }
 
-        RasterizeLogicalMaze(walls, visited, openEast, openSouth);
+        ConnectRoomsMst(walls, spawnX, spawnZ, rooms);
 
         var diameter = ComputeMaxDistance(walls, spawnX, spawnZ);
-        return new MazeAttempt(walls, spawnX, spawnZ, diameter);
+        var roomRects = rooms
+            .Select(r => new RoomRect(r.OriginX, r.OriginZ, r.Width, r.Height, r.Kind))
+            .ToList();
+        return new MazeAttempt(walls, spawnX, spawnZ, diameter, roomRects);
     }
 
-    private static void CarveCalmRoom(byte[,] walls)
+    private static bool TryPlaceRooms(Random rng, int spawnX, int spawnZ, List<RoomSite> rooms)
     {
-        for (var dz = 0; dz < CalmRoomSize; dz++)
-        for (var dx = 0; dx < CalmRoomSize; dx++)
-            walls[CalmRoomOriginX + dx, CalmRoomOriginZ + dz] = 0;
+        var targetRooms = PackRoomCount + 2;
+        var attempts = 0;
 
-        var spawnZ = CalmRoomOriginZ + CalmRoomSize / 2;
-        walls[CalmRoomOriginX + CalmRoomSize, spawnZ] = 0;
-        walls[CalmRoomOriginX + CalmRoomSize, spawnZ + 1] = 0;
-    }
-
-    private static void OpenPassage(
-        bool[,] openEast,
-        bool[,] openSouth,
-        int cx,
-        int cz,
-        int nx,
-        int nz,
-        int dir)
-    {
-        switch (dir)
+        while (rooms.Count < targetRooms && attempts < 800)
         {
-            case 1:
-                openEast[cx, cz] = true;
-                break;
-            case 2:
-                openSouth[cx, cz] = true;
-                break;
-            case 3:
-                openEast[nx, cz] = true;
-                break;
-            default:
-                openSouth[cx, nz] = true;
-                break;
-        }
-    }
+            attempts++;
+            var isBossSlot = rooms.Count == targetRooms - 1;
+            var size = isBossSlot ? BossRoomSize : PackRoomSize;
+            var kind = isBossSlot ? RoomKind.Boss : RoomKind.Pack;
+            var cx = rng.Next(12, Size - 12);
+            var cz = rng.Next(12, Size - 12);
 
-    private static void RasterizeLogicalMaze(
-        byte[,] walls,
-        bool[,] visited,
-        bool[,] openEast,
-        bool[,] openSouth)
-    {
-        for (var iz = 0; iz < LogicalSize; iz++)
-        for (var ix = 0; ix < LogicalSize; ix++)
-        {
-            if (!visited[ix, iz])
+            if (Manhattan(cx, cz, spawnX, spawnZ) < SpawnRoomMinDist)
                 continue;
 
-            var px = 1 + ix * NodeSpacing;
-            var pz = 1 + iz * NodeSpacing;
-            CarveNodeBlock(walls, px, pz);
+            var ox = cx - size / 2;
+            var oz = cz - size / 2;
+            if (ox < 2 || oz < 2 || ox + size >= Size - 2 || oz + size >= Size - 2)
+                continue;
 
-            if (ix + 1 < LogicalSize && openEast[ix, iz])
-                CarveLinkEast(walls, px, pz);
+            var overlaps = false;
+            foreach (var existing in rooms)
+            {
+                if (existing.Kind == RoomKind.Calm)
+                    continue;
+                if (Manhattan(cx, cz, existing.CenterX, existing.CenterZ) < RoomMinSeparation)
+                {
+                    overlaps = true;
+                    break;
+                }
 
-            if (iz + 1 < LogicalSize && openSouth[ix, iz])
-                CarveLinkSouth(walls, px, pz);
+                if (RectsOverlap(ox, oz, size, size, existing.OriginX, existing.OriginZ, existing.Width, existing.Height))
+                {
+                    overlaps = true;
+                    break;
+                }
+            }
+
+            if (overlaps)
+                continue;
+
+            rooms.Add(new RoomSite(ox, oz, size, size, kind, cx, cz));
+        }
+
+        return rooms.Count >= targetRooms;
+    }
+
+    private static void ConnectRoomsMst(byte[,] walls, int spawnX, int spawnZ, List<RoomSite> rooms)
+    {
+        var nodes = new List<(int X, int Z)>(rooms.Count) { (spawnX, spawnZ) };
+        for (var i = 1; i < rooms.Count; i++)
+            nodes.Add((rooms[i].CenterX, rooms[i].CenterZ));
+
+        var edges = new List<(int A, int B, int Weight)>();
+        for (var a = 0; a < nodes.Count; a++)
+        for (var b = a + 1; b < nodes.Count; b++)
+            edges.Add((a, b, Manhattan(nodes[a].X, nodes[a].Z, nodes[b].X, nodes[b].Z)));
+
+        edges.Sort((x, y) => x.Weight.CompareTo(y.Weight));
+
+        var parent = Enumerable.Range(0, nodes.Count).ToArray();
+        int Find(int x)
+        {
+            if (parent[x] != x)
+                parent[x] = Find(parent[x]);
+            return parent[x];
+        }
+
+        void Union(int a, int b)
+        {
+            var ra = Find(a);
+            var rb = Find(b);
+            if (ra != rb)
+                parent[rb] = ra;
+        }
+
+        foreach (var (a, b, _) in edges)
+        {
+            if (Find(a) == Find(b))
+                continue;
+
+            Union(a, b);
+            CarveCorridor(walls, nodes[a].X, nodes[a].Z, nodes[b].X, nodes[b].Z);
         }
     }
 
-    private static void CarveNodeBlock(byte[,] walls, int px, int pz)
+    private static void CarveCorridor(byte[,] walls, int x1, int z1, int x2, int z2)
     {
-        for (var dz = 0; dz < 2; dz++)
-        for (var dx = 0; dx < 2; dx++)
+        if (System.Math.Abs(x2 - x1) <= System.Math.Abs(z2 - z1))
         {
-            var x = px + dx;
-            var z = pz + dz;
-            if (x <= 0 || x >= Size - 1 || z <= 0 || z >= Size - 1)
-                continue;
-            walls[x, z] = 0;
+            CarveThickHLine(walls, x1, x2, z1);
+            CarveThickVLine(walls, z1, z2, x2);
+        }
+        else
+        {
+            CarveThickVLine(walls, z1, z2, x1);
+            CarveThickHLine(walls, x1, x2, z2);
         }
     }
 
-    private static void CarveLinkEast(byte[,] walls, int px, int pz)
+    private static void CarveThickHLine(byte[,] walls, int x0, int x1, int z)
     {
-        for (var dz = 0; dz < 2; dz++)
-        for (var dx = 2; dx <= 3; dx++)
-        {
-            var x = px + dx;
-            var z = pz + dz;
-            if (x <= 0 || x >= Size - 1 || z <= 0 || z >= Size - 1)
-                continue;
-            walls[x, z] = 0;
-        }
+        var from = System.Math.Min(x0, x1);
+        var to = System.Math.Max(x0, x1);
+        for (var x = from; x <= to; x++)
+        for (var dz = -CorridorHalfWidth; dz <= CorridorHalfWidth; dz++)
+            CarveFloor(walls, x, z + dz);
     }
 
-    private static void CarveLinkSouth(byte[,] walls, int px, int pz)
+    private static void CarveThickVLine(byte[,] walls, int z0, int z1, int x)
     {
-        for (var dz = 2; dz <= 3; dz++)
-        for (var dx = 0; dx < 2; dx++)
-        {
-            var x = px + dx;
-            var z = pz + dz;
-            if (x <= 0 || x >= Size - 1 || z <= 0 || z >= Size - 1)
-                continue;
-            walls[x, z] = 0;
-        }
+        var from = System.Math.Min(z0, z1);
+        var to = System.Math.Max(z0, z1);
+        for (var z = from; z <= to; z++)
+        for (var dx = -CorridorHalfWidth; dx <= CorridorHalfWidth; dx++)
+            CarveFloor(walls, x + dx, z);
+    }
+
+    private static void CarveRect(byte[,] walls, int ox, int oz, int w, int h)
+    {
+        for (var dz = 0; dz < h; dz++)
+        for (var dx = 0; dx < w; dx++)
+            CarveFloor(walls, ox + dx, oz + dz);
+    }
+
+    private static void CarveFloor(byte[,] walls, int x, int z)
+    {
+        if (x <= 0 || x >= Size - 1 || z <= 0 || z >= Size - 1)
+            return;
+        walls[x, z] = 0;
     }
 
     private static int ComputeMaxDistance(byte[,] walls, int spawnX, int spawnZ)
@@ -238,9 +257,9 @@ internal static class MazeGenerator
         return max;
     }
 
-    private static (DenseGrid<byte> Walls, GridIndex PlayerSpawn, List<EnemySpawn> Enemies) BuildLevel(
+    private static (DenseGrid<byte> Walls, GridIndex PlayerSpawn, List<EnemySpawn> Enemies, int Seed, List<RoomRect> Rooms) BuildLevel(
         MazeAttempt maze,
-        Random rng)
+        int seed)
     {
         var grid = new DenseGrid<byte>((uint)Size, (uint)Size);
         for (var z = 0; z < Size; z++)
@@ -248,45 +267,122 @@ internal static class MazeGenerator
             grid.Set((uint)x, (uint)z, maze.Walls[x, z]);
 
         var spawn = new GridIndex((uint)maze.SpawnX, (uint)maze.SpawnZ);
-        var enemies = PlaceEnemies(maze.Walls, spawn, rng);
-        return (grid, spawn, enemies);
+        var rng = new Random(seed);
+        var enemies = PlaceEnemies(maze.Walls, spawn, maze.Rooms, rng);
+        return (grid, spawn, enemies, seed, maze.Rooms);
     }
 
-    private static List<EnemySpawn> PlaceEnemies(byte[,] walls, GridIndex spawn, Random rng)
+    private static List<EnemySpawn> PlaceEnemies(
+        byte[,] walls,
+        GridIndex spawn,
+        List<RoomRect> rooms,
+        Random rng)
     {
+        var placed = new List<EnemySpawn>();
+        var usedCells = new HashSet<(int X, int Z)>();
+
+        foreach (var room in rooms)
+        {
+            if (room.Kind == RoomKind.Calm)
+                continue;
+
+            if (room.Kind == RoomKind.Boss)
+            {
+                var bx = room.X + room.Width / 2;
+                var bz = room.Z + room.Height / 2;
+                if (TryAddSpawn(placed, usedCells, bx, bz, spriteIndex: 3, EnemyKind.Boss))
+                    continue;
+            }
+
+            if (room.Kind != RoomKind.Pack)
+                continue;
+
+            var interior = CollectInteriorCells(walls, room);
+            Shuffle(interior, rng);
+            var packCount = rng.Next(4, 7);
+            var added = 0;
+            foreach (var (cx, cz) in interior)
+            {
+                if (added >= packCount)
+                    break;
+                var sprite = 2;
+                if (rng.Next(3) == 0)
+                    sprite = rng.Next(2);
+                if (TryAddSpawn(placed, usedCells, cx, cz, sprite, EnemyKind.Grunt))
+                    added++;
+            }
+        }
+
         var eligible = new List<GridIndex>();
         for (var z = 0; z < Size; z++)
         for (var x = 0; x < Size; x++)
         {
             if (walls[x, z] != 0)
                 continue;
-            var dist = System.Math.Abs(x - (int)spawn.X) + System.Math.Abs(z - (int)spawn.Y);
+            if (usedCells.Contains((x, z)))
+                continue;
+            var dist = Manhattan(x, z, (int)spawn.X, (int)spawn.Y);
             if (dist < CalmExclusionRadius)
                 continue;
             eligible.Add(new GridIndex((uint)x, (uint)z));
         }
 
         Shuffle(eligible, rng);
-        var target = System.Math.Min(MaxEnemies, System.Math.Max(4, eligible.Count * 25 / 100));
-        var placed = new List<EnemySpawn>();
-        var positions = new List<(int X, int Z)>();
+        var corridorTarget = System.Math.Min(
+            MaxCorridorEnemies,
+            System.Math.Max(0, eligible.Count * ScatterPercent / 100));
+        var corridorPlaced = 0;
 
         foreach (var cell in eligible)
         {
-            if (placed.Count >= target)
+            if (corridorPlaced >= corridorTarget)
                 break;
 
             var cx = (int)cell.X;
             var cz = (int)cell.Y;
-            if (positions.Any(p => System.Math.Abs(p.X - cx) + System.Math.Abs(p.Z - cz) < MinEnemySpacing))
-                continue;
-
-            positions.Add((cx, cz));
-            placed.Add(new EnemySpawn(cell, placed.Count % 2));
+            if (TryAddSpawn(placed, usedCells, cx, cz, corridorPlaced % 2, EnemyKind.Grunt))
+                corridorPlaced++;
         }
 
         return placed;
     }
+
+    private static List<(int X, int Z)> CollectInteriorCells(byte[,] walls, RoomRect room)
+    {
+        var cells = new List<(int X, int Z)>();
+        for (var z = room.Z + 1; z < room.Z + room.Height - 1; z++)
+        for (var x = room.X + 1; x < room.X + room.Width - 1; x++)
+        {
+            if (x <= 0 || x >= Size - 1 || z <= 0 || z >= Size - 1)
+                continue;
+            if (walls[x, z] == 0)
+                cells.Add((x, z));
+        }
+
+        return cells;
+    }
+
+    private static bool TryAddSpawn(
+        List<EnemySpawn> placed,
+        HashSet<(int X, int Z)> usedCells,
+        int x,
+        int z,
+        int spriteIndex,
+        EnemyKind kind)
+    {
+        if (usedCells.Any(p => Manhattan(p.X, p.Z, x, z) < MinEnemySpacing))
+            return false;
+
+        usedCells.Add((x, z));
+        placed.Add(new EnemySpawn(new GridIndex((uint)x, (uint)z), spriteIndex, kind));
+        return true;
+    }
+
+    private static bool RectsOverlap(int ax, int az, int aw, int ah, int bx, int bz, int bw, int bh) =>
+        ax < bx + bw && ax + aw > bx && az < bz + bh && az + ah > bz;
+
+    private static int Manhattan(int x1, int z1, int x2, int z2) =>
+        System.Math.Abs(x1 - x2) + System.Math.Abs(z1 - z2);
 
     private static void Shuffle<T>(List<T> list, Random rng)
     {
@@ -300,5 +396,19 @@ internal static class MazeGenerator
     private static int HashSeed(int baseSeed, int attempt) =>
         unchecked(baseSeed * 31 + attempt);
 
-    private readonly record struct MazeAttempt(byte[,] Walls, int SpawnX, int SpawnZ, int Diameter);
+    private readonly record struct RoomSite(
+        int OriginX,
+        int OriginZ,
+        int Width,
+        int Height,
+        RoomKind Kind,
+        int CenterX,
+        int CenterZ);
+
+    private readonly record struct MazeAttempt(
+        byte[,] Walls,
+        int SpawnX,
+        int SpawnZ,
+        int Diameter,
+        List<RoomRect> Rooms);
 }

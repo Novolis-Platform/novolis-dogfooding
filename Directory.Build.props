@@ -47,6 +47,15 @@
     <NovolisSubmoduleRoot>$(MSBuildThisFileDirectory)submodules\</NovolisSubmoduleRoot>
   </PropertyGroup>
 
+  <ItemGroup Label="Novolis.Raylib.Native packaged targets expect repo paths; RID assets in nupkg suffice.">
+    <PackageReference Update="Novolis.Raylib">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Update="Novolis.Raylib.Native">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub">
       <PrivateAssets>all</PrivateAssets>

@@ -118,7 +118,7 @@ internal sealed class WeaponHud
 
         ctx.HudText($"Enemies: {aliveEnemies}", 16, 40, 18, Color.FromArgb(255, 200, 200, 180));
         ctx.HudText(
-            "WASD move | Space jump | Mouse/Ctrl shoot | R reload | F1 new maze | Esc quit",
+            "WASD move | Space jump | Mouse/Ctrl shoot | R reload | F3 diagnostics | F1 new maze | Esc quit",
             16,
             62,
             14,

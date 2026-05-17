@@ -10,6 +10,7 @@ internal sealed class PlayerCombatState
     public const float EnemyMeleeRange = 1.2f;
     public const float EnemyMeleeDamage = 12f;
     public const float EnemyMeleeCooldown = 0.5f;
+    public const float WeaponDamage = 15f;
 
     public float Health { get; private set; } = DefaultMaxHealth;
     public float MaxHealth { get; } = DefaultMaxHealth;

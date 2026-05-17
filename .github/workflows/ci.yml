@@ -20,6 +20,20 @@ jobs:
       - name: Clone library repos
         shell: pwsh
         run: ./scripts/sync-submodules.ps1
+      - name: Pack Novolis libraries to local feed
+        shell: pwsh
+        run: |
+          $feed = Join-Path $PWD "artifacts/nuget-local"
+          New-Item -ItemType Directory -Force -Path $feed | Out-Null
+          $repos = @("novolis-math", "novolis-physics", "novolis-simulation", "novolis-raylib")
+          foreach ($name in $repos) {
+            $pack = Join-Path $PWD "submodules/$name/scripts/pack-local.ps1"
+            if (Test-Path $pack) {
+              & $pack -Feed $feed
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+          }
+          (Get-Content nuget.config -Raw) -replace '\.\./artifacts/nuget-local', 'artifacts/nuget-local' | Set-Content nuget.config -NoNewline
       - run: dotnet restore Novolis.Dogfooding.slnx
         shell: bash
       - run: dotnet build Novolis.Dogfooding.slnx --no-restore -c Release

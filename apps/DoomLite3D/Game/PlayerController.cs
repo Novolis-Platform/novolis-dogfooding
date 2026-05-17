@@ -1,9 +1,9 @@
 using System.Numerics;
 using Novolis.Math.Geometry;
-using Novolis.Physics.Abstractions;
-using Novolis.Physics.Collision.Simple;
 using Novolis.Raylib.Game;
 using Novolis.Raylib.Interact;
+using Novolis.Simulation.Kinematics;
+using Novolis.Simulation.View;
 using RayCamera = Novolis.Raylib.Rendering.Camera;
 
 namespace DoomLite3D.Game;
@@ -17,12 +17,9 @@ internal sealed class PlayerController
     private const float JumpSpeed = 6.5f;
     private const float Gravity = 22f;
 
-    public readonly FirstPersonCamera Camera = new();
-    private IStaticWorld? _physicsWorld;
+    public readonly YawPitchController Camera = new();
     private float _verticalOffset;
     private float _verticalVelocity;
-
-    public void SetPhysicsWorld(IStaticWorld world) => _physicsWorld = world;
 
     public void Reset(LevelMap level)
     {
@@ -56,9 +53,7 @@ internal sealed class PlayerController
         {
             move = Vector2.Normalize(move) * (MoveSpeed * ctx.DeltaSeconds);
             var pos = new Vector2(Camera.Position.X, Camera.Position.Z);
-            pos = _physicsWorld is null
-                ? GridCollision2D.TryMove(level.Walls, pos, move, PlayerRadius, LevelMap.CellSize)
-                : GridPhysicsMovement.TryMove(_physicsWorld, pos, move, PlayerRadius);
+            pos = PlanarAgent.Move(level.Walls, pos, move, PlayerRadius, LevelMap.CellSize);
             Camera.Position = new Vector3(pos.X, 0f, pos.Y);
         }
 

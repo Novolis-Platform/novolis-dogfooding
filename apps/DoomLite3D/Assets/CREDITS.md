@@ -10,17 +10,21 @@ The following files are **64×64 stand-in PNGs** generated for the Novolis dogfo
 
 | File | Status |
 |------|--------|
-| `enemies/imp.png` | Committed (procedural stand-in) |
-| `enemies/demon.png` | Committed (procedural stand-in) |
-| `weapon.png` | Committed (procedural stand-in) |
+| `enemies/imp.png` | Procedural stand-in (grunt) |
+| `enemies/demon.png` | Procedural stand-in (grunt) |
+| `enemies/brute.png` | Procedural stand-in (pack rooms) |
+| `enemies/boss.png` | Procedural stand-in (boss room) |
+| `weapon.png` | Procedural stand-in |
 
 | File in repo | Suggested Kenney tile (Tilemap / PNG) |
 |--------------|----------------------------------------|
 | `enemies/imp.png` | Enemy / character sprite |
 | `enemies/demon.png` | Alternate enemy sprite |
+| `enemies/brute.png` | Heavy enemy sprite |
+| `enemies/boss.png` | Large enemy sprite |
 | `weapon.png` | Weapon or UI icon |
 
-Run `scripts/fetch-kenney-assets.ps1` for download instructions.
+Run `scripts/generate-placeholder-assets.ps1` to create stand-ins. Run `scripts/fetch-kenney-assets.ps1` to copy from a Kenney zip when available.
 
 ## Novolis
 

@@ -3,6 +3,8 @@
     <RootNamespace>RaylibHello</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\submodules\novolis-raylib\src\Novolis.Raylib\Novolis.Raylib.csproj" />
+    <PackageReference Include="Novolis.Raylib">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>

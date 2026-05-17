@@ -10,6 +10,7 @@
     { "name": "novolis-math" },
     { "name": "novolis-messaging" },
     { "name": "novolis-physics" },
+    { "name": "novolis-simulation" },
     { "name": "novolis-raylib" },
     { "name": "novolis-security" },
     { "name": "novolis-storage" },
