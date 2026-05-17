@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/apps/">
+    <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
+    <Project Path="apps/RaylibHello/RaylibHello.csproj" />
+  </Folder>
+</Solution>

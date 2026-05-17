@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MathGridDemo</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\submodules\novolis-math\src\Novolis.Math.Arrays\Novolis.Math.Arrays.csproj" />
+  </ItemGroup>
+</Project>

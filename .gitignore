@@ -1,0 +1,10 @@
+bin/
+obj/
+artifacts/
+.vs/
+*.user
+*.suo
+.DS_Store
+
+# Populated by sync-submodules.ps1 or link-local-repos.ps1 (not committed as a tree)
+submodules/

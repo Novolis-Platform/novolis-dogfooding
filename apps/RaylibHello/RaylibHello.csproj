@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>RaylibHello</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\submodules\novolis-raylib\src\Novolis.Raylib\Novolis.Raylib.csproj" />
+  </ItemGroup>
+</Project>

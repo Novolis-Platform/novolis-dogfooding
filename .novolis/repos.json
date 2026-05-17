@@ -1,0 +1,20 @@
+{
+  "organization": "Novolis-Platform",
+  "submodulePath": "submodules",
+  "repos": [
+    { "name": "novolis-analyzers" },
+    { "name": "novolis-aspire" },
+    { "name": "novolis-avalonia" },
+    { "name": "novolis-codegen" },
+    { "name": "novolis-machinelearning" },
+    { "name": "novolis-math" },
+    { "name": "novolis-messaging" },
+    { "name": "novolis-physics" },
+    { "name": "novolis-raylib" },
+    { "name": "novolis-security" },
+    { "name": "novolis-storage" },
+    { "name": "novolis-testing" },
+    { "name": "novolis-transports" },
+    { "name": "novolis-wirefish" }
+  ]
+}
