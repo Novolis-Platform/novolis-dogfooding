@@ -22,11 +22,13 @@ internal sealed class BallWorld
     private const float GridCellSize = Ball.Radius * 2.25f;
 
     private readonly BvhStaticWorld _collisionWorld;
-    private readonly Random _rng;
+    private int _passSeed;
+    private Random _passRng;
     private readonly List<Ball> _balls = [];
-    private readonly Dictionary<int, List<int>> _spatialGrid = new();
-    private readonly Stack<List<int>> _cellListPool = new();
+    private readonly BallSoA _soa = new();
+    private readonly SimdGridDepenetration _ballBallSolver = new();
     private RoomInteriorBounds _bounds;
+    private bool _pileSettled;
 
     public IReadOnlyList<Ball> Balls => _balls;
     public int BallCount => _balls.Count;
@@ -38,11 +40,13 @@ internal sealed class BallWorld
     public int PhysicsSubStepsLastFrame { get; private set; }
     public int BallBallSolveIterationsLastFrame { get; private set; }
     public int ClampedBallsLastFrame { get; private set; }
+    public bool BallBallSkippedLastFrame { get; private set; }
 
-    public BallWorld(BvhStaticWorld collisionWorld, Random? rng = null)
+    public BallWorld(BvhStaticWorld collisionWorld, int? passSeed = null)
     {
         _collisionWorld = collisionWorld;
-        _rng = rng ?? Random.Shared;
+        _passSeed = passSeed ?? unchecked(Environment.TickCount ^ (int)0x5DEECE66D);
+        _passRng = new Random(_passSeed);
     }
 
     public void BindRoom(RoomWorld room) => _bounds = room.InteriorBounds;
@@ -52,6 +56,7 @@ internal sealed class BallWorld
         BindRoom(room);
         var ball = CreatePassBall(room, spreadSpawn: false);
         _balls.Add(ball);
+        _pileSettled = false;
         DepenetrateSpawnedRange(_balls.Count - 1, _balls.Count);
     }
 
@@ -69,12 +74,15 @@ internal sealed class BallWorld
         for (var i = 0; i < count; i++)
             _balls.Add(CreatePassBall(room, spreadSpawn: true, batchIndex: i, batchSize: count));
 
+        _pileSettled = false;
         DepenetrateSpawnedRange(start, _balls.Count);
     }
 
     public void ClearAndSpawnOne(RoomWorld room)
     {
         _balls.Clear();
+        _pileSettled = false;
+        ChainPassSeed(_passRng.NextDouble(), _passRng.NextDouble());
         SpawnBall(room);
     }
 
@@ -85,6 +93,7 @@ internal sealed class BallWorld
 
         BallBallContactsLastFrame = 0;
         BallBallPairChecksLastFrame = 0;
+        BallBallSkippedLastFrame = false;
         IntegratorReflectionsLastFrame = 0;
         ClampedBallsLastFrame = 0;
         ActiveBallCount = 0;
@@ -129,16 +138,14 @@ internal sealed class BallWorld
 
         if (_balls.Count > 1)
         {
-            var positionIters = DepenetrateIterationsForCount(_balls.Count);
-            BallBallSolveIterationsLastFrame = positionIters + solveIterations;
-
-            for (var iter = 0; iter < positionIters; iter++)
-                ResolveBallOverlapsSpatial(applyImpulses: false);
-
-            if (ActiveBallCount > 1)
+            if (ActiveBallCount == 0 && _pileSettled)
             {
-                for (var iter = 0; iter < solveIterations; iter++)
-                    ResolveBallOverlapsSpatial(applyImpulses: true, awakePairsOnly: true);
+                BallBallSkippedLastFrame = true;
+                BallBallSolveIterationsLastFrame = 0;
+            }
+            else
+            {
+                ResolveBallOverlapsSimd(ActiveBallCount, solveIterations);
             }
         }
 
@@ -154,64 +161,102 @@ internal sealed class BallWorld
     private Ball CreatePassBall(RoomWorld room, bool spreadSpawn, int batchIndex = 0, int batchSize = 1)
     {
         var (spawn, velocity) = spreadSpawn
-            ? SampleInteriorPass(room, _rng, batchIndex, batchSize)
-            : SamplePerimeterPass(room, _rng);
+            ? SampleCircleWallPass(room, batchIndex, batchSize)
+            : SamplePerimeterPass(room);
         ClampToInterior(spawn, velocity, out spawn, out velocity);
         return new Ball(spawn, velocity);
     }
 
-    /// <summary>Single-player chest pass from a random wall side toward the interior.</summary>
-    private static (Vector3 Spawn, Vector3 Velocity) SamplePerimeterPass(RoomWorld room, Random rng)
+    /// <summary>Mix last pass-direction rolls into the next spawn seed.</summary>
+    private void ChainPassSeed(double roll0, double roll1, double roll2 = 0, int salt = 0)
     {
+        _passSeed = unchecked((int)(
+            (uint)_passSeed * 1597334677u
+            + (uint)(roll0 * uint.MaxValue)
+            + (uint)(roll1 * uint.MaxValue) * 3812015801u
+            + (uint)(roll2 * uint.MaxValue) * 3965336299u
+            + (uint)salt * 1442695041u));
+        if (_passSeed == 0)
+            _passSeed = 1;
+        _passRng = new Random(_passSeed);
+    }
+
+    /// <summary>Single-player chest pass from a random wall side toward the interior.</summary>
+    private (Vector3 Spawn, Vector3 Velocity) SamplePerimeterPass(RoomWorld room)
+    {
+        var yawRoll = _passRng.NextDouble();
+        var speedRoll = _passRng.NextDouble();
+        ChainPassSeed(yawRoll, speedRoll);
+
         var bounds = room.InteriorBounds;
-        var yaw = (float)(rng.NextDouble() * MathF.Tau);
+        var yaw = (float)(yawRoll * MathF.Tau);
         var horizontal = new Vector3(MathF.Sin(yaw), 0f, MathF.Cos(yaw));
-        var passDistance = (RoomWorld.GridSize - 2) * RoomWorld.CellSize * 0.4f;
-        var spawn = room.RoomCenter - horizontal * passDistance + new Vector3(0f, 1.15f, 0f);
+        var spawn = room.RoomCenter - horizontal * WallStandRadius(room, horizontal) + new Vector3(0f, 1.15f, 0f);
         spawn = ClampPosition(spawn, bounds);
-        var speed = PassSpeedMin + (float)rng.NextDouble() * (PassSpeedMax - PassSpeedMin);
+        var speed = PassSpeedMin + (float)speedRoll * (PassSpeedMax - PassSpeedMin);
         var direction = Vector3.Normalize(horizontal + new Vector3(0f, PassLoft, 0f));
         return (spawn, direction * speed);
     }
 
-    /// <summary>Grid placement on the floor plus a random chest pass (bulk spawn).</summary>
-    private static (Vector3 Spawn, Vector3 Velocity) SampleInteriorPass(
+    /// <summary>
+    /// Bulk spawn: stand on a circle near the wall (back to wall), evenly spaced by angle,
+    /// chest-pass toward <see cref="RoomWorld.RoomCenter"/>.
+    /// </summary>
+    private (Vector3 Spawn, Vector3 Velocity) SampleCircleWallPass(
         RoomWorld room,
-        Random rng,
         int batchIndex,
         int batchSize)
     {
+        var baseYawRoll = _passRng.NextDouble();
+        var yawJitterRoll = _passRng.NextDouble();
+        var speedRoll = _passRng.NextDouble();
+        ChainPassSeed(baseYawRoll, yawJitterRoll, speedRoll, batchIndex);
+
         var bounds = room.InteriorBounds;
-        var spawn = GridSpawnOnFloor(bounds, batchIndex, batchSize);
+        var baseYaw = (float)(baseYawRoll * MathF.Tau);
+        var slotYaw = baseYaw + MathF.Tau * batchIndex / batchSize;
+        var jitterSpan = MathF.Tau / Math.Max(batchSize, 1);
+        var yaw = slotYaw + (float)((yawJitterRoll - 0.5) * jitterSpan * 0.55f);
 
-        var target = new Vector3(
-            Lerp(bounds.MinX, bounds.MaxX, (float)rng.NextDouble()),
-            spawn.Y,
-            Lerp(bounds.MinZ, bounds.MaxZ, (float)rng.NextDouble()));
+        var towardCenter = new Vector3(MathF.Sin(yaw), 0f, MathF.Cos(yaw));
+        var standRadius = WallStandRadius(room, towardCenter);
+        var spawn = room.RoomCenter - towardCenter * standRadius + new Vector3(0f, 1.05f, 0f);
+        spawn = ClampPosition(spawn, bounds);
 
-        var toTarget = target - spawn;
-        toTarget.Y = 0f;
-        if (toTarget.LengthSquared() < 1e-4f)
-            toTarget = new Vector3(1f, 0f, 0f);
-
-        var direction = Vector3.Normalize(toTarget + new Vector3(0f, PassLoft, 0f));
-        var speed = PassSpeedMin + (float)rng.NextDouble() * (PassSpeedMax - PassSpeedMin);
+        var speed = PassSpeedMin + (float)speedRoll * (PassSpeedMax - PassSpeedMin);
+        var direction = Vector3.Normalize(towardCenter + new Vector3(0f, PassLoft, 0f));
         return (spawn, direction * speed);
     }
 
-    private static Vector3 GridSpawnOnFloor(RoomInteriorBounds bounds, int index, int batchSize)
+    /// <summary>Distance from room center to a wall-adjacent stand point along <paramref name="towardCenter"/>.</summary>
+    private static float WallStandRadius(RoomWorld room, Vector3 towardCenter)
     {
-        var spacing = Ball.Radius * 2.05f;
-        var cols = Math.Max(1, (int)MathF.Floor((bounds.MaxX - bounds.MinX) / spacing));
-        var rows = Math.Max(1, (int)MathF.Ceiling(batchSize / (float)cols));
-        var col = index % cols;
-        var row = index / cols;
-        var x = bounds.MinX + spacing * (col + 0.5f);
-        var z = bounds.MinZ + spacing * (row + 0.5f);
-        return new Vector3(
-            Math.Clamp(x, bounds.MinX, bounds.MaxX),
-            bounds.MinY,
-            Math.Clamp(z, bounds.MinZ, bounds.MaxZ));
+        var bounds = room.InteriorBounds;
+        var c = room.RoomCenter;
+        var dx = towardCenter.X;
+        var dz = towardCenter.Z;
+        var len = MathF.Sqrt(dx * dx + dz * dz);
+        if (len < 1e-5f)
+        {
+            var fallback = MathF.Min(c.X - bounds.MinX, c.Z - bounds.MinZ);
+            return fallback * 0.94f;
+        }
+
+        dx /= len;
+        dz /= len;
+
+        var radius = float.MaxValue;
+        if (dx > 1e-5f)
+            radius = MathF.Min(radius, (c.X - bounds.MinX) / dx);
+        else if (dx < -1e-5f)
+            radius = MathF.Min(radius, (bounds.MaxX - c.X) / -dx);
+
+        if (dz > 1e-5f)
+            radius = MathF.Min(radius, (c.Z - bounds.MinZ) / dz);
+        else if (dz < -1e-5f)
+            radius = MathF.Min(radius, (bounds.MaxZ - c.Z) / -dz);
+
+        return radius * 0.94f;
     }
 
     private void DepenetrateSpawnedRange(int startIndex, int endIndex)
@@ -333,49 +378,43 @@ internal sealed class BallWorld
             ball.Velocity = new Vector3(ball.Velocity.X, MathF.Min(ball.Velocity.Y, 0f), ball.Velocity.Z);
     }
 
-    private void ResolveBallOverlapsSpatial(bool applyImpulses, bool awakePairsOnly = false)
+    private void ResolveBallOverlapsSimd(int activeCount, int impulseIterations)
     {
-        var minDist = Ball.Radius * 2.001f;
-        var minDistSq = minDist * minDist;
+        var allSleeping = activeCount == 0;
+        var positionIters = allSleeping ? 1 : DepenetrateIterationsForCount(_balls.Count);
+        var impulseIters = activeCount > 1 ? impulseIterations : 0;
+        BallBallSolveIterationsLastFrame = positionIters + impulseIters;
 
-        ClearSpatialGrid();
-        for (var i = 0; i < _balls.Count; i++)
-            AddToSpatialGrid(i, _balls[i].Position);
+        _soa.SyncFrom(_balls);
+        var frameContacts = 0;
 
-        for (var i = 0; i < _balls.Count; i++)
+        for (var iter = 0; iter < positionIters; iter++)
         {
-            var a = _balls[i];
-            var cx = (int)MathF.Floor(a.Position.X / GridCellSize);
-            var cz = (int)MathF.Floor(a.Position.Z / GridCellSize);
-
-            for (var dx = -1; dx <= 1; dx++)
-            for (var dz = -1; dz <= 1; dz++)
-            {
-                var key = CellKey(cx + dx, cz + dz);
-                if (!_spatialGrid.TryGetValue(key, out var cell))
-                    continue;
-
-                foreach (var j in cell)
-                {
-                    if (j <= i)
-                        continue;
-
-                    var b = _balls[j];
-                    if (awakePairsOnly && (a.IsSleeping || b.IsSleeping))
-                        continue;
-
-                    BallBallPairChecksLastFrame++;
-                    if (SeparatePair(a, b, minDist, minDistSq, applyImpulses))
-                        BallBallContactsLastFrame++;
-                }
-            }
+            var r = _ballBallSolver.Resolve(_soa, GridCellSize, applyImpulses: false, awakePairsOnly: false);
+            BallBallPairChecksLastFrame += r.PairChecks;
+            frameContacts += r.Contacts;
         }
 
-        if (!applyImpulses)
-            return;
+        for (var iter = 0; iter < impulseIters; iter++)
+        {
+            var r = _ballBallSolver.Resolve(_soa, GridCellSize, applyImpulses: true, awakePairsOnly: true);
+            BallBallPairChecksLastFrame += r.PairChecks;
+            frameContacts += r.Contacts;
+        }
 
-        foreach (var ball in _balls)
-            ClampVelocity(ball);
+        BallBallContactsLastFrame = frameContacts;
+        _soa.SyncTo(_balls);
+
+        if (allSleeping)
+            _pileSettled = frameContacts == 0;
+        else
+            _pileSettled = false;
+
+        if (impulseIters > 0)
+        {
+            foreach (var ball in _balls)
+                ClampVelocity(ball);
+        }
     }
 
     private bool ClampToInterior(Ball ball)
@@ -413,35 +452,4 @@ internal sealed class BallWorld
         return v * (MaxSpeedMps / speed);
     }
 
-    private static float Lerp(float a, float b, float t) => a + (b - a) * t;
-
-    private void ClearSpatialGrid()
-    {
-        foreach (var list in _spatialGrid.Values)
-        {
-            list.Clear();
-            _cellListPool.Push(list);
-        }
-
-        _spatialGrid.Clear();
-    }
-
-    private void AddToSpatialGrid(int ballIndex, Vector3 position)
-    {
-        var key = CellKeyFromPosition(position);
-        if (!_spatialGrid.TryGetValue(key, out var list))
-        {
-            list = _cellListPool.Count > 0 ? _cellListPool.Pop() : new List<int>(8);
-            _spatialGrid[key] = list;
-        }
-
-        list.Add(ballIndex);
-    }
-
-    private static int CellKeyFromPosition(Vector3 position) =>
-        CellKey(
-            (int)MathF.Floor(position.X / GridCellSize),
-            (int)MathF.Floor(position.Z / GridCellSize));
-
-    private static int CellKey(int cellX, int cellZ) => cellX * 4096 + cellZ;
 }

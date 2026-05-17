@@ -43,7 +43,7 @@ internal static class DiagnosticsHud
         const int y = 52;
         const int w = 340;
         const int lineH = 17;
-        const int lines = 12;
+        const int lines = 13;
         var h = lineH * lines + 12;
 
         ctx.HudRect(x - 4, y - 4, w + 8, h + 8, Color.FromArgb(220, 8, 10, 14));
@@ -77,6 +77,9 @@ internal static class DiagnosticsHud
             row,
             14,
             text);
+        row += lineH;
+        var skipLabel = world.BallBallSkippedLastFrame ? "yes" : "no";
+        ctx.HudText($"Ball-ball skip (pile settled) {skipLabel}", x + 8, row, 14, text);
         row += lineH;
         ctx.HudText(
             $"Phys substeps {world.PhysicsSubStepsLastFrame}  solve iters {world.BallBallSolveIterationsLastFrame}",
