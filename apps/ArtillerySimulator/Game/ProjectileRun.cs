@@ -71,19 +71,20 @@ internal sealed class ProjectileRun
   public void AdvanceWithBudget(
     TerrainWorld terrain,
     GunModel gun,
+    AtmosphereModel atmosphere,
     Vector3 originForRange,
     int maxPhysicsSteps)
   {
     for (var i = 0; i < maxPhysicsSteps && Phase == ShotPhase.InFlight; i++)
-      AdvanceOne(terrain, gun, originForRange);
+      AdvanceOne(terrain, gun, atmosphere, originForRange);
   }
 
-  private void AdvanceOne(TerrainWorld terrain, GunModel gun, Vector3 originForRange)
+  private void AdvanceOne(TerrainWorld terrain, GunModel gun, AtmosphereModel atmosphere, Vector3 originForRange)
   {
     if (Phase != ShotPhase.InFlight)
       return;
 
-    var env = new ProjectileBallisticEnvironment(9.80665, gun.DragEnabled ? 1.225 : 0);
+    var env = atmosphere.BallisticEnvironment(gun.DragEnabled, _state.Position.Y);
     var sim = gun.DragEnabled ? _drag : _vacuum;
     var collision = terrain.Collision;
     var startPos = _state.Position;

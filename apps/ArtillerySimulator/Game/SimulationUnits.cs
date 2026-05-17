@@ -24,12 +24,6 @@ internal static class SimulationUnits
   /// <summary>Typical catalog max range for same charge tier (km, open-source HE).</summary>
   public static readonly float[] ReferenceMaxRangeKm = [21f, 23.5f, 30f];
 
-  /// <summary>Rolling hills ~15–45 m relief (absolute meters, not scaled with extent).</summary>
-  public const float HillBase = 18f;
-  public const float HillSin = 12f;
-  public const float HillCos = 10f;
-  public const float HillMix = 6f;
-
   public const float FixedCamLookAhead = 2500f;
   public static readonly Vector3 FixedCamEyeOffset = new(-1200f, 700f, 900f);
 

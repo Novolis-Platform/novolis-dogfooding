@@ -22,15 +22,18 @@ internal sealed class TerrainWorld
     private Vector3[] _drawVertices = [];
     private int _seed;
     private bool _flat;
+    private TerrainStyle _style = TerrainStyle.Rugged;
 
     public BvhStaticWorld Collision => _collision;
     public Vector3 GunBaseline { get; private set; }
     public bool IsFlat => _flat;
+    public TerrainStyle Style => _style;
 
-    public void Rebuild(int seed, bool flat)
+    public void Rebuild(int seed, bool flat, TerrainStyle style = TerrainStyle.Rugged)
     {
         _seed = seed;
         _flat = flat;
+        _style = style;
         BuildMeshes();
         GunBaseline = new Vector3(
             SimulationUnits.GunPivotX,
@@ -115,12 +118,7 @@ internal sealed class TerrainWorld
             return 0f;
 
         var extent = ExtentMeters;
-        var nx = x / extent * MathF.Tau * 1.4f + _seed * 0.017f;
-        var nz = z / extent * MathF.Tau * 1.1f + _seed * 0.023f;
-        return SimulationUnits.HillBase
-               + SimulationUnits.HillSin * MathF.Sin(nx)
-               + SimulationUnits.HillCos * MathF.Cos(nz * 0.85f)
-               + SimulationUnits.HillMix * MathF.Sin((nx + nz) * 0.55f);
+        return TerrainHeightSampler.Sample(x, z, _seed, _style);
     }
 
     public void Draw(RayGameContext ctx)
@@ -142,7 +140,7 @@ internal sealed class TerrainWorld
                 var c = _drawVertices[i01];
                 var d = _drawVertices[i11];
                 var midY = (a.Y + b.Y + c.Y + d.Y) * 0.25f;
-                var color = midY < 22f ? _wireLow : _wireHigh;
+                var color = midY < 180f ? _wireLow : midY < 420f ? _wireHigh : Color.FromArgb(255, 118, 168, 92);
                 ctx.DrawBolt(a, b, color);
                 ctx.DrawBolt(a, c, color);
             }
@@ -155,7 +153,7 @@ internal sealed class TerrainWorld
                 var a = _drawVertices[z * stride + x];
                 var b = _drawVertices[(z + 1) * stride + x];
                 var midY = (a.Y + b.Y) * 0.5f;
-                var color = midY < 22f ? _wireLow : _wireHigh;
+                var color = midY < 180f ? _wireLow : midY < 420f ? _wireHigh : Color.FromArgb(255, 118, 168, 92);
                 ctx.DrawBolt(a, b, color);
             }
         }
@@ -166,7 +164,7 @@ internal sealed class TerrainWorld
     private void DrawRangeBoundary(RayGameContext ctx)
     {
         var e = ExtentMeters;
-        var y = 120f;
+        var y = MathF.Max(520f, ExtentMeters * 0.03f);
         var a = new Vector3(0f, y, 0f);
         var b = new Vector3(e, y, 0f);
         var c = new Vector3(e, y, e);

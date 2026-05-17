@@ -9,15 +9,16 @@ internal static class SimulationHud
     RayGameContext ctx,
     GunModel gun,
     TerrainWorld terrain,
+    AtmosphereModel atmosphere,
     ProjectileRun shot,
     ArtilleryCamera camera,
     float fps)
   {
     const int x = 16;
     const int y = 52;
-    const int w = 460;
+    const int w = 500;
     const int lineH = 17;
-    var lines = shot.Phase == ShotPhase.InFlight ? 17 : 16;
+    var lines = shot.Phase == ShotPhase.InFlight ? 19 : 18;
     var h = lineH * lines + 12;
 
     var text = Color.FromArgb(255, 200, 215, 195);
@@ -55,14 +56,25 @@ internal static class SimulationHud
       text);
     row += lineH;
     ctx.HudText(
-      $"Charge {gun.ChargeLabel}  Mv {gun.MuzzleSpeedMps:F0} m/s  Drag {(gun.DragEnabled ? "sea level" : "vacuum")}",
+      $"Charge {gun.ChargeLabel}  Mv {gun.MuzzleSpeedMps:F0} m/s  Aero {(gun.DragEnabled ? "ρ+wind+RH" : "vacuum")}",
       x + 8,
       row,
       14,
       text);
     row += lineH;
+    var sampleAlt = shot.Phase == ShotPhase.InFlight ? shot.CurrentPosition.Y : terrain.GunBaseline.Y;
+    ctx.HudText(atmosphere.SummaryLine(sampleAlt), x + 8, row, 13, text);
+    row += lineH;
+    var terrainLabel = terrain.IsFlat
+      ? "flat"
+      : terrain.Style switch
+      {
+        TerrainStyle.AfghanHighland => "afghan highland",
+        TerrainStyle.NordicRidges => "nordic ridges",
+        _ => "rugged blend",
+      };
     ctx.HudText(
-      $"Terrain {(terrain.IsFlat ? "flat" : "hills")}  {SimulationUnits.FormatRange(terrain.ExtentMeters)}  State {shot.Phase}",
+      $"Terrain {terrainLabel}  {SimulationUnits.FormatRange(terrain.ExtentMeters)}  State {shot.Phase}",
       x + 8,
       row,
       14,
@@ -105,7 +117,7 @@ internal static class SimulationHud
 
     row += lineH;
     ctx.HudText(
-      "WASD fly  mouse look  Shift/Ctrl elev  Q/E az  C cam  orbit:H/M dist  F flat  R reset",
+      "WASD fly  mouse look  Shift/Ctrl elev  Q/E az  C cam  F flat  T terrain  R reseed",
       x + 8,
       row,
       12,

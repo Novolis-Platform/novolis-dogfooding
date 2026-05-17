@@ -9,6 +9,7 @@ internal sealed class ArtillerySimulatorGame
 {
   private const int PhysicsStepsPerFrame = 32;
   private const int CamToggleKey = 67;
+  private const int TerrainStyleKey = 84;
   private const int KeyQ = 81;
   private const int KeyE = 69;
   private const float AimDegreesPerSecond = 28f;
@@ -22,17 +23,19 @@ internal sealed class ArtillerySimulatorGame
   private readonly GunModel _gun = new();
   private readonly ProjectileRun _shot = new();
   private readonly ArtilleryCamera _camera = new();
+  private readonly AtmosphereModel _atmosphere = AtmosphereModel.CreateRegionalDefault();
 
   private float _smoothedFps = 60f;
   private bool _fpsInit;
   private int _terrainSeed = 42;
   private bool _flatTerrain;
+  private TerrainStyle _terrainStyle = TerrainStyle.Rugged;
   private IReadOnlyList<Vector3> _aimPreview = [];
 
   public void Initialize(RayGameContext ctx)
   {
     ctx.DisableCursor();
-    _terrain.Rebuild(_terrainSeed, _flatTerrain);
+    _terrain.Rebuild(_terrainSeed, _flatTerrain, _terrainStyle);
     _shot.Reset();
     _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
     RebuildAimPreview();
@@ -47,6 +50,7 @@ internal sealed class ArtillerySimulatorGame
       _shot.AdvanceWithBudget(
         _terrain,
         _gun,
+        _atmosphere,
         _terrain.GunBaseline,
         PhysicsStepsPerFrame);
     }
@@ -75,13 +79,13 @@ internal sealed class ArtillerySimulatorGame
     DrawShot(ctx);
     ctx.EndWorld();
 
-    SimulationHud.Draw(ctx, _gun, _terrain, _shot, _camera, _smoothedFps);
+    SimulationHud.Draw(ctx, _gun, _terrain, _atmosphere, _shot, _camera, _smoothedFps);
   }
 
   private void RebuildAimPreview()
   {
     var muzzle = _gun.MuzzlePosition(_terrain.GunBaseline);
-    _aimPreview = BallisticArcPreview.Build(_gun, _terrain, muzzle);
+    _aimPreview = BallisticArcPreview.Build(_gun, _terrain, _atmosphere, muzzle);
   }
 
   private void HandleInput(RayGameContext ctx)
@@ -114,7 +118,15 @@ internal sealed class ArtillerySimulatorGame
     if (ctx.IsKeyPressed(KeyboardKey.F))
     {
       _flatTerrain = !_flatTerrain;
-      _terrain.Rebuild(_terrainSeed, _flatTerrain);
+      _terrain.Rebuild(_terrainSeed, _flatTerrain, _terrainStyle);
+      _shot.Reset();
+      _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
+    }
+
+    if (ctx.IsKeyPressed((KeyboardKey)TerrainStyleKey) && !_flatTerrain)
+    {
+      _terrainStyle = (TerrainStyle)(((int)_terrainStyle + 1) % 3);
+      _terrain.Rebuild(_terrainSeed, _flatTerrain, _terrainStyle);
       _shot.Reset();
       _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
     }
@@ -122,7 +134,7 @@ internal sealed class ArtillerySimulatorGame
     if (ctx.IsKeyPressed(KeyboardKey.R))
     {
       _terrainSeed = Random.Shared.Next();
-      _terrain.Rebuild(_terrainSeed, _flatTerrain);
+      _terrain.Rebuild(_terrainSeed, _flatTerrain, _terrainStyle);
       _shot.Reset();
       _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
     }
