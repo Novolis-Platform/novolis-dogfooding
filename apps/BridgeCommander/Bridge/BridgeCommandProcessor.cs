@@ -39,6 +39,9 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
                 return;
             }
 
+            if (command.Name == BuiltInCommands.Help)
+                return;
+
             if (command.Name == BuiltInCommands.RepeatLast)
             {
                 if (state.LastEnvelope is null)
@@ -75,11 +78,25 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
         switch (command.Name)
         {
             case "helm.set-heading":
-                state.Heading = (int)command.Arguments["heading"]! % 360;
-                if (state.Heading < 0)
-                    state.Heading += 360;
-                state.StatusLine = $"Helm: course set to {state.Heading}°.";
+                state.Heading = NormalizeHeading(Convert.ToDouble(command.Arguments["heading"]!));
+                if (command.Arguments.TryGetValue("headingBy", out var byValue) && byValue is not null)
+                    state.HeadingBy = NormalizeHeading(Convert.ToDouble(byValue));
+                state.StatusLine = command.Arguments.ContainsKey("headingBy")
+                    ? $"Helm: course {state.Heading:0.##}° BY {state.HeadingBy:0.##}°."
+                    : $"Helm: course set to {state.Heading:0.##}°.";
                 await SimulateWork(TimeSpan.FromSeconds(1.2), cancellationToken);
+                break;
+
+            case "helm.come-about":
+                state.Heading = NormalizeHeading(state.Heading + 180);
+                state.StatusLine = $"Helm: coming about to {state.Heading:0.##}°.";
+                await SimulateWork(TimeSpan.FromSeconds(1.2), cancellationToken);
+                break;
+
+            case "helm.all-ahead-full":
+                state.SpeedWarp = 9;
+                state.StatusLine = "Helm: all ahead full — warp 9.";
+                await SimulateWork(TimeSpan.FromSeconds(1), cancellationToken);
                 break;
 
             case "helm.full-stop":
@@ -159,4 +176,10 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
 
     private static async Task SimulateWork(TimeSpan duration, CancellationToken cancellationToken) =>
         await Task.Delay(duration, cancellationToken);
+
+    private static double NormalizeHeading(double degrees)
+    {
+        var normalized = degrees % 360;
+        return normalized < 0 ? normalized + 360 : normalized;
+    }
 }

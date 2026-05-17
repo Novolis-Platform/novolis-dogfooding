@@ -21,6 +21,9 @@
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="0.3.0-local" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="0.1.0-preview.1" />
     <PackageVersion Include="Novolis.Messaging.Channels" Version="0.1.0-preview.1" />
+    <PackageVersion Include="Novolis.Commands.Abstractions" Version="1.0.0" />
+    <PackageVersion Include="Novolis.Commands.Engine" Version="1.0.0" />
+    <PackageVersion Include="Novolis.Commands.Queueing" Version="1.0.0" />
     <PackageVersion Include="PacketDotNet" Version="1.4.7" />
     <PackageVersion Include="Hex1b" Version="0.154.0" />
     <PackageVersion Include="TUnit" Version="1.44.39" />

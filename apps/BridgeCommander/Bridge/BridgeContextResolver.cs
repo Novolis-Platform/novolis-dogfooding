@@ -4,13 +4,20 @@ namespace BridgeCommander.Bridge;
 
 public sealed class BridgeContextResolver : ICommandContextResolver<BridgeState>
 {
-    public string? GetActiveContextWord(BridgeState context) => context.ActiveStation;
-
-    public IReadOnlyDictionary<string, string> GetAliases(BridgeState context) =>
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> ContextAliases =
+        new(StringComparer.OrdinalIgnoreCase)
         {
-            ["stop"] = "full stop",
-            ["weapons"] = "fire",
-            ["lock"] = "lock target"
+            ["pilot"] = "helm",
+            ["conn"] = "helm",
+            ["weaps"] = "tactical",
+            ["guns"] = "tactical",
+            ["tac"] = "tactical",
+            ["eng"] = "engineering",
+            ["damage"] = "engineering"
         };
+
+    public IReadOnlyDictionary<string, string> GetContextAliases(BridgeState context) => ContextAliases;
+
+    public IReadOnlyDictionary<string, string> GetVerbAliases(BridgeState context) =>
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }

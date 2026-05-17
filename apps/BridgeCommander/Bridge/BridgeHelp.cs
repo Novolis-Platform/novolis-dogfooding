@@ -1,120 +1,208 @@
 namespace BridgeCommander.Bridge;
 
+
+
 public static class BridgeHelp
+
 {
-    public static bool TryGetHelpLines(string prompt, out IReadOnlyList<string> lines)
-    {
-        if (!prompt.Trim().Equals("help", StringComparison.OrdinalIgnoreCase) &&
-            !prompt.Trim().StartsWith("help ", StringComparison.OrdinalIgnoreCase))
-        {
-            lines = [];
-            return false;
-        }
 
-        var topic = prompt.Trim().Length > 4
-            ? prompt.Trim()[5..].Trim().ToLowerInvariant()
-            : null;
+    public static IReadOnlyList<string> GetLines(string? topic) =>
 
-        lines = topic switch
+        topic switch
+
         {
+
             null or "" => GeneralHelp(),
-            "helm" => HelmHelp(),
-            "tactical" => TacticalHelp(),
-            "engineering" => EngineeringHelp(),
+
+            "helm" or "pilot" or "conn" => HelmHelp(),
+
+            "tactical" or "weaps" or "guns" or "tac" => TacticalHelp(),
+
+            "engineering" or "eng" or "damage" => EngineeringHelp(),
+
             "nav" => NavHelp(),
+
             "comms" => CommsHelp(),
+
             "admin" => AdminHelp(),
+
             "system" or "builtins" => SystemHelp(),
-            _ => [$"Unknown help topic '{topic}'. Try: help helm | tactical | engineering | nav | comms | admin | system"]
+
+            _ => [$"Unknown topic '{topic}'. Try: help helm | tactical | engineering | nav | comms | admin | system"]
+
         };
 
-        return true;
-    }
+
 
     private static IReadOnlyList<string> GeneralHelp() =>
+
     [
-        "Bridge Commander — type an order, press Transmit.",
+
+        "Bridge Commander — every order needs a station prefix (or alias).",
+
+        "Commas after the prefix are fine: helm, set heading to 270",
+
         "",
-        "Format: [station] <verb> [arguments]   — or omit station to use the active one.",
-        "Active station is shown below the command line; click a station button to switch.",
+
+        "Prefixes: helm, tactical, engineering, nav, comms, admin",
+
+        "Aliases:  pilot/conn→helm  weaps/guns/tac→tactical  eng/damage→engineering",
+
         "",
-        "── Helm ──",
+
+        "── Helm (pilot) ──",
+
         ..HelmHelp().Skip(1),
+
         "",
-        "── Tactical ──",
+
+        "── Tactical (weaps) ──",
+
         ..TacticalHelp().Skip(1),
+
         "",
-        "── Engineering ──",
+
+        "── Engineering (eng) ──",
+
         ..EngineeringHelp().Skip(1),
+
         "",
+
         "── Nav / Comms / Admin ──",
+
         ..NavHelp().Skip(1),
+
         ..CommsHelp().Skip(1),
+
         ..AdminHelp().Skip(1),
+
         "",
-        "── System ──",
+
+        "── System (no prefix) ──",
+
         ..SystemHelp().Skip(1),
+
         "",
-        "── Demos ──",
-        "fire                    → ambiguous (admin dismiss vs tactical weapons)",
-        "help <station>          → this page, filtered by station",
-        "",
-        "Type help helm (etc.) for one station only."
+
+        "help <station>  —  filter this panel"
+
     ];
+
+
 
     private static IReadOnlyList<string> HelmHelp() =>
+
     [
-        "Helm commands (station: helm):",
-        "helm heading 270        → course 270°; status shows new heading after ~1s",
-        "helm set heading 270    → same as above",
-        "helm warp 7             → speed warp 7 (0–9)",
-        "helm full stop          → warp 0, all stop",
-        "heading 270             → works when helm is the active station"
+
+        "Helm (prefix: helm or pilot):",
+
+        "helm heading 270              → course 270°",
+        "helm course 122 by 33         → sloppy 3D OK",
+
+        "helm set heading to 122 by 180 → 3D: 122° BY 180°",
+        "helm set course 123,5 by 119,4 → comma decimals OK",
+        "helm heading 122 mark 6 by 180 → 122.6° BY 180°",
+
+        "helm come about               → reverse heading (+180°)",
+
+        "helm all ahead full           → warp 9",
+
+        "helm warp 7                   → warp factor 7",
+
+        "helm full stop                → warp 0"
+
     ];
+
+
 
     private static IReadOnlyList<string> TacticalHelp() =>
+
     [
-        "Tactical commands (station: tactical):",
-        "tactical lock target    → locks hostile KR-12; required before firing",
-        "tactical fire           → fires weapons if target locked (~2.5s); else 'no target lock'",
-        "tactical fire weapons   → same as fire",
-        "fire                    → ambiguous without station — try help for demo"
+
+        "Tactical (prefix: tactical or weaps):",
+
+        "tactical lock target              → lock hostile KR-12",
+
+        "weaps target the closest enemy    → same",
+
+        "tactical fire                     → fire if locked (~2.5s)"
+
     ];
+
+
 
     private static IReadOnlyList<string> EngineeringHelp() =>
+
     [
-        "Engineering commands (station: engineering):",
-        "engineering divert shields  → shields +15% (caps 100)",
-        "engineering divert weapons  → shields −10%, power to weapons",
-        "engineering repair          → hull +8% (~3s)"
+
+        "Engineering (prefix: engineering or eng):",
+
+        "engineering divert shields   → shields +15%",
+
+        "engineering divert weapons   → shields −10%",
+
+        "engineering repair           → hull +8% (~3s)"
+
     ];
+
+
 
     private static IReadOnlyList<string> NavHelp() =>
+
     [
-        "Nav commands (station: nav):",
-        "nav set course alpha centauri   → logs course laid in (~1.5s)",
-        "nav course mars                 → same (destination is free text)"
+
+        "Nav (prefix: nav):",
+
+        "nav set course alpha centauri   → course laid in",
+
+        "nav course mars                 → same"
+
     ];
+
+
 
     private static IReadOnlyList<string> CommsHelp() =>
+
     [
-        "Comms commands (station: comms):",
-        "comms hail              → hail transmitted on open channel"
+
+        "Comms (prefix: comms):",
+
+        "comms hail              → open-channel hail"
+
     ];
+
+
 
     private static IReadOnlyList<string> AdminHelp() =>
+
     [
-        "Admin commands (station: admin):",
-        "admin fire              → personnel transfer logged (used in ambiguity demo)"
+
+        "Admin (prefix: admin):",
+
+        "admin fire              → personnel transfer logged"
+
     ];
 
+
+
     private static IReadOnlyList<string> SystemHelp() =>
+
     [
-        "System commands (no station prefix):",
-        "belay that              → emergency interrupt; cancels in-flight command",
-        "clear queue             → dismiss queued orders (not yet drained in v0 UI)",
-        "repeat last             → re-runs last successful command",
-        "help                    → this help",
-        "help tactical           → help for one station"
+
+        "System (no station prefix):",
+
+        "help                    → this reference",
+
+        "help tactical           → one station",
+
+        "belay that              → cancel in-flight command",
+
+        "clear queue             → dismiss queued orders",
+
+        "repeat last             → repeat last command"
+
     ];
+
 }
+
+

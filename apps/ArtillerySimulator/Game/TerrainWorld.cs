@@ -5,18 +5,22 @@ using Novolis.Raylib.Game;
 
 namespace ArtillerySimulator.Game;
 
-/// <summary>Procedural heightfield meshed for BVH collision and wireframe draw.</summary>
+/// <summary>Procedural heightfield with range-limit walls and boundary checks.</summary>
 internal sealed class TerrainWorld
 {
-    public const float ExtentMeters = 500f;
-    private const int GridCells = 64;
+    public float ExtentMeters => SimulationUnits.ExtentMeters;
+    private const int CollisionCells = 128;
+    private const int DrawCells = 64;
+    private const float WallTopY = 450f;
+    private const float WallBottomY = -30f;
+
+    private static readonly Color BoundaryColor = Color.FromArgb(255, 200, 180, 90);
 
     private readonly Color _wireLow = Color.FromArgb(255, 48, 72, 44);
     private readonly Color _wireHigh = Color.FromArgb(255, 72, 110, 58);
 
     private BvhStaticWorld _collision = null!;
-    private Vector3[] _vertices = [];
-    private int[] _triangleIndices = [];
+    private Vector3[] _drawVertices = [];
     private int _seed;
     private bool _flat;
 
@@ -28,8 +32,73 @@ internal sealed class TerrainWorld
     {
         _seed = seed;
         _flat = flat;
-        BuildMesh();
-        GunBaseline = new Vector3(40f, SampleHeight(40f, ExtentMeters * 0.5f) + 1.2f, ExtentMeters * 0.5f);
+        BuildMeshes();
+        GunBaseline = new Vector3(
+            SimulationUnits.GunPivotX,
+            SampleHeight(SimulationUnits.GunPivotX, ExtentMeters * 0.5f) + SimulationUnits.GunHeightOffset,
+            ExtentMeters * 0.5f);
+    }
+
+    public bool IsInside(float x, float z) =>
+        x >= 0f && x <= ExtentMeters && z >= 0f && z <= ExtentMeters;
+
+    public bool TryHeightfieldContact(Vector3 position, float radius)
+    {
+        if (!IsInside(position.X, position.Z))
+            return false;
+
+        return position.Y <= SampleHeight(position.X, position.Z) + radius;
+    }
+
+    /// <summary>First exit of segment from the XZ range box (0…extent). Returns false if both endpoints inside.</summary>
+    public bool TrySegmentLeavesRange(
+        Vector3 from,
+        Vector3 to,
+        out Vector3 hitPoint,
+        out float fractionAlongSegment)
+    {
+        hitPoint = default;
+        fractionAlongSegment = 1f;
+
+        if (IsInside(from.X, from.Z) && IsInside(to.X, to.Z))
+            return false;
+
+        var delta = to - from;
+        var tBest = 1f;
+        var found = false;
+
+        if (MathF.Abs(delta.X) > 1e-8f)
+        {
+            if (delta.X > 0f && from.X <= ExtentMeters)
+                TryPlane(from.X, ExtentMeters, delta.X, ref tBest, ref found);
+            if (delta.X < 0f && from.X >= 0f)
+                TryPlane(from.X, 0f, delta.X, ref tBest, ref found);
+        }
+
+        if (MathF.Abs(delta.Z) > 1e-8f)
+        {
+            if (delta.Z > 0f && from.Z <= ExtentMeters)
+                TryPlane(from.Z, ExtentMeters, delta.Z, ref tBest, ref found);
+            if (delta.Z < 0f && from.Z >= 0f)
+                TryPlane(from.Z, 0f, delta.Z, ref tBest, ref found);
+        }
+
+        if (!found || tBest < 0f || tBest > 1f)
+            return false;
+
+        fractionAlongSegment = tBest;
+        hitPoint = from + delta * tBest;
+        return true;
+    }
+
+    private static void TryPlane(float start, float plane, float delta, ref float tBest, ref bool found)
+    {
+        var t = (plane - start) / delta;
+        if (t < 0f || t > 1f || t >= tBest)
+            return;
+
+        tBest = t;
+        found = true;
     }
 
     public float SampleHeight(float x, float z)
@@ -37,50 +106,86 @@ internal sealed class TerrainWorld
         if (_flat)
             return 0f;
 
-        var nx = x / ExtentMeters * MathF.Tau * 1.4f + _seed * 0.017f;
-        var nz = z / ExtentMeters * MathF.Tau * 1.1f + _seed * 0.023f;
-        return 18f
-               + 28f * MathF.Sin(nx)
-               + 22f * MathF.Cos(nz * 0.85f)
-               + 14f * MathF.Sin((nx + nz) * 0.55f);
+        var extent = ExtentMeters;
+        var nx = x / extent * MathF.Tau * 1.4f + _seed * 0.017f;
+        var nz = z / extent * MathF.Tau * 1.1f + _seed * 0.023f;
+        return SimulationUnits.HillBase
+               + SimulationUnits.HillSin * MathF.Sin(nx)
+               + SimulationUnits.HillCos * MathF.Cos(nz * 0.85f)
+               + SimulationUnits.HillMix * MathF.Sin((nx + nz) * 0.55f);
     }
 
     public void Draw(RayGameContext ctx)
     {
-        var triCount = _triangleIndices.Length / 3;
-        for (var t = 0; t < triCount; t++)
+        var stride = DrawCells + 1;
+        for (var z = 0; z < DrawCells; z++)
         {
-            var i = t * 3;
-            var a = _vertices[_triangleIndices[i]];
-            var b = _vertices[_triangleIndices[i + 1]];
-            var c = _vertices[_triangleIndices[i + 2]];
-            var midY = (a.Y + b.Y + c.Y) / 3f;
-            var color = midY < 25f ? _wireLow : _wireHigh;
-            ctx.DrawBolt(a, b, color);
-            ctx.DrawBolt(b, c, color);
-            ctx.DrawBolt(c, a, color);
+            for (var x = 0; x < DrawCells; x++)
+            {
+                var i00 = z * stride + x;
+                var i10 = i00 + 1;
+                var i01 = i00 + stride;
+                var i11 = i01 + 1;
+                var a = _drawVertices[i00];
+                var b = _drawVertices[i10];
+                var c = _drawVertices[i01];
+                var d = _drawVertices[i11];
+                var midY = (a.Y + b.Y + c.Y + d.Y) * 0.25f;
+                var color = midY < 22f ? _wireLow : _wireHigh;
+                ctx.DrawBolt(a, b, color);
+                ctx.DrawBolt(a, c, color);
+            }
         }
+
+        for (var x = 0; x <= DrawCells; x++)
+        {
+            for (var z = 0; z < DrawCells; z++)
+            {
+                var a = _drawVertices[z * stride + x];
+                var b = _drawVertices[(z + 1) * stride + x];
+                var midY = (a.Y + b.Y) * 0.5f;
+                var color = midY < 22f ? _wireLow : _wireHigh;
+                ctx.DrawBolt(a, b, color);
+            }
+        }
+
+        DrawRangeBoundary(ctx);
     }
 
-    private void BuildMesh()
+    private void DrawRangeBoundary(RayGameContext ctx)
     {
-        var verts = new Vector3[(GridCells + 1) * (GridCells + 1)];
-        var tris = new List<int>(GridCells * GridCells * 6);
+        var e = ExtentMeters;
+        var y = 35f;
+        var a = new Vector3(0f, y, 0f);
+        var b = new Vector3(e, y, 0f);
+        var c = new Vector3(e, y, e);
+        var d = new Vector3(0f, y, e);
+        ctx.DrawBolt(a, b, BoundaryColor);
+        ctx.DrawBolt(b, c, BoundaryColor);
+        ctx.DrawBolt(c, d, BoundaryColor);
+        ctx.DrawBolt(d, a, BoundaryColor);
+    }
 
-        for (var z = 0; z <= GridCells; z++)
-        for (var x = 0; x <= GridCells; x++)
+    private void BuildMeshes()
+    {
+        var extent = ExtentMeters;
+        var verts = new List<Vector3>((CollisionCells + 1) * (CollisionCells + 1) + 16);
+        var tris = new List<int>(CollisionCells * CollisionCells * 6 + 24);
+
+        for (var z = 0; z <= CollisionCells; z++)
+        for (var x = 0; x <= CollisionCells; x++)
         {
-            var fx = x / (float)GridCells * ExtentMeters;
-            var fz = z / (float)GridCells * ExtentMeters;
-            verts[z * (GridCells + 1) + x] = new Vector3(fx, SampleHeight(fx, fz), fz);
+            var fx = x / (float)CollisionCells * extent;
+            var fz = z / (float)CollisionCells * extent;
+            verts.Add(new Vector3(fx, SampleHeight(fx, fz), fz));
         }
 
-        for (var z = 0; z < GridCells; z++)
-        for (var x = 0; x < GridCells; x++)
+        for (var z = 0; z < CollisionCells; z++)
+        for (var x = 0; x < CollisionCells; x++)
         {
-            var i00 = z * (GridCells + 1) + x;
+            var i00 = z * (CollisionCells + 1) + x;
             var i10 = i00 + 1;
-            var i01 = i00 + (GridCells + 1);
+            var i01 = i00 + (CollisionCells + 1);
             var i11 = i01 + 1;
             tris.Add(i00);
             tris.Add(i10);
@@ -90,8 +195,59 @@ internal sealed class TerrainWorld
             tris.Add(i01);
         }
 
-        _vertices = verts;
-        _triangleIndices = tris.ToArray();
-        _collision = new BvhStaticWorld(new StaticTriangleMesh(_vertices, _triangleIndices));
+        AddRangeWalls(verts, tris, extent);
+
+        _collision = new BvhStaticWorld(new StaticTriangleMesh(verts.ToArray(), tris.ToArray()));
+
+        _drawVertices = new Vector3[(DrawCells + 1) * (DrawCells + 1)];
+        for (var z = 0; z <= DrawCells; z++)
+        for (var x = 0; x <= DrawCells; x++)
+        {
+            var fx = x / (float)DrawCells * extent;
+            var fz = z / (float)DrawCells * extent;
+            _drawVertices[z * (DrawCells + 1) + x] = new Vector3(fx, SampleHeight(fx, fz), fz);
+        }
+    }
+
+    private static void AddRangeWalls(List<Vector3> verts, List<int> tris, float extent)
+    {
+        void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+        {
+            var i = verts.Count;
+            verts.Add(a);
+            verts.Add(b);
+            verts.Add(c);
+            verts.Add(d);
+            tris.Add(i);
+            tris.Add(i + 1);
+            tris.Add(i + 2);
+            tris.Add(i);
+            tris.Add(i + 2);
+            tris.Add(i + 3);
+        }
+
+        Quad(
+            new Vector3(0f, WallBottomY, 0f),
+            new Vector3(0f, WallBottomY, extent),
+            new Vector3(0f, WallTopY, extent),
+            new Vector3(0f, WallTopY, 0f));
+
+        Quad(
+            new Vector3(extent, WallBottomY, extent),
+            new Vector3(extent, WallBottomY, 0f),
+            new Vector3(extent, WallTopY, 0f),
+            new Vector3(extent, WallTopY, extent));
+
+        Quad(
+            new Vector3(0f, WallBottomY, 0f),
+            new Vector3(extent, WallBottomY, 0f),
+            new Vector3(extent, WallTopY, 0f),
+            new Vector3(0f, WallTopY, 0f));
+
+        Quad(
+            new Vector3(extent, WallBottomY, extent),
+            new Vector3(0f, WallBottomY, extent),
+            new Vector3(0f, WallTopY, extent),
+            new Vector3(extent, WallTopY, extent));
     }
 }

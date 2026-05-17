@@ -13,9 +13,13 @@ public sealed class BridgeCommandService : IAsyncDisposable
 
     public BridgeCommandService(BridgeState state)
     {
+        var engineOptions = new CommandEngineOptions();
+        engineOptions.ArgumentParsers.Register("heading3d", new BridgeHeadingArgumentParser());
+
         _engine = new CommandEngine<BridgeState>(
             BridgeCommandRegistry.Create(),
-            new BridgeContextResolver());
+            new BridgeContextResolver(),
+            engineOptions);
 
         _queue = new ChannelCommandQueue();
         _runner = new CommandQueueRunner<BridgeState>(_queue, new BridgeCommandProcessor());
@@ -28,32 +32,25 @@ public sealed class BridgeCommandService : IAsyncDisposable
             return;
 
         var trimmed = prompt.Trim();
-
-        if (BridgeHelp.TryGetHelpLines(trimmed, out var helpLines))
-        {
-            state.AddHistory(new HistoryEntry(
-                DateTimeOffset.UtcNow,
-                trimmed,
-                HistoryKind.Help,
-                "Command reference.",
-                helpLines));
-
-            state.StatusLine = "Help displayed in command log.";
-            return;
-        }
-
         var result = await _engine.ParseCommandAsync(trimmed, state);
 
         if (result.Success && result.Command is not null)
         {
+            if (result.Command.Name == BuiltInCommands.Help)
+            {
+                var topic = result.Command.Arguments["topic"] as string;
+                ApplyHelp(state, trimmed, topic);
+                return;
+            }
+
             state.AddHistory(new HistoryEntry(
                 DateTimeOffset.UtcNow,
                 trimmed,
                 HistoryKind.ParseSuccess,
-                $"Queued {result.Command.Name}",
-                [$"Priority: {result.Command.Priority}"]));
+                $"Queued {result.Command.Name}"));
 
             await _queue.EnqueueAsync(result.Command);
+            state.StatusLine = $"Queued {result.Command.Name}.";
             return;
         }
 
@@ -70,19 +67,37 @@ public sealed class BridgeCommandService : IAsyncDisposable
                 "Ambiguous command.",
                 details));
 
-            state.StatusLine = "Command ambiguous — see log for candidates.";
+            state.StatusLine = "Ambiguous — see log for candidates.";
             return;
         }
 
         var failure = result.Failures.FirstOrDefault();
+        var failureDetails = failure?.Code == ParseFailureCode.UnknownContext
+            ? ["Prefixes: helm, tactical, weaps, pilot, eng, nav, comms, admin"]
+            : result.Suggestions.Count > 0
+                ? result.Suggestions.Select(s => $"Did you mean: {s}?").ToList()
+                : [];
+
         state.AddHistory(new HistoryEntry(
             DateTimeOffset.UtcNow,
             trimmed,
             HistoryKind.ParseFailure,
             failure?.Message ?? "Parse failed.",
-            result.Failures.Select(f => $"{f.Code}: {f.Message}").ToList()));
+            failureDetails));
 
         state.StatusLine = failure?.Message ?? "Unable to parse command.";
+    }
+
+    private static void ApplyHelp(BridgeState state, string prompt, string? topic)
+    {
+        state.HelpPanelLines.Clear();
+        state.HelpPanelLines.AddRange(BridgeHelp.GetLines(topic));
+        state.AddHistory(new HistoryEntry(
+            DateTimeOffset.UtcNow,
+            prompt,
+            HistoryKind.Help,
+            string.IsNullOrEmpty(topic) ? "Opened command reference." : $"Help: {topic}."));
+        state.StatusLine = "Help updated in reference panel.";
     }
 
     public ValueTask DisposeAsync()

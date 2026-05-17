@@ -2,12 +2,12 @@ using BridgeCommander.Bridge;
 using Hex1b;
 
 var state = new BridgeState();
+state.HelpPanelLines.AddRange(BridgeHelp.GetLines(null));
 state.AddHistory(new HistoryEntry(
     DateTimeOffset.UtcNow,
     "",
     HistoryKind.System,
-    "Bridge command interface online.",
-    ["Novolis.Commands dogfood — parse, queue, execute.", "Type help for commands and expected results."]));
+    "Bridge online. Prefix every order with a station (helm, tactical, weaps…)."));
 
 await using var commands = new BridgeCommandService(state);
 

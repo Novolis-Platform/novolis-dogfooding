@@ -7,24 +7,31 @@ namespace ArtillerySimulator.Game;
 
 internal sealed class ArtillerySimulatorGame
 {
+  private const int PhysicsStepsPerFrame = 32;
+  private const int CamToggleKey = 67;
+
   private static readonly Color Background = Color.FromArgb(255, 14, 18, 26);
   private static readonly Color TrailColor = Color.FromArgb(255, 200, 220, 160);
+  private static readonly Color PreviewColor = Color.FromArgb(120, 140, 160, 90);
   private static readonly Color ImpactColor = Color.FromArgb(255, 255, 210, 120);
 
   private readonly TerrainWorld _terrain = new();
   private readonly GunModel _gun = new();
   private readonly ProjectileRun _shot = new();
-  private readonly OverviewCamera _camera = new();
+  private readonly ArtilleryCamera _camera = new();
 
   private float _smoothedFps = 60f;
   private bool _fpsInit;
   private int _terrainSeed = 42;
   private bool _flatTerrain;
+  private IReadOnlyList<Vector3> _aimPreview = [];
 
   public void Initialize(RayGameContext ctx)
   {
     _terrain.Rebuild(_terrainSeed, _flatTerrain);
     _shot.Reset();
+    _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
+    RebuildAimPreview();
   }
 
   public void Update(RayGameContext ctx)
@@ -33,9 +40,15 @@ internal sealed class ArtillerySimulatorGame
 
     if (_shot.Phase == ShotPhase.InFlight)
     {
-      for (var i = 0; i < 4; i++)
-        _shot.Advance(_terrain.Collision, _gun, _terrain.GunBaseline);
+      _shot.AdvanceWithBudget(
+        _terrain,
+        _gun,
+        _terrain.GunBaseline,
+        PhysicsStepsPerFrame);
     }
+
+    if (_shot.Phase == ShotPhase.Ready)
+      RebuildAimPreview();
 
     var dt = ctx.DeltaSeconds;
     if (dt > 1e-6f)
@@ -46,13 +59,21 @@ internal sealed class ArtillerySimulatorGame
     }
 
     ctx.Clear(Background);
-    ctx.BeginWorld(_camera.Build());
+    var barrelDir = _gun.BarrelDirection();
+    ctx.BeginWorld(_camera.Build(dt, _terrain.GunBaseline, barrelDir, _shot));
     _terrain.Draw(ctx);
-    _gun.Draw(ctx, _terrain.GunBaseline);
+    DrawAimPreview(ctx);
+    _gun.Draw(ctx, _terrain.GunBaseline, showPivotGlow: _shot.Phase == ShotPhase.Ready);
     DrawShot(ctx);
     ctx.EndWorld();
 
-    SimulationHud.Draw(ctx, _gun, _terrain, _shot, _smoothedFps);
+    SimulationHud.Draw(ctx, _gun, _terrain, _shot, _camera, _smoothedFps);
+  }
+
+  private void RebuildAimPreview()
+  {
+    var muzzle = _gun.MuzzlePosition(_terrain.GunBaseline);
+    _aimPreview = BallisticArcPreview.Build(_gun, _terrain, muzzle);
   }
 
   private void HandleInput(RayGameContext ctx)
@@ -76,11 +97,15 @@ internal sealed class ArtillerySimulatorGame
     if (ctx.IsKeyPressed(KeyboardKey.D))
       _gun.ToggleDrag();
 
+    if (ctx.IsKeyPressed((KeyboardKey)CamToggleKey))
+      _camera.ToggleMode();
+
     if (ctx.IsKeyPressed(KeyboardKey.F))
     {
       _flatTerrain = !_flatTerrain;
       _terrain.Rebuild(_terrainSeed, _flatTerrain);
       _shot.Reset();
+      _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
     }
 
     if (ctx.IsKeyPressed(KeyboardKey.R))
@@ -88,6 +113,7 @@ internal sealed class ArtillerySimulatorGame
       _terrainSeed = Random.Shared.Next();
       _terrain.Rebuild(_terrainSeed, _flatTerrain);
       _shot.Reset();
+      _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
     }
 
     if (ctx.IsKeyPressed(KeyboardKey.Space) && _shot.Phase != ShotPhase.InFlight)
@@ -109,6 +135,15 @@ internal sealed class ArtillerySimulatorGame
     Console.WriteLine($"[ArtillerySimulator] vacuum flat expected range ~ {expected:F1} m (2*vx*vy/g)");
   }
 
+  private void DrawAimPreview(RayGameContext ctx)
+  {
+    if (_shot.Phase != ShotPhase.Ready || _aimPreview.Count < 2)
+      return;
+
+    for (var i = 1; i < _aimPreview.Count; i++)
+      ctx.DrawBolt(_aimPreview[i - 1], _aimPreview[i], PreviewColor);
+  }
+
   private void DrawShot(RayGameContext ctx)
   {
     var trail = _shot.Trail;
@@ -116,14 +151,14 @@ internal sealed class ArtillerySimulatorGame
       ctx.DrawBolt(trail[i - 1], trail[i], TrailColor);
 
     if (_shot.Phase != ShotPhase.Ready)
-      ctx.DrawGlowSphere(_shot.CurrentPosition, 0.12f, TrailColor);
+      ctx.DrawGlowSphere(_shot.CurrentPosition, GunModel.MuzzleRadius, TrailColor);
 
     if (_shot.Impact is { } impact)
     {
-      ctx.DrawGlowSphereWires(impact.Position, 0.35f, ImpactColor);
+      ctx.DrawGlowSphereWires(impact.Position, 1.5f, ImpactColor);
       var p = impact.Position;
-      ctx.DrawBolt(p + new Vector3(-1f, 0f, 0f), p + new Vector3(1f, 0f, 0f), ImpactColor);
-      ctx.DrawBolt(p + new Vector3(0f, 0f, -1f), p + new Vector3(0f, 0f, 1f), ImpactColor);
+      ctx.DrawBolt(p + new Vector3(-2f, 0f, 0f), p + new Vector3(2f, 0f, 0f), ImpactColor);
+      ctx.DrawBolt(p + new Vector3(0f, 0f, -2f), p + new Vector3(0f, 0f, 2f), ImpactColor);
     }
   }
 }

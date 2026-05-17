@@ -6,8 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Hex1b" />
-    <ProjectReference Include="..\..\..\novolis-commands\src\Novolis.Commands.Abstractions\Novolis.Commands.Abstractions.csproj" />
-    <ProjectReference Include="..\..\..\novolis-commands\src\Novolis.Commands.Engine\Novolis.Commands.Engine.csproj" />
-    <ProjectReference Include="..\..\..\novolis-commands\src\Novolis.Commands.Queueing\Novolis.Commands.Queueing.csproj" />
+    <PackageReference Include="Novolis.Commands.Abstractions" />
+    <PackageReference Include="Novolis.Commands.Engine" />
+    <PackageReference Include="Novolis.Commands.Queueing" />
   </ItemGroup>
 </Project>
