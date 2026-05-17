@@ -17,7 +17,7 @@ internal static class SimulationHud
     const int y = 52;
     const int w = 460;
     const int lineH = 17;
-    var lines = shot.Phase == ShotPhase.InFlight ? 16 : 15;
+    var lines = shot.Phase == ShotPhase.InFlight ? 17 : 16;
     var h = lineH * lines + 12;
 
     var text = Color.FromArgb(255, 200, 215, 195);
@@ -32,7 +32,19 @@ internal static class SimulationHud
     row += lineH;
     ctx.HudText("155 mm M777-class — educational ballistics, not classified data", x + 8, row, 12, dim);
     row += lineH;
-    ctx.HudText($"FPS {fps:F0}  Cam {(camera.Mode == CameraMode.Fixed ? "fixed" : "chase")}", x + 8, row, 14, text);
+    ctx.HudText(
+      $"Typical max HE (pubs) {SimulationUnits.ReferenceMaxRangeKmForCharge(0):F0}/{SimulationUnits.ReferenceMaxRangeKmForCharge(1):F1}/{SimulationUnits.ReferenceMaxRangeKmForCharge(2):F0} km",
+      x + 8,
+      row,
+      12,
+      dim);
+    row += lineH;
+    ctx.HudText(
+      $"FPS {fps:F0}  Cam {(camera.Mode == CameraMode.Freecam ? "free" : "orbit")}",
+      x + 8,
+      row,
+      14,
+      text);
     row += lineH;
     var mils = gun.ElevationDegrees * 6400f / 360f;
     ctx.HudText(
@@ -70,7 +82,7 @@ internal static class SimulationHud
 
     if (shot.Impact is { } impact)
     {
-      var reason = impact.Reason == ImpactEndReason.BeyondRange ? "  Beyond range" : "";
+      var reason = impact.Reason == ImpactEndReason.BeyondRange ? "  Range limit (map edge)" : "";
       ctx.HudText(
         $"Impact {SimulationUnits.FormatRange(impact.HorizontalRangeMeters)}  TOF {impact.TimeSeconds:F1} s{reason}",
         x + 8,
@@ -79,7 +91,7 @@ internal static class SimulationHud
         text);
       row += lineH;
       ctx.HudText(
-        $"Impact speed {impact.ImpactSpeedMps:F0} m/s  at ({impact.Position.X:F0}, {impact.Position.Y:F0}, {impact.Position.Z:F0})",
+        $"Impact speed {impact.ImpactSpeedMps:F0} m/s  ground ({impact.Position.X:F0}, {impact.Position.Y:F0}, {impact.Position.Z:F0})",
         x + 8,
         row,
         14,
@@ -93,7 +105,7 @@ internal static class SimulationHud
 
     row += lineH;
     ctx.HudText(
-      "W/S elev  A/P az  1-3 charge  D drag  Space fire  C cam  F flat  R reset",
+      "WASD fly  mouse look  Shift/Ctrl elev  Q/E az  C cam  orbit:H/M dist  F flat  R reset",
       x + 8,
       row,
       12,

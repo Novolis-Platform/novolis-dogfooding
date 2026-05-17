@@ -5,14 +5,12 @@ using Novolis.Raylib.Game;
 
 namespace ArtillerySimulator.Game;
 
-/// <summary>Procedural heightfield with range-limit walls and boundary checks.</summary>
+/// <summary>Procedural heightfield with logical range box and ground-projected edge impacts.</summary>
 internal sealed class TerrainWorld
 {
     public float ExtentMeters => SimulationUnits.ExtentMeters;
-    private const int CollisionCells = 128;
-    private const int DrawCells = 64;
-    private const float WallTopY = 450f;
-    private const float WallBottomY = -30f;
+    private const int CollisionCells = 256;
+    private const int DrawCells = 96;
 
     private static readonly Color BoundaryColor = Color.FromArgb(255, 200, 180, 90);
 
@@ -48,6 +46,15 @@ internal sealed class TerrainWorld
             return false;
 
         return position.Y <= SampleHeight(position.X, position.Z) + radius;
+    }
+
+    /// <summary>Clamp XZ to the range box and place Y on the terrain surface.</summary>
+    public Vector3 ProjectOntoTerrainSurface(Vector3 p, float surfaceEpsilon = 0.05f)
+    {
+        var x = Math.Clamp(p.X, 0f, ExtentMeters);
+        var z = Math.Clamp(p.Z, 0f, ExtentMeters);
+        var y = SampleHeight(x, z) + surfaceEpsilon;
+        return new Vector3(x, y, z);
     }
 
     /// <summary>First exit of segment from the XZ range box (0…extent). Returns false if both endpoints inside.</summary>
@@ -155,7 +162,7 @@ internal sealed class TerrainWorld
     private void DrawRangeBoundary(RayGameContext ctx)
     {
         var e = ExtentMeters;
-        var y = 35f;
+        var y = 55f;
         var a = new Vector3(0f, y, 0f);
         var b = new Vector3(e, y, 0f);
         var c = new Vector3(e, y, e);
@@ -169,15 +176,15 @@ internal sealed class TerrainWorld
     private void BuildMeshes()
     {
         var extent = ExtentMeters;
-        var verts = new List<Vector3>((CollisionCells + 1) * (CollisionCells + 1) + 16);
-        var tris = new List<int>(CollisionCells * CollisionCells * 6 + 24);
+        var verts = new Vector3[(CollisionCells + 1) * (CollisionCells + 1)];
+        var tris = new List<int>(CollisionCells * CollisionCells * 6);
 
         for (var z = 0; z <= CollisionCells; z++)
         for (var x = 0; x <= CollisionCells; x++)
         {
             var fx = x / (float)CollisionCells * extent;
             var fz = z / (float)CollisionCells * extent;
-            verts.Add(new Vector3(fx, SampleHeight(fx, fz), fz));
+            verts[z * (CollisionCells + 1) + x] = new Vector3(fx, SampleHeight(fx, fz), fz);
         }
 
         for (var z = 0; z < CollisionCells; z++)
@@ -195,9 +202,7 @@ internal sealed class TerrainWorld
             tris.Add(i01);
         }
 
-        AddRangeWalls(verts, tris, extent);
-
-        _collision = new BvhStaticWorld(new StaticTriangleMesh(verts.ToArray(), tris.ToArray()));
+        _collision = new BvhStaticWorld(new StaticTriangleMesh(verts, tris.ToArray()));
 
         _drawVertices = new Vector3[(DrawCells + 1) * (DrawCells + 1)];
         for (var z = 0; z <= DrawCells; z++)
@@ -207,47 +212,5 @@ internal sealed class TerrainWorld
             var fz = z / (float)DrawCells * extent;
             _drawVertices[z * (DrawCells + 1) + x] = new Vector3(fx, SampleHeight(fx, fz), fz);
         }
-    }
-
-    private static void AddRangeWalls(List<Vector3> verts, List<int> tris, float extent)
-    {
-        void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
-        {
-            var i = verts.Count;
-            verts.Add(a);
-            verts.Add(b);
-            verts.Add(c);
-            verts.Add(d);
-            tris.Add(i);
-            tris.Add(i + 1);
-            tris.Add(i + 2);
-            tris.Add(i);
-            tris.Add(i + 2);
-            tris.Add(i + 3);
-        }
-
-        Quad(
-            new Vector3(0f, WallBottomY, 0f),
-            new Vector3(0f, WallBottomY, extent),
-            new Vector3(0f, WallTopY, extent),
-            new Vector3(0f, WallTopY, 0f));
-
-        Quad(
-            new Vector3(extent, WallBottomY, extent),
-            new Vector3(extent, WallBottomY, 0f),
-            new Vector3(extent, WallTopY, 0f),
-            new Vector3(extent, WallTopY, extent));
-
-        Quad(
-            new Vector3(0f, WallBottomY, 0f),
-            new Vector3(extent, WallBottomY, 0f),
-            new Vector3(extent, WallTopY, 0f),
-            new Vector3(0f, WallTopY, 0f));
-
-        Quad(
-            new Vector3(extent, WallBottomY, extent),
-            new Vector3(0f, WallBottomY, extent),
-            new Vector3(0f, WallTopY, extent),
-            new Vector3(extent, WallTopY, extent));
     }
 }

@@ -5,6 +5,9 @@ namespace BridgeCommander.Bridge;
 
 public static class BridgeHexApp
 {
+    public static Hex1bApp Create(BridgeSession session) =>
+        Create(session.State, session.Commands);
+
     public static Hex1bApp Create(BridgeState state, BridgeCommandService commands) =>
         new(ctx => ctx.VStack(v =>
         [

@@ -26,14 +26,23 @@ internal static class BallisticArcPreview
       state = sim.Step(state, DtSeconds, env);
       var p = state.Position;
 
-      if (terrain.TrySegmentLeavesRange(prev, p, out _, out _))
+      if (terrain.TrySegmentLeavesRange(prev, p, out var boundaryHit, out _))
+      {
+        points.Add(terrain.ProjectOntoTerrainSurface(boundaryHit));
         break;
+      }
 
       if (!terrain.IsInside(p.X, p.Z))
+      {
+        points.Add(terrain.ProjectOntoTerrainSurface(p));
         break;
+      }
 
       if (terrain.TryHeightfieldContact(p, GunModel.MuzzleRadius))
+      {
+        points.Add(p);
         break;
+      }
 
       points.Add(p);
     }

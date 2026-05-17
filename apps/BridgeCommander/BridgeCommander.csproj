@@ -6,6 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Hex1b" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="Novolis.Commands.Abstractions" />
     <PackageReference Include="Novolis.Commands.Engine" />
     <PackageReference Include="Novolis.Commands.Queueing" />

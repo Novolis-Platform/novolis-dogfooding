@@ -9,6 +9,9 @@ internal sealed class ArtillerySimulatorGame
 {
   private const int PhysicsStepsPerFrame = 32;
   private const int CamToggleKey = 67;
+  private const int KeyQ = 81;
+  private const int KeyE = 69;
+  private const float AimDegreesPerSecond = 28f;
 
   private static readonly Color Background = Color.FromArgb(255, 14, 18, 26);
   private static readonly Color TrailColor = Color.FromArgb(255, 200, 220, 160);
@@ -28,6 +31,7 @@ internal sealed class ArtillerySimulatorGame
 
   public void Initialize(RayGameContext ctx)
   {
+    ctx.DisableCursor();
     _terrain.Rebuild(_terrainSeed, _flatTerrain);
     _shot.Reset();
     _camera.SnapToGun(_terrain.GunBaseline, _gun.BarrelDirection());
@@ -58,6 +62,8 @@ internal sealed class ArtillerySimulatorGame
       _fpsInit = true;
     }
 
+    _camera.Update(ctx, _terrain.GunBaseline, _shot);
+
     ctx.Clear(Background);
     var barrelDir = _gun.BarrelDirection();
     ctx.BeginWorld(_camera.Build(dt, _terrain.GunBaseline, barrelDir, _shot));
@@ -78,14 +84,17 @@ internal sealed class ArtillerySimulatorGame
 
   private void HandleInput(RayGameContext ctx)
   {
-    if (ctx.IsKeyPressed(KeyboardKey.W))
-      _gun.NudgeElevation(0.5f);
-    if (ctx.IsKeyPressed(KeyboardKey.S))
-      _gun.NudgeElevation(-0.5f);
-    if (ctx.IsKeyPressed(KeyboardKey.A))
-      _gun.NudgeAzimuth(-1f);
-    if (ctx.IsKeyPressed(KeyboardKey.P))
-      _gun.NudgeAzimuth(1f);
+    var aimStep = AimDegreesPerSecond * ctx.DeltaSeconds;
+
+    if (ctx.IsKeyDown(KeyboardKey.LeftShift))
+      _gun.NudgeElevation(aimStep);
+    if (ctx.IsKeyDown(KeyboardKey.LeftControl))
+      _gun.NudgeElevation(-aimStep);
+
+    if (ctx.IsKeyDown((KeyboardKey)KeyQ))
+      _gun.NudgeAzimuth(-aimStep);
+    if (ctx.IsKeyDown((KeyboardKey)KeyE))
+      _gun.NudgeAzimuth(aimStep);
 
     if (ctx.IsKeyPressed(KeyboardKey.One))
       _gun.SetCharge(0);
@@ -155,10 +164,10 @@ internal sealed class ArtillerySimulatorGame
 
     if (_shot.Impact is { } impact)
     {
-      ctx.DrawGlowSphereWires(impact.Position, 1.5f, ImpactColor);
+      ctx.DrawGlowSphereWires(impact.Position, 8f, ImpactColor);
       var p = impact.Position;
-      ctx.DrawBolt(p + new Vector3(-2f, 0f, 0f), p + new Vector3(2f, 0f, 0f), ImpactColor);
-      ctx.DrawBolt(p + new Vector3(0f, 0f, -2f), p + new Vector3(0f, 0f, 2f), ImpactColor);
+      ctx.DrawBolt(p + new Vector3(-12f, 0f, 0f), p + new Vector3(12f, 0f, 0f), ImpactColor);
+      ctx.DrawBolt(p + new Vector3(0f, 0f, -12f), p + new Vector3(0f, 0f, 12f), ImpactColor);
     }
   }
 }

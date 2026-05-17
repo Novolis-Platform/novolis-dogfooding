@@ -1,0 +1,112 @@
+namespace BridgeCommander.Bridge;
+
+/// <summary>
+/// Headless bridge session shared by the TUI and MCP automation.
+/// </summary>
+public sealed class BridgeSession : IAsyncDisposable
+{
+    public BridgeState State { get; }
+    public BridgeCommandService Commands { get; }
+    public BridgeActivityTracker Activity { get; }
+
+    private BridgeSession(BridgeState state, BridgeCommandService commands, BridgeActivityTracker activity)
+    {
+        State = state;
+        Commands = commands;
+        Activity = activity;
+    }
+
+    public static BridgeSession Create()
+    {
+        var state = new BridgeState();
+        var activity = new BridgeActivityTracker();
+        var commands = new BridgeCommandService(state, activity);
+        var session = new BridgeSession(state, commands, activity);
+        session.Initialize();
+        return session;
+    }
+
+    public void Initialize()
+    {
+        State.History.Clear();
+        State.HelpPanelLines.Clear();
+        State.HelpPanelLines.AddRange(BridgeHelp.GetLines(null));
+        State.AddHistory(new HistoryEntry(
+            DateTimeOffset.UtcNow,
+            "",
+            HistoryKind.System,
+            "Bridge online. Prefix every order with a station (helm, tactical, weaps…)."));
+        State.StatusLine = "Standing by. Prefix orders with a station (helm, tactical, weaps…).";
+        State.Heading = 180;
+        State.HeadingBy = 0;
+        State.SpeedWarp = 5;
+        State.ShieldPercent = 80;
+        State.HullPercent = 100;
+        State.TargetLocked = false;
+        State.TargetName = null;
+        State.LastExecutedCommand = null;
+        State.LastEnvelope = null;
+        Activity.Reset();
+    }
+
+    public BridgeSnapshot GetSnapshot() => BridgeSnapshot.From(State, Activity);
+
+    public async Task<TransmitResult> TransmitAsync(
+        string prompt,
+        bool waitForIdle = true,
+        TimeSpan? idleTimeout = null,
+        CancellationToken cancellationToken = default)
+    {
+        var historyBefore = State.History.Count;
+        await Commands.SubmitPromptAsync(State, prompt).ConfigureAwait(false);
+
+        if (waitForIdle)
+        {
+            await Activity.WaitForIdleAsync(
+                idleTimeout ?? TimeSpan.FromSeconds(30),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        var newEntries = State.History.Skip(historyBefore).ToArray();
+        return TransmitResult.From(prompt, newEntries, GetSnapshot());
+    }
+
+    public ValueTask DisposeAsync() => Commands.DisposeAsync();
+}
+
+public sealed record TransmitResult(
+    string Prompt,
+    bool ParseSucceeded,
+    bool Executed,
+    string StatusLine,
+    IReadOnlyList<string> NewHistoryLines,
+    BridgeSnapshot Snapshot)
+{
+    public static TransmitResult From(
+        string prompt,
+        IReadOnlyList<HistoryEntry> newEntries,
+        BridgeSnapshot snapshot)
+    {
+        var parseOk = newEntries.Any(e => e.Kind is HistoryKind.ParseSuccess or HistoryKind.Help);
+        var executed = newEntries.Any(e => e.Kind is HistoryKind.Executed or HistoryKind.Interrupted);
+        var failed = newEntries.Any(e => e.Kind is HistoryKind.ParseFailure);
+
+        return new TransmitResult(
+            prompt,
+            parseOk && !failed,
+            executed,
+            snapshot.StatusLine,
+            newEntries.SelectMany(FormatHistoryEntry).ToArray(),
+            snapshot);
+    }
+
+    private static IEnumerable<string> FormatHistoryEntry(HistoryEntry entry)
+    {
+        yield return entry.DisplayLine;
+        if (entry.Details is null)
+            yield break;
+
+        foreach (var detail in entry.Details)
+            yield return string.IsNullOrEmpty(detail) ? "" : $"  {detail}";
+    }
+}

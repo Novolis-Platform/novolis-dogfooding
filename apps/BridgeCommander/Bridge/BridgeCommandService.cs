@@ -9,10 +9,13 @@ public sealed class BridgeCommandService : IAsyncDisposable
     private readonly ICommandEngine<BridgeState> _engine;
     private readonly ICommandQueue _queue;
     private readonly CommandQueueRunner<BridgeState> _runner;
+    private readonly BridgeActivityTracker _activity;
     private readonly CancellationTokenSource _runCts = new();
 
-    public BridgeCommandService(BridgeState state)
+    public BridgeCommandService(BridgeState state, BridgeActivityTracker activity)
     {
+        _activity = activity;
+
         var engineOptions = new CommandEngineOptions();
         engineOptions.ArgumentParsers.Register("heading3d", new BridgeHeadingArgumentParser());
 
@@ -22,7 +25,9 @@ public sealed class BridgeCommandService : IAsyncDisposable
             engineOptions);
 
         _queue = new ChannelCommandQueue();
-        _runner = new CommandQueueRunner<BridgeState>(_queue, new BridgeCommandProcessor());
+        _runner = new CommandQueueRunner<BridgeState>(
+            _queue,
+            new BridgeCommandProcessor(activity));
         _ = Task.Run(() => _runner.RunAsync(state, _runCts.Token));
     }
 
@@ -38,8 +43,7 @@ public sealed class BridgeCommandService : IAsyncDisposable
         {
             if (result.Command.Name == BuiltInCommands.Help)
             {
-                var topic = result.Command.Arguments["topic"] as string;
-                ApplyHelp(state, trimmed, topic);
+                ApplyHelp(state, trimmed, result.Command.Arguments["topic"] as string);
                 return;
             }
 
@@ -49,6 +53,7 @@ public sealed class BridgeCommandService : IAsyncDisposable
                 HistoryKind.ParseSuccess,
                 $"Queued {result.Command.Name}"));
 
+            _activity.OnEnqueued();
             await _queue.EnqueueAsync(result.Command);
             state.StatusLine = $"Queued {result.Command.Name}.";
             return;

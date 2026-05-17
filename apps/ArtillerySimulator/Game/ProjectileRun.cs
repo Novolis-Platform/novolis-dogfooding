@@ -110,9 +110,9 @@ internal sealed class ProjectileRun
         if (TryRangeOrGroundHit(terrain, subStart, subCandidate.Position, _state.Velocity, _state.TimeSeconds, subDt, originForRange))
           return;
 
-        if (TryTerrainHit(terrain, collision, subDisp, subDt, out var impactPos, out var impactVel, out var impactTime))
+        if (TryTerrainHit(terrain, collision, subDisp, subDt, out var impactPos, out var impactVel, out var impactTime, out var reason))
         {
-          RecordImpact(impactPos, impactVel, impactTime, originForRange, ImpactEndReason.TerrainMesh);
+          RecordImpact(impactPos, impactVel, impactTime, originForRange, reason);
           return;
         }
 
@@ -123,9 +123,9 @@ internal sealed class ProjectileRun
     }
     else
     {
-      if (TryTerrainHit(terrain, collision, displacement, DtSeconds, out var impactPos, out var impactVel, out var impactTime))
+      if (TryTerrainHit(terrain, collision, displacement, DtSeconds, out var impactPos, out var impactVel, out var impactTime, out var reason))
       {
-        RecordImpact(impactPos, impactVel, impactTime, originForRange, ImpactEndReason.TerrainMesh);
+        RecordImpact(impactPos, impactVel, impactTime, originForRange, reason);
         return;
       }
 
@@ -153,7 +153,8 @@ internal sealed class ProjectileRun
     if (terrain.TrySegmentLeavesRange(from, to, out var boundaryHit, out var boundaryFrac))
     {
       var t = startTime + stepDt * boundaryFrac;
-      RecordImpact(boundaryHit, velocity, t, originForRange, ImpactEndReason.BeyondRange);
+      var ground = terrain.ProjectOntoTerrainSurface(boundaryHit);
+      RecordImpact(ground, velocity, t, originForRange, ImpactEndReason.BeyondRange);
       return true;
     }
 
@@ -171,7 +172,8 @@ internal sealed class ProjectileRun
     var p = _state.Position;
     if (!terrain.IsInside(p.X, p.Z))
     {
-      RecordImpact(p, _state.Velocity, _state.TimeSeconds, originForRange, ImpactEndReason.BeyondRange);
+      var ground = terrain.ProjectOntoTerrainSurface(p);
+      RecordImpact(ground, _state.Velocity, _state.TimeSeconds, originForRange, ImpactEndReason.BeyondRange);
       return true;
     }
 
@@ -191,11 +193,13 @@ internal sealed class ProjectileRun
     double stepDt,
     out Vector3 impactPos,
     out Vector3 impactVel,
-    out double impactTime)
+    out double impactTime,
+    out ImpactEndReason reason)
   {
     impactPos = default;
     impactVel = default;
     impactTime = 0;
+    reason = ImpactEndReason.TerrainMesh;
 
     var travel = displacement.Length();
     if (travel < 1e-8f)
@@ -216,9 +220,10 @@ internal sealed class ProjectileRun
 
       if (terrain.TrySegmentLeavesRange(segStart, segEnd, out var boundaryHit, out var boundaryFrac))
       {
-        impactPos = boundaryHit;
+        impactPos = terrain.ProjectOntoTerrainSurface(boundaryHit);
         impactVel = startVel;
         impactTime = startTime + stepDt * (traveled + chunkLen * boundaryFrac) / travel;
+        reason = ImpactEndReason.BeyondRange;
         return true;
       }
 
@@ -227,6 +232,7 @@ internal sealed class ProjectileRun
         impactPos = segEnd;
         impactVel = startVel;
         impactTime = startTime + stepDt * (traveled + chunkLen) / travel;
+        reason = ImpactEndReason.Heightfield;
         return true;
       }
 
@@ -241,6 +247,7 @@ internal sealed class ProjectileRun
       impactPos = sphere.Center + chunk * frac;
       impactVel = startVel;
       impactTime = startTime + stepDt * (traveled + chunkLen * frac) / travel;
+      reason = ImpactEndReason.TerrainMesh;
       return true;
     }
 

@@ -21,7 +21,7 @@ internal sealed class GunModel
   public string ChargeLabel => SimulationUnits.ChargeLabels[ChargeIndex];
 
   public static ProjectileProfile Educational155Profile =>
-      new(massKg: 43.5, referenceAreaM2: Math.PI * 0.155f * 0.155f / 4.0, dragCoefficient: 0.42);
+      new(massKg: 47f, referenceAreaM2: Math.PI * 0.155f * 0.155f / 4.0, dragCoefficient: 0.42);
 
   public void NudgeElevation(float delta) => ElevationDegrees = Math.Clamp(ElevationDegrees + delta, -3f, 75f);
 

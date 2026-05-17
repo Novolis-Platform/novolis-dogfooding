@@ -2,9 +2,24 @@ using Novolis.Commands;
 
 namespace BridgeCommander.Bridge;
 
-public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
+public sealed class BridgeCommandProcessor(BridgeActivityTracker activity) : ICommandProcessor<BridgeState>
 {
     public async ValueTask ProcessAsync(
+        CommandEnvelope command,
+        BridgeState state,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await ProcessCoreAsync(command, state, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            activity.OnFinished();
+        }
+    }
+
+    private async ValueTask ProcessCoreAsync(
         CommandEnvelope command,
         BridgeState state,
         CancellationToken cancellationToken)
@@ -51,13 +66,15 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
                 }
 
                 state.StatusLine = $"Repeating: {state.LastExecutedCommand}";
-                await ExecuteDomainAsync(state.LastEnvelope, state, cancellationToken);
+                await ExecuteDomainAsync(state.LastEnvelope, state, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
-            await ExecuteDomainAsync(command, state, cancellationToken);
-            state.LastEnvelope = command;
-            state.LastExecutedCommand = command.Name;
+            if (await ExecuteDomainAsync(command, state, cancellationToken).ConfigureAwait(false))
+            {
+                state.LastEnvelope = command;
+                state.LastExecutedCommand = command.Name;
+            }
         }
         catch (OperationCanceledException)
         {
@@ -70,7 +87,7 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
         }
     }
 
-    private static async ValueTask ExecuteDomainAsync(
+    private static async ValueTask<bool> ExecuteDomainAsync(
         CommandEnvelope command,
         BridgeState state,
         CancellationToken cancellationToken)
@@ -122,7 +139,12 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
                 if (!state.TargetLocked)
                 {
                     state.StatusLine = "Tactical: no target lock.";
-                    break;
+                    state.AddHistory(new HistoryEntry(
+                        DateTimeOffset.UtcNow,
+                        command.OriginalPrompt,
+                        HistoryKind.Executed,
+                        state.StatusLine));
+                    return false;
                 }
 
                 state.StatusLine = $"Tactical: weapons fired at {state.TargetName}.";
@@ -172,6 +194,7 @@ public sealed class BridgeCommandProcessor : ICommandProcessor<BridgeState>
             command.OriginalPrompt,
             HistoryKind.Executed,
             state.StatusLine));
+        return true;
     }
 
     private static async Task SimulateWork(TimeSpan duration, CancellationToken cancellationToken) =>
