@@ -1,5 +1,16 @@
 <Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Avalonia" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Controls.DataGrid" Version="12.0.0" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
+    <PackageVersion Include="PacketDotNet" Version="1.4.7" />
+    <PackageVersion Include="TUnit" Version="1.44.39" />
   </ItemGroup>
 </Project>
