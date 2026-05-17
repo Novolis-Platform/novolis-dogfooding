@@ -67,7 +67,7 @@ internal sealed class BallWorld
             _balls.Capacity = target;
 
         for (var i = 0; i < count; i++)
-            _balls.Add(CreatePassBall(room, spreadSpawn: true));
+            _balls.Add(CreatePassBall(room, spreadSpawn: true, batchIndex: i, batchSize: count));
 
         DepenetrateSpawnedRange(start, _balls.Count);
     }
@@ -93,7 +93,6 @@ internal sealed class BallWorld
         var subSteps = SubStepsForCount(_balls.Count);
         var solveIterations = SolveIterationsForCount(_balls.Count);
         PhysicsSubStepsLastFrame = subSteps;
-        BallBallSolveIterationsLastFrame = solveIterations;
 
         foreach (var ball in _balls)
         {
@@ -128,10 +127,19 @@ internal sealed class BallWorld
             }
         }
 
-        if (ActiveBallCount > 1)
+        if (_balls.Count > 1)
         {
-            for (var iter = 0; iter < solveIterations; iter++)
-                ResolveBallBallContactsSpatial();
+            var positionIters = DepenetrateIterationsForCount(_balls.Count);
+            BallBallSolveIterationsLastFrame = positionIters + solveIterations;
+
+            for (var iter = 0; iter < positionIters; iter++)
+                ResolveBallOverlapsSpatial(applyImpulses: false);
+
+            if (ActiveBallCount > 1)
+            {
+                for (var iter = 0; iter < solveIterations; iter++)
+                    ResolveBallOverlapsSpatial(applyImpulses: true, awakePairsOnly: true);
+            }
         }
 
         foreach (var ball in _balls)
@@ -143,10 +151,10 @@ internal sealed class BallWorld
         }
     }
 
-    private Ball CreatePassBall(RoomWorld room, bool spreadSpawn)
+    private Ball CreatePassBall(RoomWorld room, bool spreadSpawn, int batchIndex = 0, int batchSize = 1)
     {
         var (spawn, velocity) = spreadSpawn
-            ? SampleInteriorPass(room, _rng)
+            ? SampleInteriorPass(room, _rng, batchIndex, batchSize)
             : SamplePerimeterPass(room, _rng);
         ClampToInterior(spawn, velocity, out spawn, out velocity);
         return new Ball(spawn, velocity);
@@ -166,14 +174,15 @@ internal sealed class BallWorld
         return (spawn, direction * speed);
     }
 
-    /// <summary>Random point in the court with a pass toward a random interior target (bulk spawn).</summary>
-    private static (Vector3 Spawn, Vector3 Velocity) SampleInteriorPass(RoomWorld room, Random rng)
+    /// <summary>Grid placement on the floor plus a random chest pass (bulk spawn).</summary>
+    private static (Vector3 Spawn, Vector3 Velocity) SampleInteriorPass(
+        RoomWorld room,
+        Random rng,
+        int batchIndex,
+        int batchSize)
     {
         var bounds = room.InteriorBounds;
-        var spawn = new Vector3(
-            Lerp(bounds.MinX, bounds.MaxX, (float)rng.NextDouble()),
-            Lerp(0.9f, 2.1f, (float)rng.NextDouble()),
-            Lerp(bounds.MinZ, bounds.MaxZ, (float)rng.NextDouble()));
+        var spawn = GridSpawnOnFloor(bounds, batchIndex, batchSize);
 
         var target = new Vector3(
             Lerp(bounds.MinX, bounds.MaxX, (float)rng.NextDouble()),
@@ -190,10 +199,31 @@ internal sealed class BallWorld
         return (spawn, direction * speed);
     }
 
+    private static Vector3 GridSpawnOnFloor(RoomInteriorBounds bounds, int index, int batchSize)
+    {
+        var spacing = Ball.Radius * 2.05f;
+        var cols = Math.Max(1, (int)MathF.Floor((bounds.MaxX - bounds.MinX) / spacing));
+        var rows = Math.Max(1, (int)MathF.Ceiling(batchSize / (float)cols));
+        var col = index % cols;
+        var row = index / cols;
+        var x = bounds.MinX + spacing * (col + 0.5f);
+        var z = bounds.MinZ + spacing * (row + 0.5f);
+        return new Vector3(
+            Math.Clamp(x, bounds.MinX, bounds.MaxX),
+            bounds.MinY,
+            Math.Clamp(z, bounds.MinZ, bounds.MaxZ));
+    }
+
     private void DepenetrateSpawnedRange(int startIndex, int endIndex)
     {
-        const int iterations = 6;
-        var minDist = Ball.Radius * 2.05f;
+        var count = endIndex - startIndex;
+        var iterations = count switch
+        {
+            > 50 => 12,
+            > 10 => 8,
+            _ => 6,
+        };
+        var minDist = Ball.Radius * 2.001f;
         var minDistSq = minDist * minDist;
 
         for (var iter = 0; iter < iterations; iter++)
@@ -215,30 +245,42 @@ internal sealed class BallWorld
         }
     }
 
-    private static void SeparatePair(Ball a, Ball b, float minDist, float minDistSq, bool applyImpulse)
+    private static bool SeparatePair(Ball a, Ball b, float minDist, float minDistSq, bool applyImpulse)
     {
         var delta = b.Position - a.Position;
         var distSq = delta.LengthSquared();
-        if (distSq >= minDistSq || distSq < 1e-12f)
-            return;
+        if (distSq >= minDistSq)
+            return false;
 
-        var dist = MathF.Sqrt(distSq);
-        var normal = delta / dist;
-        var overlap = minDist - dist;
+        Vector3 normal;
+        float overlap;
+        if (distSq < 1e-10f)
+        {
+            normal = new Vector3(1f, 0f, 0f);
+            overlap = minDist;
+        }
+        else
+        {
+            var dist = MathF.Sqrt(distSq);
+            normal = delta / dist;
+            overlap = minDist - dist;
+        }
+
         a.Position -= normal * (overlap * 0.5f);
         b.Position += normal * (overlap * 0.5f);
 
         if (!applyImpulse)
-            return;
+            return true;
 
         var relVel = b.Velocity - a.Velocity;
         var vn = Vector3.Dot(relVel, normal);
         if (vn >= 0f)
-            return;
+            return true;
 
         var impulse = -(1f + (float)BallBallRestitution) * vn * 0.5f;
         a.Velocity -= normal * impulse;
         b.Velocity += normal * impulse;
+        return true;
     }
 
     private static void UpdateSleeping(Ball ball) =>
@@ -259,6 +301,15 @@ internal sealed class BallWorld
             > 150 => 1,
             > 50 => 2,
             _ => 3,
+        };
+
+    private static int DepenetrateIterationsForCount(int count) =>
+        count switch
+        {
+            > 1000 => 4,
+            > 300 => 3,
+            > 80 => 2,
+            _ => 1,
         };
 
     private void ApplyGroundFriction(Ball ball, float deltaSeconds)
@@ -282,8 +333,11 @@ internal sealed class BallWorld
             ball.Velocity = new Vector3(ball.Velocity.X, MathF.Min(ball.Velocity.Y, 0f), ball.Velocity.Z);
     }
 
-    private void ResolveBallBallContactsSpatial()
+    private void ResolveBallOverlapsSpatial(bool applyImpulses, bool awakePairsOnly = false)
     {
+        var minDist = Ball.Radius * 2.001f;
+        var minDistSq = minDist * minDist;
+
         ClearSpatialGrid();
         for (var i = 0; i < _balls.Count; i++)
             AddToSpatialGrid(i, _balls[i].Position);
@@ -291,9 +345,6 @@ internal sealed class BallWorld
         for (var i = 0; i < _balls.Count; i++)
         {
             var a = _balls[i];
-            if (a.IsSleeping)
-                continue;
-
             var cx = (int)MathF.Floor(a.Position.X / GridCellSize);
             var cz = (int)MathF.Floor(a.Position.Z / GridCellSize);
 
@@ -309,28 +360,22 @@ internal sealed class BallWorld
                     if (j <= i)
                         continue;
 
+                    var b = _balls[j];
+                    if (awakePairsOnly && (a.IsSleeping || b.IsSleeping))
+                        continue;
+
                     BallBallPairChecksLastFrame++;
-                    TryResolvePair(a, _balls[j]);
+                    if (SeparatePair(a, b, minDist, minDistSq, applyImpulses))
+                        BallBallContactsLastFrame++;
                 }
             }
         }
-    }
 
-    private void TryResolvePair(Ball a, Ball b)
-    {
-        if (a.IsSleeping && b.IsSleeping)
+        if (!applyImpulses)
             return;
 
-        var minDist = Ball.Radius * 2f;
-        var minDistSq = minDist * minDist;
-        var delta = b.Position - a.Position;
-        if (delta.LengthSquared() >= minDistSq)
-            return;
-
-        BallBallContactsLastFrame++;
-        SeparatePair(a, b, minDist, minDistSq, applyImpulse: !(a.IsSleeping || b.IsSleeping));
-        ClampVelocity(a);
-        ClampVelocity(b);
+        foreach (var ball in _balls)
+            ClampVelocity(ball);
     }
 
     private bool ClampToInterior(Ball ball)
