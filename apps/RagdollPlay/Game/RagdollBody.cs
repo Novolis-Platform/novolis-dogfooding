@@ -41,7 +41,7 @@ internal sealed class RagdollBody
         var lKnee = feetPosition + new Vector3(-0.18f, 0.45f, 0f);
         var rKnee = feetPosition + new Vector3(0.18f, 0.45f, 0f);
 
-        AddSphere(feetPosition);
+        AddSphere(feetPosition); // Pelvis
         AddSphere(lKnee);
         AddSphere(rKnee);
         AddSphere(hip);

@@ -12,7 +12,6 @@ internal sealed class RagdollPlayGame
 {
     private static readonly Color Background = Color.FromArgb(255, 22, 26, 34);
     private static readonly Color WallWire = Color.FromArgb(255, 80, 95, 120);
-    private static readonly Color JointWire = Color.FromArgb(255, 180, 200, 120);
     private static readonly Color HudText = Color.FromArgb(255, 210, 220, 235);
 
     private readonly DiagnosticsOverlay _diagnostics = new();
@@ -85,21 +84,7 @@ internal sealed class RagdollPlayGame
         var aspect = (float)ctx.Width / Math.Max(ctx.Height, 1);
         var (origin, direction) = BuildPickRay(pose, nx, ny, aspect);
 
-        var best = -1;
-        var bestDist = float.MaxValue;
-        for (var i = 0; i < _ragdoll.Spheres.Count; i++)
-        {
-            var center = _ragdoll.Spheres[i].Position;
-            if (!RaySphere.TryHit(origin, direction, center, RagdollBody.SphereRadius, out var t) || t < 0f)
-                continue;
-            if (t < bestDist)
-            {
-                bestDist = t;
-                best = i;
-            }
-        }
-
-        if (best < 0)
+        if (!PainterDollRenderer.TryPickBone(origin, direction, _ragdoll.Spheres, 0.12f, out var best, out _))
             return;
 
         var impulseDir = Vector3.Normalize(direction + new Vector3(0f, 0.35f, 0f));
@@ -134,27 +119,8 @@ internal sealed class RagdollPlayGame
         }
     }
 
-    private void DrawRagdoll(RayGameContext ctx)
-    {
-        foreach (var joint in _ragdoll.Joints)
-        {
-            var a = _ragdoll.Spheres[joint.SphereA].Position;
-            var b = _ragdoll.Spheres[joint.SphereB].Position;
-            ctx.DrawBolt(a, b, JointWire);
-        }
-
-        for (var i = 0; i < _ragdoll.Spheres.Count; i++)
-        {
-            var color = i switch
-            {
-                5 => Color.FromArgb(255, 255, 210, 140),
-                4 => Color.FromArgb(255, 120, 180, 255),
-                _ => Color.FromArgb(255, 200, 120, 160),
-            };
-            var pos = _ragdoll.Spheres[i].Position;
-            ctx.DrawGlowSphere(pos, RagdollBody.SphereRadius, color);
-        }
-    }
+    private void DrawRagdoll(RayGameContext ctx) =>
+        PainterDollRenderer.Draw(ctx, _ragdoll.Spheres);
 }
 
 internal static class RaySphere
