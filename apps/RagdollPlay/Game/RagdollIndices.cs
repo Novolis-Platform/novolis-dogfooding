@@ -1,6 +1,6 @@
 namespace RagdollPlay.Game;
 
-/// <summary>Sphere indices — hip-rooted humanoid with feet.</summary>
+/// <summary>Sphere indices for the 11-bone humanoid ragdoll.</summary>
 internal static class RagdollIndices
 {
     public const int Hip = 0;

@@ -87,8 +87,7 @@ internal static class PainterDollRenderer
             return;
         }
 
-        var dir = delta / len;
-        var steps = Math.Clamp((int)(len / (radius * 0.45f)), 2, 8);
+        var steps = Math.Clamp((int)(len / (radius * 0.9f)), 2, 3);
         for (var i = 0; i <= steps; i++)
         {
             var t = i / (float)steps;
@@ -96,9 +95,6 @@ internal static class PainterDollRenderer
             var shade = i % 2 == 0 ? Wood : WoodHi;
             ctx.DrawGlowSphere(p, radius, shade);
         }
-
-        ctx.DrawGlowSphere(a, radius * 0.95f, JointKnob);
-        ctx.DrawGlowSphere(b, radius * 0.95f, JointKnob);
     }
 
     private static void DrawJoint(RayGameContext ctx, Vector3 center, float radius)

@@ -20,9 +20,10 @@ internal sealed class RagdollBody
             StaticRestitution = 0.35f,
             MaxSpeedMps = 12f,
         },
-        JointIterations = 18,
+        JointIterations = 16,
         JointRelaxIterations = 4,
-        InternalCollisionIterations = 6,
+        AngularIterations = 2,
+        InternalCollisionIterations = 4,
         ConstraintPasses = 2,
     };
 
@@ -35,56 +36,29 @@ internal sealed class RagdollBody
     public IReadOnlyList<SphereState> Spheres => _spheres;
     public IReadOnlyList<DistanceJoint> Joints => _joints;
     public int LastJointCorrections => _simulator.LastJointCorrections;
+    public int LastAngularCorrections => _simulator.LastAngularCorrections;
     public int LastInternalFixes => _simulator.LastInternalCollisionFixes;
 
     public void SpawnStanding(Vector3 groundPoint, PlayRoom room)
     {
-        _spheres.Clear();
-        _joints.Clear();
-        _swingLimits.Clear();
-        _hingeLimits.Clear();
         _clamp = room.InteriorBounds.ToInteriorClamp();
 
-        var hip = groundPoint + new Vector3(0f, 1.02f, 0f);
-        var chest = hip + new Vector3(0f, 0.5f, 0.02f);
-        var head = chest + new Vector3(0f, 0.4f, 0f);
-        var lKnee = hip + new Vector3(-0.2f, -0.5f, 0.06f);
-        var rKnee = hip + new Vector3(0.2f, -0.5f, 0.06f);
-        var lFoot = lKnee + new Vector3(0f, -0.42f, 0.1f);
-        var rFoot = rKnee + new Vector3(0f, -0.42f, 0.1f);
-        var lShoulder = chest + new Vector3(-0.3f, 0.1f, 0.1f);
-        var rShoulder = chest + new Vector3(0.3f, 0.1f, 0.1f);
-        var lHand = lShoulder + new Vector3(-0.26f, -0.06f, 0.16f);
-        var rHand = rShoulder + new Vector3(0.26f, -0.06f, 0.16f);
-
-        AddSphere(hip);
-        AddSphere(lKnee);
-        AddSphere(rKnee);
-        AddSphere(chest);
-        AddSphere(head);
-        AddSphere(lShoulder);
-        AddSphere(rShoulder);
-        AddSphere(lHand);
-        AddSphere(rHand);
-        AddSphere(lFoot);
-        AddSphere(rFoot);
-
-        Link(RagdollIndices.Hip, RagdollIndices.Chest);
-        Link(RagdollIndices.Chest, RagdollIndices.Head);
-        Link(RagdollIndices.Hip, RagdollIndices.LeftKnee);
-        Link(RagdollIndices.Hip, RagdollIndices.RightKnee);
-        Link(RagdollIndices.LeftKnee, RagdollIndices.LeftFoot);
-        Link(RagdollIndices.RightKnee, RagdollIndices.RightFoot);
-        Link(RagdollIndices.Chest, RagdollIndices.LeftShoulder);
-        Link(RagdollIndices.Chest, RagdollIndices.RightShoulder);
-        Link(RagdollIndices.LeftShoulder, RagdollIndices.LeftHand);
-        Link(RagdollIndices.RightShoulder, RagdollIndices.RightHand);
-
-        RagdollPoseLimits.BuildFromSpawnPose(_spheres, _swingLimits, _hingeLimits);
+        RagdollHumanoidPreset.BuildStanding(
+            groundPoint,
+            _spheres,
+            _joints,
+            _swingLimits,
+            _hingeLimits,
+            runtimeStiffness: 0.65f);
 
         _simulator.SetJoints(CollectionsMarshal.AsSpan(_joints));
         _simulator.DepenetrateSpawnedRange(_spheres, 0, _spheres.Count, _clamp);
-        StabilizeSpawn();
+        RagdollHumanoidPreset.StabilizeSpawn(
+            _spheres,
+            CollectionsMarshal.AsSpan(_joints),
+            _clamp,
+            _simulator,
+            spawnStiffness: 0.85f);
     }
 
     public void ApplyImpulse(int sphereIndex, Vector3 impulse)
@@ -100,30 +74,13 @@ internal sealed class RagdollBody
     public void Step(BvhStaticWorld world, float deltaSeconds)
     {
         _simulator.SetJoints(CollectionsMarshal.AsSpan(_joints));
-        _simulator.Step(world, _spheres, _clamp, deltaSeconds);
-    }
-
-    private void StabilizeSpawn()
-    {
-        var joints = CollectionsMarshal.AsSpan(_joints);
-        var swings = CollectionsMarshal.AsSpan(_swingLimits);
-        var hinges = CollectionsMarshal.AsSpan(_hingeLimits);
-
-        for (var i = 0; i < 32; i++)
-        {
-            DistanceJointSolver.Solve(joints, _spheres, 10);
-            AngularLimitSolver.Solve(swings, hinges, _spheres, 2);
-        }
-
-        _simulator.DepenetrateSpawnedRange(_spheres, 0, _spheres.Count, _clamp);
-
-        foreach (var sphere in _spheres)
-        {
-            sphere.Velocity = Vector3.Zero;
-            sphere.IsSleeping = false;
-        }
-
-        _simulator.ResetPileState();
+        _simulator.Step(
+            world,
+            _spheres,
+            _clamp,
+            deltaSeconds,
+            CollectionsMarshal.AsSpan(_swingLimits),
+            CollectionsMarshal.AsSpan(_hingeLimits));
     }
 
     private void WakeAll()
@@ -132,10 +89,4 @@ internal sealed class RagdollBody
             s.IsSleeping = false;
         _simulator.MarkPileUnsettled();
     }
-
-    private void AddSphere(Vector3 position) =>
-        _spheres.Add(new SphereState(position, Vector3.Zero));
-
-    private void Link(int a, int b) =>
-        _joints.Add(new DistanceJoint(a, b, Vector3.Distance(_spheres[a].Position, _spheres[b].Position), 1f));
 }
