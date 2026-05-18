@@ -24,18 +24,24 @@ internal sealed class RagdollBody
 
     private readonly List<SphereState> _spheres = [];
     private readonly List<DistanceJoint> _joints = [];
+    private readonly List<SwingLimit> _swingLimits = [];
+    private readonly List<HingeLimit> _hingeLimits = [];
     private InteriorClampVolume _clamp;
     private int _lastInternalFixes;
+    private int _lastAngularFixes;
 
     public IReadOnlyList<SphereState> Spheres => _spheres;
     public IReadOnlyList<DistanceJoint> Joints => _joints;
     public int LastJointCorrections => _simulator.LastJointCorrections;
     public int LastInternalFixes => _lastInternalFixes;
+    public int LastAngularFixes => _lastAngularFixes;
 
     public void SpawnStanding(Vector3 groundPoint, PlayRoom room)
     {
         _spheres.Clear();
         _joints.Clear();
+        _swingLimits.Clear();
+        _hingeLimits.Clear();
         _clamp = room.InteriorBounds.ToInteriorClamp();
 
         var hip = groundPoint + new Vector3(0f, 1.05f, 0f);
@@ -58,14 +64,16 @@ internal sealed class RagdollBody
         AddSphere(lHand);
         AddSphere(rHand);
 
-        Link(RagdollIndices.Hip, RagdollIndices.LeftKnee);
-        Link(RagdollIndices.Hip, RagdollIndices.RightKnee);
-        Link(RagdollIndices.Hip, RagdollIndices.Chest);
-        Link(RagdollIndices.Chest, RagdollIndices.Head);
-        Link(RagdollIndices.Chest, RagdollIndices.LeftShoulder);
-        Link(RagdollIndices.Chest, RagdollIndices.RightShoulder);
-        Link(RagdollIndices.LeftShoulder, RagdollIndices.LeftHand);
-        Link(RagdollIndices.RightShoulder, RagdollIndices.RightHand);
+        Link(RagdollIndices.Hip, RagdollIndices.LeftKnee, stiffness: 0.94f);
+        Link(RagdollIndices.Hip, RagdollIndices.RightKnee, stiffness: 0.94f);
+        Link(RagdollIndices.Hip, RagdollIndices.Chest, stiffness: 0.98f);
+        Link(RagdollIndices.Chest, RagdollIndices.Head, stiffness: 0.9f);
+        Link(RagdollIndices.Chest, RagdollIndices.LeftShoulder, stiffness: 0.72f);
+        Link(RagdollIndices.Chest, RagdollIndices.RightShoulder, stiffness: 0.72f);
+        Link(RagdollIndices.LeftShoulder, RagdollIndices.LeftHand, stiffness: 0.8f);
+        Link(RagdollIndices.RightShoulder, RagdollIndices.RightHand, stiffness: 0.8f);
+
+        RagdollPoseLimits.BuildFromSpawnPose(_spheres, _swingLimits, _hingeLimits);
 
         _simulator.SetJoints(CollectionsMarshal.AsSpan(_joints));
         _simulator.DepenetrateSpawnedRange(_spheres, 0, _spheres.Count, _clamp);
@@ -85,9 +93,13 @@ internal sealed class RagdollBody
     public void Step(BvhStaticWorld world, float deltaSeconds)
     {
         var joints = CollectionsMarshal.AsSpan(_joints);
+        var swings = CollectionsMarshal.AsSpan(_swingLimits);
+        var hinges = CollectionsMarshal.AsSpan(_hingeLimits);
+
         for (var pass = 0; pass < 3; pass++)
         {
             DistanceJointSolver.Solve(joints, _spheres, 10);
+            _lastAngularFixes = AngularLimitSolver.Solve(swings, hinges, _spheres, 6);
             RagdollSelfCollision.Resolve(_spheres, SphereRadius, 5);
         }
 
@@ -96,6 +108,7 @@ internal sealed class RagdollBody
         for (var pass = 0; pass < 3; pass++)
         {
             DistanceJointSolver.Solve(joints, _spheres, 10);
+            _lastAngularFixes = AngularLimitSolver.Solve(swings, hinges, _spheres, 6);
             RagdollSelfCollision.Resolve(_spheres, SphereRadius, 5);
         }
 
@@ -104,9 +117,13 @@ internal sealed class RagdollBody
 
     private void StabilizeSpawn()
     {
+        var joints = CollectionsMarshal.AsSpan(_joints);
+        var swings = CollectionsMarshal.AsSpan(_swingLimits);
+        var hinges = CollectionsMarshal.AsSpan(_hingeLimits);
         for (var i = 0; i < 24; i++)
         {
-            DistanceJointSolver.Solve(CollectionsMarshal.AsSpan(_joints), _spheres, 12);
+            DistanceJointSolver.Solve(joints, _spheres, 12);
+            AngularLimitSolver.Solve(swings, hinges, _spheres, 8);
             RagdollSelfCollision.Resolve(_spheres, SphereRadius, 8);
         }
     }
@@ -121,9 +138,9 @@ internal sealed class RagdollBody
     private void AddSphere(Vector3 position) =>
         _spheres.Add(new SphereState(position, Vector3.Zero));
 
-    private void Link(int a, int b)
+    private void Link(int a, int b, float stiffness)
     {
         var rest = Vector3.Distance(_spheres[a].Position, _spheres[b].Position);
-        _joints.Add(new DistanceJoint(a, b, rest));
+        _joints.Add(new DistanceJoint(a, b, rest, stiffness));
     }
 }
