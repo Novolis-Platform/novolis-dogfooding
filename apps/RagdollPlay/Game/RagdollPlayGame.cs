@@ -11,6 +11,8 @@ namespace RagdollPlay.Game;
 internal sealed class RagdollPlayGame
 {
     private static readonly Color Background = Color.FromArgb(255, 22, 26, 34);
+    private static readonly Color Floor = Color.FromArgb(255, 48, 52, 62);
+    private static readonly Color GridLine = Color.FromArgb(255, 68, 78, 95);
     private static readonly Color WallWire = Color.FromArgb(255, 80, 95, 120);
     private static readonly Color HudText = Color.FromArgb(255, 210, 220, 235);
 
@@ -25,12 +27,13 @@ internal sealed class RagdollPlayGame
         _room = PlayRoom.Create();
         _ragdoll = new RagdollBody();
         ResetRagdoll();
-        _camera.SnapTarget(_room.RoomCenter);
-        _camera.Distance = 9f;
-        _camera.MinDistance = 4f;
-        _camera.MaxDistance = 18f;
-        _camera.Yaw = 0.6f;
-        _camera.Pitch = 0.35f;
+        _camera.SnapTarget(_room.RoomCenter + new Vector3(0f, 1f, 0f));
+        _camera.Distance = 10f;
+        _camera.MinDistance = 5f;
+        _camera.MaxDistance = 16f;
+        _camera.Yaw = 0.85f;
+        _camera.Pitch = 0.48f;
+        _camera.FieldOfViewDegrees = 50f;
     }
 
     public void Update(RayGameContext ctx)
@@ -40,6 +43,7 @@ internal sealed class RagdollPlayGame
             ResetRagdoll();
 
         var pose = _camera.BuildViewPose(ctx.DeltaSeconds);
+        FollowRagdoll(pose, ctx.DeltaSeconds);
         TryImpulseFromClick(ctx, pose);
         _diagnostics.ToggleIfKeyPressed(ctx);
         _ragdoll.Step(_room.CollisionWorld, ctx.DeltaSeconds);
@@ -48,29 +52,46 @@ internal sealed class RagdollPlayGame
         var camera = RayCamera.Perspective(pose.Position, pose.Target, pose.Up, pose.FieldOfViewDegrees);
         ctx.BeginWorld(camera);
         DrawRoom(ctx);
-        DrawRagdoll(ctx);
+        PainterDollRenderer.Draw(ctx, _ragdoll.Spheres);
         ctx.EndWorld();
 
-        ctx.Text("Click ragdoll to shove  |  R reset  |  F3 diag", 16, 16, 18, HudText);
+        ctx.Text("LMB shove  |  MMB orbit  |  wheel zoom  |  R reset  |  F3 diag", 16, 16, 18, HudText);
         _diagnostics.Draw(ctx, (_, lines) =>
         {
-            lines.Add($"spheres {_ragdoll.Spheres.Count}  joints {_ragdoll.Joints.Count}");
-            lines.Add($"joint corrections {_ragdoll.LastJointCorrections}");
+            lines.Add($"bones {RagdollIndices.Count}  joints {_ragdoll.Joints.Count}");
+            lines.Add($"joint fixes {_ragdoll.LastJointCorrections}  self-coll {_ragdoll.LastInternalFixes}");
         });
+    }
+
+    private void FollowRagdoll(ViewPose pose, float deltaSeconds)
+    {
+        _ = pose;
+        if (_ragdoll.Spheres.Count < RagdollIndices.Count)
+            return;
+
+        var hip = _ragdoll.Spheres[RagdollIndices.Hip].Position;
+        var t = 1f - MathF.Exp(-4f * MathF.Max(deltaSeconds, 1e-4f));
+        _camera.Target = Vector3.Lerp(_camera.Target, hip + new Vector3(0f, 0.5f, 0f), t * 0.15f);
     }
 
     private void ResetRagdoll()
     {
-        var spawn = _room.RoomCenter + new Vector3(0f, 0.3f, 0f);
+        var spawn = _room.RoomCenter + new Vector3(0f, 0.05f, 0f);
         _ragdoll.SpawnStanding(spawn, _room);
+        _camera.SnapTarget(_ragdoll.Spheres[RagdollIndices.Hip].Position + new Vector3(0f, 0.6f, 0f));
     }
 
     private void UpdateCamera(RayGameContext ctx)
     {
-        const float sensitivity = 0.004f;
-        var delta = ctx.MouseDelta;
-        _camera.AddLookDelta(-delta.X * sensitivity, -delta.Y * sensitivity);
-        _camera.AdjustDistance(Input.GetMouseWheelMove() * -0.8f);
+        if (ctx.IsMouseDown(MouseButton.Middle))
+        {
+            var delta = ctx.MouseDelta;
+            const float sensitivity = 0.004f;
+            _camera.AddLookDelta(-delta.X * sensitivity, -delta.Y * sensitivity);
+        }
+
+        _camera.Pitch = Math.Clamp(_camera.Pitch, 0.25f, 1.1f);
+        _camera.AdjustDistance(Input.GetMouseWheelMove() * -0.7f);
     }
 
     private void TryImpulseFromClick(RayGameContext ctx, ViewPose pose)
@@ -84,11 +105,11 @@ internal sealed class RagdollPlayGame
         var aspect = (float)ctx.Width / Math.Max(ctx.Height, 1);
         var (origin, direction) = BuildPickRay(pose, nx, ny, aspect);
 
-        if (!PainterDollRenderer.TryPickBone(origin, direction, _ragdoll.Spheres, 0.12f, out var best, out _))
+        if (!PainterDollRenderer.TryPickBone(origin, direction, _ragdoll.Spheres, 0.14f, out var best, out _))
             return;
 
-        var impulseDir = Vector3.Normalize(direction + new Vector3(0f, 0.35f, 0f));
-        _ragdoll.ApplyImpulse(best, impulseDir * 6f);
+        var impulseDir = Vector3.Normalize(direction + new Vector3(0f, 0.2f, 0f));
+        _ragdoll.ApplyImpulse(best, impulseDir * 4.5f);
     }
 
     private static (Vector3 Origin, Vector3 Direction) BuildPickRay(ViewPose pose, float nx, float ny, float aspect)
@@ -103,6 +124,17 @@ internal sealed class RagdollPlayGame
 
     private void DrawRoom(RayGameContext ctx)
     {
+        var center = _room.RoomCenter;
+        ctx.DrawPlane(center, new Vector2(PlayRoom.GridSize, PlayRoom.GridSize), Floor);
+
+        var half = PlayRoom.GridSize * PlayRoom.CellSize * 0.5f;
+        for (var i = 0; i <= PlayRoom.GridSize; i++)
+        {
+            var t = i * PlayRoom.CellSize;
+            ctx.DrawBolt(new Vector3(t, 0.02f, 0f), new Vector3(t, 0.02f, half * 2f), GridLine);
+            ctx.DrawBolt(new Vector3(0f, 0.02f, t), new Vector3(half * 2f, 0.02f, t), GridLine);
+        }
+
         var h = PlayRoom.WallHeight * 0.5f;
         for (var y = 0u; y < PlayRoom.GridSize; y++)
         for (var x = 0u; x < PlayRoom.GridSize; x++)
@@ -117,28 +149,5 @@ internal sealed class RagdollPlayGame
                 new Vector3(PlayRoom.CellSize, PlayRoom.WallHeight, PlayRoom.CellSize),
                 WallWire);
         }
-    }
-
-    private void DrawRagdoll(RayGameContext ctx) =>
-        PainterDollRenderer.Draw(ctx, _ragdoll.Spheres);
-}
-
-internal static class RaySphere
-{
-    public static bool TryHit(Vector3 origin, Vector3 direction, Vector3 center, float radius, out float t)
-    {
-        var oc = origin - center;
-        var a = Vector3.Dot(direction, direction);
-        var b = 2f * Vector3.Dot(oc, direction);
-        var c = Vector3.Dot(oc, oc) - radius * radius;
-        var disc = b * b - 4f * a * c;
-        if (disc < 0f || MathF.Abs(a) < 1e-8f)
-        {
-            t = -1f;
-            return false;
-        }
-
-        t = (-b - MathF.Sqrt(disc)) / (2f * a);
-        return t >= 0f;
     }
 }
