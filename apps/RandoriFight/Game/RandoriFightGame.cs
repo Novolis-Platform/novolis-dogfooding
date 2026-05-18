@@ -43,6 +43,9 @@ internal sealed class RandoriFightGame
         if (ctx.IsKeyPressed(KeyboardKey.R))
             ResetRound();
 
+        if (ctx.IsKeyPressed(KeyboardKey.Tab))
+            FighterRenderer.ToggleSkeletonOverlay();
+
         _diagnostics.ToggleIfKeyPressed(ctx);
 
         ctx.Clear(Sky);
@@ -54,7 +57,7 @@ internal sealed class RandoriFightGame
         ctx.EndWorld();
 
         DrawHud(ctx);
-        ctx.Text("A/D ma-ai  |  F men  |  M kesa  |  H uke  |  N tsuki  |  R reset  |  F3 diag", 16, ctx.Height - 32, 17, HudText);
+        ctx.Text("A/D ma-ai  |  F men  M kesa  N tsuki  H uke  |  Tab rig  R reset  F3 diag", 16, ctx.Height - 32, 17, HudText);
         _diagnostics.Draw(ctx, (_, lines) =>
         {
             lines.Add($"p {_player.Health:F0}  ai {_opponent.Health:F0}");
