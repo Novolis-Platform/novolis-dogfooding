@@ -2,7 +2,6 @@ using System.Drawing;
 using System.Numerics;
 using Novolis.Raylib.Game;
 using Novolis.Raylib.Interact;
-using Novolis.Simulation.View;
 using Input = Novolis.Raylib.Interact.Input;
 using RayCamera = Novolis.Raylib.Rendering.Camera;
 
@@ -10,112 +9,131 @@ namespace RtsLite.Game;
 
 internal sealed class RtsLiteGame
 {
-    private static readonly Color Background = Color.FromArgb(255, 24, 30, 38);
-    private static readonly Color WallColor = Color.FromArgb(255, 70, 85, 110);
-    private static readonly Color FloorColor = Color.FromArgb(255, 40, 48, 58);
-    private static readonly Color PlayerUnit = Color.FromArgb(255, 120, 220, 255);
-    private static readonly Color EnemyUnit = Color.FromArgb(255, 220, 80, 80);
-    private static readonly Color OrderLine = Color.FromArgb(180, 180, 220, 120);
-    private static readonly Color HudText = Color.FromArgb(255, 210, 220, 235);
+    private static readonly Color Sky = Color.FromArgb(255, 72, 88, 108);
+    private static readonly Color Sand = Color.FromArgb(255, 168, 142, 88);
+    private static readonly Color SandDark = Color.FromArgb(255, 138, 112, 68);
+    private static readonly Color Water = Color.FromArgb(255, 48, 110, 118);
+    private static readonly Color Tiberium = Color.FromArgb(255, 58, 168, 62);
+    private static readonly Color WallRock = Color.FromArgb(255, 90, 78, 62);
+    private static readonly Color AlliedTint = Color.FromArgb(255, 200, 220, 255);
+    private static readonly Color SovietTint = Color.FromArgb(255, 255, 170, 150);
+    private static readonly Color AlliedTank = Color.FromArgb(255, 72, 118, 188);
+    private static readonly Color SovietTank = Color.FromArgb(255, 188, 62, 52);
+    private static readonly Color OrderLine = Color.FromArgb(180, 255, 240, 120);
+    private static readonly Color HudText = Color.FromArgb(255, 235, 228, 200);
+    private static readonly Color Sidebar = Color.FromArgb(230, 28, 32, 38);
+    private static readonly Color SidebarHi = Color.FromArgb(255, 72, 88, 108);
 
     private readonly DiagnosticsOverlay _diagnostics = new();
-    private readonly OrbitCameraRig _camera = new();
+    private readonly RtsClassicCamera _camera = new();
     private readonly RtsSelection _selection = new();
+    private readonly RtsBuildPlacer _build = new();
     private readonly List<RtsUnit> _units = [];
 
     private RtsArena _arena = null!;
+    private RtsBuildingArt _art = null!;
     private float _enemyPulse;
+    private float _spawnPulse;
 
     public void Initialize(RayGameContext ctx)
     {
         _arena = RtsArena.Create();
+        _art = new RtsBuildingArt(ctx, ResolveAssetPath("Assets/buildings_set_small.png"));
         SpawnForces();
-        _camera.SnapTarget(_arena.CellCenter(RtsArena.GridSize / 2, RtsArena.GridSize / 2));
-        _camera.Distance = 22f;
-        _camera.MinDistance = 10f;
-        _camera.MaxDistance = 40f;
-        _camera.Pitch = 0.9f;
+        _camera.SnapTo(_arena.CellCenter(RtsArena.GridSize / 2, RtsArena.GridSize / 2));
     }
 
     public void Update(RayGameContext ctx)
     {
-        UpdateCamera(ctx);
-        var pose = _camera.BuildViewPose(ctx.DeltaSeconds);
-        HandleSelection(ctx, pose);
+        _camera.Update(ctx);
+        HandleBuildKeys(ctx);
+        var pose = _camera.BuildViewPose();
+        var ground = _camera.ScreenToGround(Input.GetMousePosition(), ctx.Width, ctx.Height);
+
+        if (_build.IsActive)
+        {
+            if (ctx.IsMousePressed(MouseButton.Left))
+                _build.TryPlaceAtGround(_arena, ground, UnitTeam.Player);
+            if (ctx.IsMousePressed(MouseButton.Right))
+                _build.Cancel();
+        }
+        else
+        {
+            HandleSelection(ctx, ground);
+        }
+
         TickUnits(ctx.DeltaSeconds);
+        TickProduction(ctx.DeltaSeconds);
         _diagnostics.ToggleIfKeyPressed(ctx);
 
-        ctx.Clear(Background);
+        ctx.Clear(Sky);
         var camera = RayCamera.Perspective(pose.Position, pose.Target, pose.Up, pose.FieldOfViewDegrees);
         ctx.BeginWorld(camera);
         DrawArena(ctx);
+        DrawBuildings(ctx, camera);
+        if (_build.IsActive)
+            _build.DrawGhost(ctx, camera, _art, _arena, ground, UnitTeam.Player);
         DrawUnits(ctx);
         ctx.EndWorld();
 
-        _selection.DrawDragRect(ctx);
+        if (!_build.IsActive)
+            _selection.DrawDragRect(ctx);
+
+        DrawSidebar(ctx);
         RtsMinimap.Draw(ctx, _arena, _units);
-        ctx.Text("Drag select  |  Right-click move  |  Wheel zoom  |  F3 diag", 16, 16, 18, HudText);
         _diagnostics.Draw(ctx, (_, lines) =>
         {
             var selected = _units.Count(u => u.Team == UnitTeam.Player && u.Selected);
-            lines.Add($"units {_units.Count}  selected {selected}");
+            lines.Add($"units {_units.Count}  selected {selected}  buildings {_arena.Buildings.Count}");
+            if (_build.ActiveType is { } t)
+                lines.Add($"placing {t.Label()}");
         });
+    }
+
+    private static string ResolveAssetPath(string relative)
+    {
+        var baseDir = AppContext.BaseDirectory;
+        return Path.Combine(baseDir, relative);
+    }
+
+    private void HandleBuildKeys(RayGameContext ctx)
+    {
+        if (ctx.IsKeyPressed(KeyboardKey.One))
+            _build.Select(RtsBuildingType.ConstructionYard);
+        if (ctx.IsKeyPressed(KeyboardKey.Two))
+            _build.Select(RtsBuildingType.PowerPlant);
+        if (ctx.IsKeyPressed(KeyboardKey.Three))
+            _build.Select(RtsBuildingType.Barracks);
+        if (ctx.IsKeyPressed(KeyboardKey.Four))
+            _build.Select(RtsBuildingType.OreRefinery);
+        if (ctx.IsKeyPressed(KeyboardKey.Five))
+            _build.Select(RtsBuildingType.WarFactory);
+        if (ctx.IsKeyPressed(KeyboardKey.B))
+            _build.Cancel();
     }
 
     private void SpawnForces()
     {
         _units.Clear();
-        var center = _arena.CellCenter(RtsArena.GridSize / 2, RtsArena.GridSize / 2);
-        for (var i = 0; i < 6; i++)
+        SpawnSquad(UnitTeam.Player, _arena.SpawnPlayer, 8);
+        SpawnSquad(UnitTeam.Enemy, _arena.SpawnEnemy, 6);
+    }
+
+    private void SpawnSquad(UnitTeam team, Vector3 anchor, int count)
+    {
+        for (var i = 0; i < count; i++)
         {
-            var offset = new Vector3((i % 3 - 1) * 1.2f, 0f, (i / 3 - 0.5f) * 1.2f);
-            _units.Add(new RtsUnit { Team = UnitTeam.Player, Position = _arena.SpawnPlayer + offset });
+            var offset = new Vector3((i % 4 - 1.5f) * 0.9f, 0f, (i / 4 - 0.5f) * 0.9f);
+            _units.Add(new RtsUnit { Team = team, Position = anchor + offset });
         }
-
-        for (var i = 0; i < 5; i++)
-        {
-            var offset = new Vector3((i - 2) * 0.9f, 0f, 0f);
-            _units.Add(new RtsUnit { Team = UnitTeam.Enemy, Position = _arena.SpawnEnemy + offset });
-        }
-
-        _camera.Target = center;
     }
 
-    private void UpdateCamera(RayGameContext ctx)
-    {
-        const float sensitivity = 0.003f;
-        var delta = ctx.MouseDelta;
-        _camera.AddLookDelta(-delta.X * sensitivity, -delta.Y * sensitivity);
-        _camera.AdjustDistance(Input.GetMouseWheelMove() * -1.2f);
-
-        if (ctx.IsKeyDown(KeyboardKey.W))
-            _camera.Target += _cameraForwardXZ() * (6f * ctx.DeltaSeconds);
-        if (ctx.IsKeyDown(KeyboardKey.S))
-            _camera.Target -= _cameraForwardXZ() * (6f * ctx.DeltaSeconds);
-        if (ctx.IsKeyDown(KeyboardKey.A))
-            _camera.Target -= _cameraRightXZ() * (6f * ctx.DeltaSeconds);
-        if (ctx.IsKeyDown(KeyboardKey.D))
-            _camera.Target += _cameraRightXZ() * (6f * ctx.DeltaSeconds);
-    }
-
-    private Vector3 _cameraForwardXZ()
-    {
-        var f = new Vector3(MathF.Sin(_camera.Yaw), 0f, MathF.Cos(_camera.Yaw));
-        return Vector3.Normalize(f);
-    }
-
-    private Vector3 _cameraRightXZ()
-    {
-        var r = new Vector3(MathF.Cos(_camera.Yaw), 0f, -MathF.Sin(_camera.Yaw));
-        return Vector3.Normalize(r);
-    }
-
-    private void HandleSelection(RayGameContext ctx, ViewPose pose)
+    private void HandleSelection(RayGameContext ctx, Vector3 groundClick)
     {
         var mouse = Input.GetMousePosition();
         _selection.Update(
             _units,
-            p => ScreenToGround(p, ctx, pose),
+            p => _camera.ScreenToGround(p, ctx.Width, ctx.Height),
             ctx.IsMousePressed(MouseButton.Left),
             ctx.IsMouseDown(MouseButton.Left),
             ctx.IsMousePressed(MouseButton.Right),
@@ -128,7 +146,7 @@ internal sealed class RtsLiteGame
             unit.Tick(_arena, dt);
 
         _enemyPulse += dt;
-        if (_enemyPulse < 2.5f)
+        if (_enemyPulse < 3f)
             return;
 
         _enemyPulse = 0f;
@@ -141,39 +159,65 @@ internal sealed class RtsLiteGame
             enemy.MoveTarget = target + new Vector3(Random.Shared.NextSingle() - 0.5f, 0f, Random.Shared.NextSingle() - 0.5f);
     }
 
-    private static Vector3 ScreenToGround(Vector2 screen, RayGameContext ctx, ViewPose pose)
+    private void TickProduction(float dt)
     {
-        var nx = (screen.X / ctx.Width - 0.5f) * 2f;
-        var ny = (0.5f - screen.Y / ctx.Height) * 2f;
-        var aspect = (float)ctx.Width / Math.Max(ctx.Height, 1);
-        var forward = Vector3.Normalize(pose.Target - pose.Position);
-        var right = Vector3.Normalize(Vector3.Cross(forward, pose.Up));
-        var up = Vector3.Normalize(Vector3.Cross(right, forward));
-        var fovTan = MathF.Tan(pose.FieldOfViewDegrees * MathF.PI / 360f);
-        var dir = Vector3.Normalize(forward + right * (nx * fovTan * aspect) + up * (ny * fovTan));
+        _spawnPulse += dt;
+        if (_spawnPulse < 4f)
+            return;
 
-        var origin = pose.Position;
-        if (MathF.Abs(dir.Y) < 1e-5f)
-            return new Vector3(origin.X, 0f, origin.Z);
+        _spawnPulse = 0f;
+        TrySpawnFromBarracks(UnitTeam.Player, AlliedTank);
+        TrySpawnFromBarracks(UnitTeam.Enemy, SovietTank);
+    }
 
-        var t = -origin.Y / dir.Y;
-        if (t < 0f)
-            t = 40f;
-        var hit = origin + dir * t;
-        return new Vector3(hit.X, 0f, hit.Z);
+    private void TrySpawnFromBarracks(UnitTeam team, Color _)
+    {
+        foreach (var b in _arena.Buildings)
+        {
+            if (b.Team != team || b.Type is not (RtsBuildingType.Barracks or RtsBuildingType.WarFactory))
+                continue;
+
+            var spawn = b.WorldCenter(_arena) + new Vector3(Random.Shared.NextSingle() - 0.5f, 0f, Random.Shared.NextSingle() - 0.5f);
+            if (!_arena.IsBlocked(spawn.X, spawn.Z))
+                _units.Add(new RtsUnit { Team = team, Position = spawn });
+        }
     }
 
     private void DrawArena(RayGameContext ctx)
     {
-        ctx.DrawPlane(_arena.CellCenter(RtsArena.GridSize / 2, RtsArena.GridSize / 2), new Vector2(RtsArena.GridSize, RtsArena.GridSize), FloorColor);
+        var center = _arena.CellCenter(RtsArena.GridSize / 2, RtsArena.GridSize / 2);
+        ctx.DrawPlane(center, new Vector2(RtsArena.GridSize, RtsArena.GridSize), Sand);
+
         for (var z = 0u; z < _arena.Walls.Height; z++)
         for (var x = 0u; x < _arena.Walls.Width; x++)
         {
-            if (_arena.Walls[x, z, 0] == 0)
-                continue;
-
             var c = _arena.CellCenter(x, z);
-            ctx.DrawShipBox(c + new Vector3(0f, 0.4f, 0f), new Vector3(RtsArena.CellSize, 0.8f, RtsArena.CellSize), WallColor);
+            if (_arena.Tiberium[x, z, 0] != 0)
+            {
+                ctx.DrawShipBox(c + new Vector3(0f, 0.12f, 0f), new Vector3(0.5f, 0.2f, 0.5f), Tiberium);
+                continue;
+            }
+
+            if (_arena.Walls[x, z, 0] == 0)
+            {
+                if ((x + z) % 5 == 0)
+                    ctx.DrawShipBox(c + new Vector3(0f, 0.02f, 0f), new Vector3(0.95f, 0.04f, 0.95f), SandDark);
+                continue;
+            }
+
+            var color = _arena.Walls[x, z, 0] != 0 && x is >= 16 and <= 22 && z is >= 16 and <= 22
+                ? Water
+                : WallRock;
+            ctx.DrawShipBox(c + new Vector3(0f, 0.25f, 0f), new Vector3(RtsArena.CellSize, 0.5f, RtsArena.CellSize), color);
+        }
+    }
+
+    private void DrawBuildings(RayGameContext ctx, RayCamera camera)
+    {
+        foreach (var b in _arena.Buildings)
+        {
+            var tint = b.Team == UnitTeam.Player ? AlliedTint : SovietTint;
+            _art.Draw(camera, ctx, b.Type, b.WorldCenter(_arena), b.BillboardScale, tint);
         }
     }
 
@@ -181,14 +225,45 @@ internal sealed class RtsLiteGame
     {
         foreach (var unit in _units)
         {
-            var color = unit.Team == UnitTeam.Player ? PlayerUnit : EnemyUnit;
+            var color = unit.Team == UnitTeam.Player ? AlliedTank : SovietTank;
+            var pos = unit.Position + new Vector3(0f, 0.2f, 0f);
             if (unit.Selected)
-                ctx.DrawGlowSphereWires(unit.Position + new Vector3(0f, 0.35f, 0f), RtsUnit.Radius + 0.12f, Color.FromArgb(255, 255, 255, 180));
+                ctx.DrawShipWires(pos, new Vector3(0.9f, 0.35f, 1.2f), Color.FromArgb(255, 255, 255, 200));
 
-            ctx.DrawGlowSphere(unit.Position + new Vector3(0f, 0.35f, 0f), RtsUnit.Radius, color);
+            ctx.DrawShipBox(pos, new Vector3(0.75f, 0.28f, 1.1f), color);
+            ctx.DrawShipBox(pos + new Vector3(0f, 0.18f, 0.35f), new Vector3(0.35f, 0.2f, 0.5f), Color.FromArgb(255, 40, 40, 40));
 
             if (unit.MoveTarget is { } target)
-                ctx.DrawBolt(unit.Position + new Vector3(0f, 0.35f, 0f), target + new Vector3(0f, 0.35f, 0f), OrderLine);
+                ctx.DrawBolt(pos, target + new Vector3(0f, 0.2f, 0f), OrderLine);
         }
+    }
+
+    private void DrawSidebar(RayGameContext ctx)
+    {
+        var w = 200;
+        var x = 8;
+        var y = ctx.Height - 168;
+        ctx.HudRect(x, y, w, 160, Sidebar);
+        ctx.HudRect(x, y, w, 22, SidebarHi);
+        ctx.HudText("ALLIED BUILD", x + 8, y + 4, 14, HudText);
+        ctx.HudText("∞ ORE", x + 118, y + 4, 14, Color.FromArgb(255, 140, 255, 120));
+
+        var row = y + 28;
+        DrawBuildButton(ctx, x + 8, row, RtsBuildingType.ConstructionYard, "1");
+        DrawBuildButton(ctx, x + 8, row + 24, RtsBuildingType.PowerPlant, "2");
+        DrawBuildButton(ctx, x + 8, row + 48, RtsBuildingType.Barracks, "3");
+        DrawBuildButton(ctx, x + 8, row + 72, RtsBuildingType.OreRefinery, "4");
+        DrawBuildButton(ctx, x + 8, row + 96, RtsBuildingType.WarFactory, "5");
+
+        ctx.HudText("MMB drag | edge scroll | WASD", x + 8, y + 142, 11, Color.FromArgb(200, 180, 170, 150));
+        ctx.HudText("LMB place  RMB cancel build", x + 8, ctx.Height - 18, 12, HudText);
+    }
+
+    private void DrawBuildButton(RayGameContext ctx, int x, int y, RtsBuildingType type, string key)
+    {
+        var active = _build.ActiveType == type;
+        var bg = active ? Color.FromArgb(255, 90, 120, 160) : Color.FromArgb(180, 48, 52, 60);
+        ctx.HudRect(x, y, 184, 20, bg);
+        ctx.HudText($"{key} {type.Label()}", x + 6, y + 3, 13, HudText);
     }
 }

@@ -29,7 +29,7 @@ Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **sourc
 | ArtillerySimulator | Raylib, Physics.Ballistics, Physics.Collision.Simple, Simulation.World + World.Builders + View (PackageReference) |
 | RagdollPlay | Raylib, Physics.Collision.Simple + **Physics.Joints**, Simulation.World + World.Builders |
 | PlatformerHop | Raylib, Simulation.Kinematics + View (side-view tile platformer) |
-| RtsLite | Raylib, Simulation.Kinematics + View + World (top-down selection and orders) |
+| RtsLite | Raylib, Simulation.View; fixed C&amp;C-style camera; CC0 building billboards; infinite-ore build menu |
 | BridgeCommander | **Novolis.Commands** (Engine, Queueing, Abstractions) via sibling project ref; Hex1b TUI |
 | WireFishViewer | Avalonia, Transports, Messaging (some still project-ref until packed) |
 

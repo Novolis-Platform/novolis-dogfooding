@@ -89,7 +89,7 @@ internal sealed class RtsSelection
     private static void SelectBox(
         IList<RtsUnit> units,
         Func<Vector2, Vector3> screenToGround,
-        RectangleF rect)
+        ScreenRect rect)
     {
         var a = screenToGround(new Vector2(rect.Left, rect.Top));
         var b = screenToGround(new Vector2(rect.Right, rect.Bottom));
@@ -111,15 +111,15 @@ internal sealed class RtsSelection
         }
     }
 
-    private static RectangleF NormalizedRect(Vector2 a, Vector2 b)
+    private static ScreenRect NormalizedRect(Vector2 a, Vector2 b)
     {
         var x = MathF.Min(a.X, b.X);
         var y = MathF.Min(a.Y, b.Y);
-        return new RectangleF(x, y, MathF.Abs(b.X - a.X), MathF.Abs(b.Y - a.Y));
+        return new ScreenRect(x, y, MathF.Abs(b.X - a.X), MathF.Abs(b.Y - a.Y));
     }
 }
 
-internal readonly struct RectangleF(float x, float y, float width, float height)
+internal readonly struct ScreenRect(float x, float y, float width, float height)
 {
     public float X { get; } = x;
     public float Y { get; } = y;
