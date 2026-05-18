@@ -13,12 +13,20 @@ internal sealed class PlayRoom
     public const float WallHeight = 4f;
 
     public BvhStaticWorld CollisionWorld { get; }
+    /// <summary>XZ center of the room at physics floor height (Y = 0).</summary>
+    public Vector3 FloorCenter { get; }
+    /// <summary>Volume center of the enclosed room (mid-height).</summary>
     public Vector3 RoomCenter { get; }
     public RoomInteriorBounds InteriorBounds { get; }
 
-    private PlayRoom(BvhStaticWorld collisionWorld, Vector3 roomCenter, RoomInteriorBounds interiorBounds)
+    private PlayRoom(
+        BvhStaticWorld collisionWorld,
+        Vector3 floorCenter,
+        Vector3 roomCenter,
+        RoomInteriorBounds interiorBounds)
     {
         CollisionWorld = collisionWorld;
+        FloorCenter = floorCenter;
         RoomCenter = roomCenter;
         InteriorBounds = interiorBounds;
     }
@@ -33,14 +41,16 @@ internal sealed class PlayRoom
             cells,
             CellSize,
             WallHeight);
-        var roomCenter = new Vector3(GridSize * CellSize * 0.5f, WallHeight * 0.5f, GridSize * CellSize * 0.5f);
+        var xzCenter = GridSize * CellSize * 0.5f;
+        var floorCenter = new Vector3(xzCenter, 0f, xzCenter);
+        var roomCenter = new Vector3(xzCenter, WallHeight * 0.5f, xzCenter);
         var interior = RoomInteriorBounds.ForOccupancyGrid(
             GridSize,
             GridSize,
             CellSize,
             WallHeight,
             RagdollBody.SphereRadius);
-        return new PlayRoom(collisionWorld, roomCenter, interior);
+        return new PlayRoom(collisionWorld, floorCenter, roomCenter, interior);
     }
 
     private static DenseGrid<byte> BuildPerimeterGrid()

@@ -27,7 +27,7 @@ internal sealed class RagdollPlayGame
         _room = PlayRoom.Create();
         _ragdoll = new RagdollBody();
         ResetRagdoll();
-        _camera.SnapTarget(_room.RoomCenter + new Vector3(0f, 1f, 0f));
+        _camera.SnapTarget(_room.FloorCenter + new Vector3(0f, 1f, 0f));
         _camera.Distance = 10f;
         _camera.MinDistance = 5f;
         _camera.MaxDistance = 16f;
@@ -76,7 +76,7 @@ internal sealed class RagdollPlayGame
 
     private void ResetRagdoll()
     {
-        var spawn = _room.RoomCenter + new Vector3(0f, 0.05f, 0f);
+        var spawn = _room.FloorCenter + new Vector3(0f, 0.05f, 0f);
         _ragdoll.SpawnStanding(spawn, _room);
         _camera.SnapTarget(_ragdoll.Spheres[RagdollIndices.Hip].Position + new Vector3(0f, 0.6f, 0f));
     }
@@ -124,8 +124,7 @@ internal sealed class RagdollPlayGame
 
     private void DrawRoom(RayGameContext ctx)
     {
-        var center = _room.RoomCenter;
-        ctx.DrawPlane(center, new Vector2(PlayRoom.GridSize, PlayRoom.GridSize), Floor);
+        ctx.DrawPlane(_room.FloorCenter, new Vector2(PlayRoom.GridSize, PlayRoom.GridSize), Floor);
 
         var half = PlayRoom.GridSize * PlayRoom.CellSize * 0.5f;
         for (var i = 0; i <= PlayRoom.GridSize; i++)
