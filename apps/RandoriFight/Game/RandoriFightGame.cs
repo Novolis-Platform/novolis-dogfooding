@@ -8,14 +8,14 @@ namespace RandoriFight.Game;
 
 internal sealed class RandoriFightGame
 {
-    private static readonly Color Sky = Color.FromArgb(255, 24, 28, 38);
-    private static readonly Color Tatami = Color.FromArgb(255, 168, 138, 88);
-    private static readonly Color TatamiLine = Color.FromArgb(255, 118, 88, 52);
-    private static readonly Color Rope = Color.FromArgb(255, 210, 68, 58);
-    private static readonly Color HudText = Color.FromArgb(255, 230, 220, 200);
-    private static readonly Color BarBack = Color.FromArgb(200, 40, 44, 52);
-    private static readonly Color BarPlayer = Color.FromArgb(255, 88, 168, 255);
-    private static readonly Color BarAi = Color.FromArgb(255, 255, 108, 88);
+    private static readonly Color Sky = Color.FromArgb(255, 18, 22, 30);
+    private static readonly Color Tatami = Color.FromArgb(255, 178, 148, 96);
+    private static readonly Color TatamiLine = Color.FromArgb(255, 128, 96, 58);
+    private static readonly Color Rope = Color.FromArgb(255, 188, 48, 42);
+    private static readonly Color HudText = Color.FromArgb(255, 238, 228, 210);
+    private static readonly Color BarBack = Color.FromArgb(200, 36, 40, 48);
+    private static readonly Color BarPlayer = Color.FromArgb(255, 120, 180, 255);
+    private static readonly Color BarAi = Color.FromArgb(255, 255, 120, 90);
 
     private readonly DiagnosticsOverlay _diagnostics = new();
     private readonly SideFightCamera _camera = new();
@@ -23,7 +23,7 @@ internal sealed class RandoriFightGame
     private readonly Fighter _player = new() { IsPlayer = true };
     private readonly Fighter _opponent = new() { IsPlayer = false };
 
-    private string _banner = "Randori — F punch, M kick, H block";
+    private string _banner = "Chūdan — F men  M kesa  H uke";
 
     public void Initialize(RayGameContext ctx)
     {
@@ -54,11 +54,11 @@ internal sealed class RandoriFightGame
         ctx.EndWorld();
 
         DrawHud(ctx);
-        ctx.Text("A/D move  |  F punch  |  M kick  |  H block  |  R reset  |  F3 diag", 16, ctx.Height - 32, 18, HudText);
+        ctx.Text("A/D ma-ai  |  F men  |  M kesa  |  H uke  |  N tsuki  |  R reset  |  F3 diag", 16, ctx.Height - 32, 17, HudText);
         _diagnostics.Draw(ctx, (_, lines) =>
         {
             lines.Add($"p {_player.Health:F0}  ai {_opponent.Health:F0}");
-            lines.Add($"p {StateLabel(_player)}  ai {StateLabel(_opponent)}");
+            lines.Add($"you {TechniqueLabel(_player)}  ai {TechniqueLabel(_opponent)}");
         });
     }
 
@@ -71,9 +71,11 @@ internal sealed class RandoriFightGame
             _player.SetWalkInput(ReadMoveAxis(ctx));
 
         if (ctx.IsKeyPressed(KeyboardKey.F))
-            _player.TryPunch();
+            _player.TryMen();
         if (ctx.IsKeyPressed(KeyboardKey.M))
-            _player.TryKick();
+            _player.TryKesa();
+        if (ctx.IsKeyPressed(KeyboardKey.N))
+            _player.TryThrust();
     }
 
     private static float ReadMoveAxis(RayGameContext ctx)
@@ -99,32 +101,32 @@ internal sealed class RandoriFightGame
     {
         if (!_player.IsAlive && _opponent.Health <= 0f)
         {
-            _banner = "Draw";
+            _banner = "Aiuchi";
             return;
         }
 
         if (!_opponent.IsAlive)
         {
-            _banner = "Ippon — you win";
+            _banner = "Ippon";
             return;
         }
 
         if (!_player.IsAlive)
         {
-            _banner = "Ippon — opponent wins";
+            _banner = "Opponent ippon";
             return;
         }
 
-        _banner = "Randori";
+        _banner = "Katana randori";
     }
 
     private void ResetRound()
     {
-        _player.Reset(-4.5f, facing: 1);
-        _opponent.Reset(4.5f, facing: -1);
+        _player.Reset(-4.2f, facing: 1);
+        _opponent.Reset(4.2f, facing: -1);
         _camera.Snap(0f);
         _ai.Reset();
-        _banner = "Randori";
+        _banner = "Chūdan";
     }
 
     private void DrawArena(RayGameContext ctx)
@@ -139,17 +141,19 @@ internal sealed class RandoriFightGame
             ctx.DrawBolt(new Vector3(x, 0.02f, -halfD), new Vector3(x, 0.02f, halfD), TatamiLine);
         }
 
-        ctx.DrawBolt(new Vector3(-halfW, 0.15f, -halfD), new Vector3(halfW, 0.15f, -halfD), Rope);
-        ctx.DrawBolt(new Vector3(-halfW, 0.15f, halfD), new Vector3(halfW, 0.15f, halfD), Rope);
-        ctx.DrawBolt(new Vector3(-halfW, 0.15f, -halfD), new Vector3(-halfW, 0.15f, halfD), Rope);
-        ctx.DrawBolt(new Vector3(halfW, 0.15f, -halfD), new Vector3(halfW, 0.15f, halfD), Rope);
+        ctx.DrawBolt(new Vector3(-halfW, 0.12f, -halfD), new Vector3(halfW, 0.12f, -halfD), Rope);
+        ctx.DrawBolt(new Vector3(-halfW, 0.12f, halfD), new Vector3(halfW, 0.12f, halfD), Rope);
+        ctx.DrawBolt(new Vector3(-halfW, 0.12f, -halfD), new Vector3(-halfW, 0.12f, halfD), Rope);
+        ctx.DrawBolt(new Vector3(halfW, 0.12f, -halfD), new Vector3(halfW, 0.12f, halfD), Rope);
+
+        ctx.DrawBolt(new Vector3(0f, 0.03f, -halfD), new Vector3(0f, 0.03f, halfD), Color.FromArgb(140, 90, 70, 50));
     }
 
     private void DrawHud(RayGameContext ctx)
     {
         DrawHealthBar(ctx, 24, 24, 320, 18, _player.Health, BarPlayer);
         DrawHealthBar(ctx, ctx.Width - 344, 24, 320, 18, _opponent.Health, BarAi);
-        ctx.Text(_banner, ctx.Width / 2 - 80, 24, 26, HudText);
+        ctx.Text(_banner, ctx.Width / 2 - 70, 22, 28, HudText);
     }
 
     private static void DrawHealthBar(RayGameContext ctx, int x, int y, int w, int h, float health, Color fill)
@@ -160,7 +164,16 @@ internal sealed class RandoriFightGame
             ctx.Rect(x, y, fillW, h, fill);
     }
 
-    private static string StateLabel(Fighter f) => f.State.ToString();
-
-    // HUD bars without texture: use Text blocks as simple fill via repeated draw — replace with proper HUD rects if added later.
+    private static string TechniqueLabel(Fighter f) => f.State switch
+    {
+        FighterState.Idle => "chudan",
+        FighterState.Walk => "ayumi",
+        FighterState.Men => "men",
+        FighterState.Kesa => "kesa",
+        FighterState.Thrust => "tsuki",
+        FighterState.Parry => "uke",
+        FighterState.HitStun => "ukemi",
+        FighterState.Ko => "fall",
+        _ => f.State.ToString(),
+    };
 }

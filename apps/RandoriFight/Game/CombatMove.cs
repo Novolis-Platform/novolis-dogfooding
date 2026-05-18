@@ -7,7 +7,8 @@ internal readonly struct CombatMove(
     float range,
     float radius,
     float damage,
-    float hitStun)
+    float hitStun,
+    float strikeHeight)
 {
     public float Startup { get; } = startup;
     public float Active { get; } = active;
@@ -16,11 +17,18 @@ internal readonly struct CombatMove(
     public float Radius { get; } = radius;
     public float Damage { get; } = damage;
     public float HitStun { get; } = hitStun;
+    public float StrikeHeight { get; } = strikeHeight;
     public float Total => Startup + Active + Recovery;
 }
 
 internal static class CombatMoves
 {
-    public static readonly CombatMove Punch = new(0.07f, 0.07f, 0.2f, 1.05f, 0.42f, 8f, 0.22f);
-    public static readonly CombatMove Kick = new(0.11f, 0.09f, 0.3f, 1.45f, 0.48f, 14f, 0.32f);
+    /// <summary>Men — lift to jōdan then cut through the head line.</summary>
+    public static readonly CombatMove Men = new(0.14f, 0.09f, 0.26f, 1.35f, 0.38f, 16f, 0.28f, 1.52f);
+
+    /// <summary>Kesa-giri — diagonal cut across the torso line.</summary>
+    public static readonly CombatMove Kesa = new(0.1f, 0.1f, 0.24f, 1.25f, 0.44f, 13f, 0.24f, 1.12f);
+
+    /// <summary>Tsuki — straight thrust along the center line.</summary>
+    public static readonly CombatMove Thrust = new(0.06f, 0.07f, 0.22f, 1.55f, 0.28f, 11f, 0.2f, 1.05f);
 }

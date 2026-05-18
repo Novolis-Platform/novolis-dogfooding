@@ -13,14 +13,22 @@ internal sealed class Fighter
     public bool AttackHitApplied { get; private set; }
 
     private CombatMove _activeMove;
-    private float _walkSpeed = 4.2f;
+    private float _walkSpeed = 3.6f;
 
     public Vector3 WorldPosition => new(PositionX, FightArena.FloorY, 0f);
 
     public bool IsAlive => Health > 0f && State != FighterState.Ko;
-    public bool IsBlocking => State == FighterState.Block;
+    public bool IsParrying => State == FighterState.Parry;
     public bool IsInHitStun => State == FighterState.HitStun;
-    public bool IsAttacking => State is FighterState.Punch or FighterState.Kick;
+    public bool IsAttacking => State is FighterState.Men or FighterState.Kesa or FighterState.Thrust;
+
+    public KatanaPose CurrentPose =>
+        KatanaPoses.Solve(State, MoveNormalizedTime, MoveAnimPhase, StateTime);
+
+    public bool IsStrikeWindow => IsInActivePhase();
+
+    public float MoveNormalizedTime =>
+        IsAttacking ? Math.Clamp(StateTime / _activeMove.Total, 0f, 1f) : 0f;
 
     public void Reset(float x, int facing)
     {
@@ -34,7 +42,7 @@ internal sealed class Fighter
 
     public void FaceToward(float otherX)
     {
-        if (State is FighterState.Punch or FighterState.Kick or FighterState.HitStun)
+        if (State is FighterState.Men or FighterState.Kesa or FighterState.Thrust or FighterState.HitStun)
             return;
 
         Facing = otherX >= PositionX ? 1 : -1;
@@ -56,41 +64,27 @@ internal sealed class Fighter
         State = FighterState.Walk;
     }
 
-    public void TryBlock(bool held)
+    public void TryParry(bool held)
     {
         if (!IsAlive || IsInHitStun || IsAttacking)
             return;
 
         if (held)
         {
-            State = FighterState.Block;
+            State = FighterState.Parry;
             StateTime = 0f;
             return;
         }
 
-        if (State == FighterState.Block)
+        if (State == FighterState.Parry)
             Enter(FighterState.Idle);
     }
 
-    public bool TryPunch()
-    {
-        if (!CanStartAttack())
-            return false;
+    public bool TryMen() => TryAttack(FighterState.Men, CombatMoves.Men);
+    public bool TryKesa() => TryAttack(FighterState.Kesa, CombatMoves.Kesa);
+    public bool TryThrust() => TryAttack(FighterState.Thrust, CombatMoves.Thrust);
 
-        BeginAttack(FighterState.Punch, CombatMoves.Punch);
-        return true;
-    }
-
-    public bool TryKick()
-    {
-        if (!CanStartAttack())
-            return false;
-
-        BeginAttack(FighterState.Kick, CombatMoves.Kick);
-        return true;
-    }
-
-    public void Update(float deltaSeconds, float moveInput, bool blockHeld)
+    public void Update(float deltaSeconds, float moveInput, bool parryHeld)
     {
         StateTime += deltaSeconds;
 
@@ -102,9 +96,9 @@ internal sealed class Fighter
             return;
         }
 
-        if (State == FighterState.Block)
+        if (State == FighterState.Parry)
         {
-            if (!blockHeld)
+            if (!parryHeld)
                 Enter(FighterState.Idle);
             return;
         }
@@ -113,9 +107,6 @@ internal sealed class Fighter
             Enter(FighterState.Idle);
 
         if (!IsAttacking)
-            return;
-
-        if (IsInActivePhase() && !AttackHitApplied)
             return;
 
         if (StateTime >= _activeMove.Total)
@@ -127,16 +118,16 @@ internal sealed class Fighter
         if (!IsAlive)
             return;
 
-        if (IsBlocking)
+        if (IsParrying)
         {
-            Health -= amount * 0.15f;
-            State = FighterState.Block;
+            Health -= amount * 0.08f;
+            State = FighterState.Parry;
             StateTime = 0f;
             return;
         }
 
         Health = MathF.Max(0f, Health - amount);
-        _activeMove = new CombatMove(0f, 0f, 0f, 0f, 0f, 0f, hitStun);
+        _activeMove = new CombatMove(0f, 0f, 0f, 0f, 0f, 0f, hitStun, 1f);
         State = FighterState.HitStun;
         StateTime = 0f;
         AttackHitApplied = false;
@@ -153,8 +144,9 @@ internal sealed class Fighter
         if (!IsAttacking || AttackHitApplied || !IsInActivePhase())
             return false;
 
-        var center = AttackCenter();
-        var dist = Vector3.Distance(center, defender.WorldPosition + new Vector3(0f, 0.9f, 0f));
+        var tip = WorldFromLocal(CurrentPose.BladeTip);
+        var target = defender.WorldPosition + new Vector3(0f, _activeMove.StrikeHeight, 0f);
+        var dist = Vector3.Distance(tip, target);
         if (dist > _activeMove.Radius)
             return false;
 
@@ -163,34 +155,38 @@ internal sealed class Fighter
         return true;
     }
 
-    public Vector3 AttackCenter()
-    {
-        var reach = _activeMove.Range * AttackPhaseT();
-        return WorldPosition + new Vector3(Facing * reach, 0.95f, 0f);
-    }
+    public Vector3 BladeTipWorld() => WorldFromLocal(CurrentPose.BladeTip);
 
-    public float AttackPhaseT()
-    {
-        if (!IsAttacking)
-            return 0f;
+    public Vector3 WorldFromLocal(Vector3 local) =>
+        WorldPosition + new Vector3(local.X * Facing, local.Y, local.Z);
 
-        if (StateTime < _activeMove.Startup)
-            return 0f;
-
-        var activeT = (StateTime - _activeMove.Startup) / MathF.Max(_activeMove.Active, 1e-4f);
-        return Math.Clamp(activeT, 0f, 1f);
-    }
-
-    public float MoveAnimPhase => State == FighterState.Walk ? StateTime * 9f : 0f;
+    public float MoveAnimPhase => State == FighterState.Walk ? StateTime * 7.5f : 0f;
 
     private bool CanMove() =>
         IsAlive && State is FighterState.Idle or FighterState.Walk;
 
-    private bool CanStartAttack() =>
-        IsAlive && State is FighterState.Idle or FighterState.Walk;
+    private bool TryAttack(FighterState state, CombatMove move)
+    {
+        if (!IsAlive || State is not (FighterState.Idle or FighterState.Walk))
+            return false;
 
-    private bool IsInActivePhase() =>
-        StateTime >= _activeMove.Startup && StateTime <= _activeMove.Startup + _activeMove.Active;
+        BeginAttack(state, move);
+        return true;
+    }
+
+    private bool IsInActivePhase()
+    {
+        if (!IsAttacking)
+            return false;
+
+        return State switch
+        {
+            FighterState.Men => MoveNormalizedTime is >= 0.36f and <= 0.58f,
+            FighterState.Kesa => MoveNormalizedTime is >= 0.34f and <= 0.6f,
+            FighterState.Thrust => MoveNormalizedTime is >= 0.4f and <= 0.58f,
+            _ => StateTime >= _activeMove.Startup && StateTime <= _activeMove.Startup + _activeMove.Active,
+        };
+    }
 
     private void BeginAttack(FighterState state, CombatMove move)
     {

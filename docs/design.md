@@ -30,7 +30,7 @@ Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **sourc
 | RagdollPlay | Raylib, Physics.Collision.Simple + **Physics.Joints**, Simulation.World + World.Builders |
 | PlatformerHop | Raylib, Simulation.Kinematics + View (side-view tile platformer) |
 | RtsLite | Raylib, Simulation.View; fixed C&amp;C-style camera; CC0 building billboards; infinite-ore build menu |
-| RandoriFight | Raylib, Simulation.View; Tekken-style 3D randori on a 2D plane, side camera, AI opponent |
+| RandoriFight | Raylib, Simulation.View; katana randori (men/kesa/tsuki, chūdan kamae), Tekken-plane 3D, side camera, AI |
 | BridgeCommander | **Novolis.Commands** (Engine, Queueing, Abstractions) via sibling project ref; Hex1b TUI |
 | WireFishViewer | Avalonia, Transports, Messaging (some still project-ref until packed) |
 

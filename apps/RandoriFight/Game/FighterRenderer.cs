@@ -6,104 +6,60 @@ namespace RandoriFight.Game;
 
 internal static class FighterRenderer
 {
-    private static readonly Color Gi = Color.FromArgb(255, 228, 222, 198);
-    private static readonly Color GiShadow = Color.FromArgb(255, 168, 158, 132);
-    private static readonly Color Belt = Color.FromArgb(255, 42, 38, 48);
-    private static readonly Color Skin = Color.FromArgb(255, 198, 150, 118);
-    private static readonly Color SkinDark = Color.FromArgb(255, 138, 98, 72);
-    private static readonly Color AiGi = Color.FromArgb(255, 198, 210, 228);
-    private static readonly Color AiShadow = Color.FromArgb(255, 118, 138, 168);
-    private static readonly Color HitFlash = Color.FromArgb(255, 255, 120, 90);
+    private static readonly Color Hakama = Color.FromArgb(255, 28, 32, 48);
+    private static readonly Color HakamaFold = Color.FromArgb(255, 18, 22, 34);
+    private static readonly Color Gi = Color.FromArgb(255, 235, 228, 210);
+    private static readonly Color GiAi = Color.FromArgb(255, 210, 218, 232);
+    private static readonly Color Skin = Color.FromArgb(255, 192, 148, 112);
+    private static readonly Color Blade = Color.FromArgb(255, 198, 208, 222);
+    private static readonly Color BladeEdge = Color.FromArgb(255, 235, 242, 255);
+    private static readonly Color Tsuba = Color.FromArgb(255, 58, 48, 42);
+    private static readonly Color Sageo = Color.FromArgb(255, 168, 42, 48);
+    private static readonly Color HitFlash = Color.FromArgb(255, 255, 140, 100);
+    private static readonly Color CutTrail = Color.FromArgb(100, 255, 220, 160);
 
     public static void Draw(RayGameContext ctx, Fighter fighter, bool isPlayer)
     {
-        var root = fighter.WorldPosition;
         var face = fighter.Facing;
-        var phase = fighter.AttackPhaseT();
-        var walk = fighter.MoveAnimPhase;
-        var gi = isPlayer ? Gi : AiGi;
-        var shadow = isPlayer ? GiShadow : AiShadow;
+        var pose = fighter.CurrentPose;
+        var root = fighter.WorldPosition;
+        var gi = isPlayer ? Gi : GiAi;
+        var flash = fighter.State == FighterState.HitStun;
 
-        var bob = fighter.State == FighterState.Walk ? MathF.Sin(walk) * 0.04f : 0f;
-        root.Y += bob;
+        DrawSegment(ctx, root, face, pose.LeftFoot, pose.Hips, 0.1f, HakamaFold);
+        DrawSegment(ctx, root, face, pose.RightFoot, pose.Hips, 0.1f, HakamaFold);
+        DrawSegment(ctx, root, face, pose.Hips, pose.Chest, 0.15f, gi);
+        DrawSegment(ctx, root, face, pose.Chest, pose.Head, 0.11f, flash ? HitFlash : Skin);
+        DrawSegment(ctx, root, face, pose.LeftHand, pose.RightHand, 0.05f, Skin);
+        DrawKatana(ctx, root, face, pose, fighter);
 
-        GetPose(fighter.State, phase, walk, out var spineLean, out var armL, out var armR, out var legL, out var legR);
-
-        DrawLimb(ctx, root, face, new Vector3(0f, 0.45f, 0f), new Vector3(0f, 0.95f, 0f), 0.16f, gi);
-        DrawLimb(ctx, root, face, new Vector3(0f, 0.95f, 0f), new Vector3(spineLean * 0.15f, 1.45f, 0f), 0.14f, gi);
-        DrawLimb(ctx, root, face, new Vector3(-0.18f * face, 1.35f, 0f), new Vector3(-0.18f * face + armL.X, 1.35f + armL.Y, armL.Z), 0.09f, gi);
-        DrawLimb(ctx, root, face, new Vector3(0.18f * face, 1.35f, 0f), new Vector3(0.18f * face + armR.X, 1.35f + armR.Y, armR.Z), 0.09f, gi);
-        DrawLimb(ctx, root, face, new Vector3(-0.12f * face, 0.45f, 0f), new Vector3(-0.14f * face + legL.X, legL.Y, legL.Z), 0.11f, shadow);
-        DrawLimb(ctx, root, face, new Vector3(0.12f * face, 0.45f, 0f), new Vector3(0.14f * face + legR.X, legR.Y, legR.Z), 0.11f, shadow);
-
-        ctx.DrawGlowSphere(root + new Vector3(0f, 1.62f, 0f), 0.14f, fighter.State == FighterState.HitStun ? HitFlash : Skin);
-        ctx.DrawGlowSphere(root + new Vector3(0f, 0.92f, 0f), 0.2f, Belt);
-
-        if (fighter.IsAttacking && fighter.AttackPhaseT() > 0.2f)
-        {
-            var hit = fighter.AttackCenter();
-            ctx.DrawGlowSphereWires(hit, fighter.State == FighterState.Kick ? 0.5f : 0.42f, Color.FromArgb(80, 255, 200, 120));
-        }
+        if (fighter.IsAttacking && fighter.MoveNormalizedTime is > 0.32f and < 0.68f)
+            DrawCutTrail(ctx, root, face, pose);
     }
 
-    private static void GetPose(
-        FighterState state,
-        float phase,
-        float walk,
-        out float spineLean,
-        out Vector3 armL,
-        out Vector3 armR,
-        out Vector3 legL,
-        out Vector3 legR)
+    private static void DrawKatana(RayGameContext ctx, Vector3 root, int face, KatanaPose pose, Fighter fighter)
     {
-        spineLean = 0f;
-        armL = new Vector3(-0.22f, -0.12f, 0f);
-        armR = new Vector3(0.22f, -0.12f, 0f);
-        legL = new Vector3(-0.08f, -0.02f, 0f);
-        legR = new Vector3(0.08f, -0.02f, 0f);
+        var a = Local(root, face, pose.BladeRoot);
+        var b = Local(root, face, pose.BladeTip);
+        var tsuba = Local(root, face, Vector3.Lerp(pose.BladeRoot, pose.RightHand, 0.35f));
 
-        switch (state)
-        {
-            case FighterState.Walk:
-                legL.Y = MathF.Sin(walk) * 0.18f;
-                legR.Y = -MathF.Sin(walk) * 0.18f;
-                armL.Y = -MathF.Sin(walk) * 0.1f;
-                armR.Y = MathF.Sin(walk) * 0.1f;
-                break;
-            case FighterState.Punch:
-                spineLean = 0.12f * phase;
-                armR = new Vector3(0.55f * phase, 0.08f, 0f);
-                armL = new Vector3(-0.28f, -0.2f, 0f);
-                legR.X = 0.2f * phase;
-                break;
-            case FighterState.Kick:
-                spineLean = -0.08f * phase;
-                armL = new Vector3(-0.35f, 0.05f, 0f);
-                armR = new Vector3(0.3f, 0.05f, 0f);
-                legR = new Vector3(0.65f * phase, 0.35f * phase, 0f);
-                legL.X = -0.15f;
-                break;
-            case FighterState.Block:
-                armL = new Vector3(-0.18f, 0.22f, 0.12f);
-                armR = new Vector3(0.18f, 0.22f, 0.12f);
-                spineLean = -0.06f;
-                break;
-            case FighterState.HitStun:
-                spineLean = -0.18f;
-                armL = new Vector3(-0.35f, 0.1f, 0f);
-                armR = new Vector3(0.35f, 0.1f, 0f);
-                break;
-            case FighterState.Ko:
-                spineLean = -0.45f;
-                armL = new Vector3(-0.5f, -0.05f, 0f);
-                armR = new Vector3(0.5f, -0.05f, 0f);
-                legL = new Vector3(-0.2f, -0.35f, 0f);
-                legR = new Vector3(0.2f, -0.35f, 0f);
-                break;
-        }
+        ctx.DrawLaserBolt(a, b, Blade);
+        ctx.DrawGlowSphere(tsuba, 0.055f, Tsuba);
+        ctx.DrawGlowSphere(a, 0.045f, Sageo);
+        ctx.DrawGlowSphere(b, 0.04f, BladeEdge);
+
+        if (fighter.IsStrikeWindow)
+            ctx.DrawGlowSphereWires(b, 0.22f, CutTrail);
     }
 
-    private static void DrawLimb(
+    private static void DrawCutTrail(RayGameContext ctx, Vector3 root, int face, KatanaPose pose)
+    {
+        var tip = Local(root, face, pose.BladeTip);
+        var mid = Local(root, face, Vector3.Lerp(pose.BladeRoot, pose.BladeTip, 0.55f));
+        ctx.DrawBolt(mid, tip, CutTrail);
+    }
+
+    private static void DrawSegment(
         RayGameContext ctx,
         Vector3 root,
         int face,
@@ -112,12 +68,13 @@ internal static class FighterRenderer
         float radius,
         Color color)
     {
-        localA.X *= face;
-        localB.X *= face;
-        var a = root + localA;
-        var b = root + localB;
+        var a = Local(root, face, localA);
+        var b = Local(root, face, localB);
         ctx.DrawLaserBolt(a, b, color);
-        ctx.DrawGlowSphere(a, radius, SkinDark);
-        ctx.DrawGlowSphere(b, radius * 0.92f, color);
+        ctx.DrawGlowSphere(a, radius, color);
+        ctx.DrawGlowSphere(b, radius * 0.9f, color);
     }
+
+    private static Vector3 Local(Vector3 root, int face, Vector3 local) =>
+        root + new Vector3(local.X * face, local.Y, local.Z);
 }

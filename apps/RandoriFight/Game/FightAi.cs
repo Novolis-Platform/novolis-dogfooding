@@ -3,9 +3,9 @@ namespace RandoriFight.Game;
 internal sealed class FightAi
 {
     private float _thinkCooldown;
-    private float _aggression = 0.55f;
+    private float _aggression = 0.58f;
 
-    public void Reset() => _thinkCooldown = 0.2f;
+    public void Reset() => _thinkCooldown = 0.25f;
 
     public void Update(Fighter self, Fighter opponent, float deltaSeconds)
     {
@@ -17,7 +17,7 @@ internal sealed class FightAi
 
         if (self.IsInHitStun || self.IsAttacking)
         {
-            self.TryBlock(false);
+            self.TryParry(false);
             return;
         }
 
@@ -25,14 +25,14 @@ internal sealed class FightAi
         var dist = MathF.Abs(dx);
         var toward = Math.Sign(dx);
 
-        if (opponent.IsAttacking && dist < 2.2f && _thinkCooldown <= 0f)
+        if (opponent.IsAttacking && dist < 2.4f && _thinkCooldown <= 0f)
         {
-            self.TryBlock(true);
-            _thinkCooldown = 0.15f;
+            self.TryParry(true);
+            _thinkCooldown = 0.18f;
             return;
         }
 
-        self.TryBlock(false);
+        self.TryParry(false);
 
         if (_thinkCooldown > 0f)
         {
@@ -40,39 +40,35 @@ internal sealed class FightAi
             return;
         }
 
-        if (dist > 1.65f)
+        if (dist > 1.85f)
         {
             self.SetWalkInput(toward);
-            _thinkCooldown = 0.08f;
+            _thinkCooldown = 0.1f;
             return;
         }
 
-        if (dist < 0.95f && Random.Shared.NextDouble() < 0.35)
+        if (dist < 1.05f)
         {
             self.SetWalkInput(-toward);
-            _thinkCooldown = 0.2f;
+            _thinkCooldown = 0.22f;
             return;
         }
 
-        if (dist <= 1.55f)
+        if (dist <= 1.75f && Random.Shared.NextDouble() < _aggression)
         {
-            if (Random.Shared.NextDouble() < _aggression)
-            {
-                if (Random.Shared.NextDouble() < 0.55)
-                    self.TryKick();
-                else
-                    self.TryPunch();
-            }
+            var roll = Random.Shared.NextDouble();
+            if (roll < 0.4)
+                self.TryMen();
+            else if (roll < 0.75)
+                self.TryKesa();
             else
-            {
-                self.SetWalkInput(-toward * 0.5f);
-            }
+                self.TryThrust();
 
-            _thinkCooldown = 0.28f + (float)Random.Shared.NextDouble() * 0.2f;
+            _thinkCooldown = 0.35f + (float)Random.Shared.NextDouble() * 0.25f;
             return;
         }
 
-        self.SetWalkInput(toward);
-        _thinkCooldown = 0.1f;
+        self.SetWalkInput(toward * 0.6f);
+        _thinkCooldown = 0.12f;
     }
 }
