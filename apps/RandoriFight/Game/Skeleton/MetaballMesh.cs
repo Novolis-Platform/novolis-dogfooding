@@ -7,12 +7,6 @@ namespace RandoriFight.Game.Skeleton;
 /// <summary>Metaball-style skin: one envelope per joint + capsule bridges (no stacked blob chains).</summary>
 internal static class MetaballMesh
 {
-    public static void DrawSkin(RayGameContext ctx, IReadOnlyList<RigSegment> segments)
-    {
-        foreach (var seg in segments)
-            DrawCapsuleEnvelope(ctx, seg.Start, seg.End, seg.Radius, seg.Color);
-    }
-
     /// <summary>Unity/Blender-style octahedral bones with wire joint spheres.</summary>
     public static void DrawSkeletonOverlay(RayGameContext ctx, IReadOnlyList<RigSegment> bones)
     {

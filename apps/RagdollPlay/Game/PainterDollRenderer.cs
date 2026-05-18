@@ -23,6 +23,8 @@ internal static class PainterDollRenderer
 
         DrawCapsule(ctx, P(RagdollIndices.Hip), P(RagdollIndices.LeftKnee), 0.11f);
         DrawCapsule(ctx, P(RagdollIndices.Hip), P(RagdollIndices.RightKnee), 0.11f);
+        DrawCapsule(ctx, P(RagdollIndices.LeftKnee), P(RagdollIndices.LeftFoot), 0.09f);
+        DrawCapsule(ctx, P(RagdollIndices.RightKnee), P(RagdollIndices.RightFoot), 0.09f);
         DrawCapsule(ctx, P(RagdollIndices.Hip), P(RagdollIndices.Chest), 0.14f);
         DrawCapsule(ctx, P(RagdollIndices.Chest), P(RagdollIndices.Head), 0.09f);
         DrawCapsule(ctx, P(RagdollIndices.Chest), P(RagdollIndices.LeftShoulder), 0.08f);
@@ -33,6 +35,8 @@ internal static class PainterDollRenderer
         DrawJoint(ctx, P(RagdollIndices.Hip), 0.13f);
         DrawJoint(ctx, P(RagdollIndices.LeftKnee), 0.1f);
         DrawJoint(ctx, P(RagdollIndices.RightKnee), 0.1f);
+        DrawJoint(ctx, P(RagdollIndices.LeftFoot), 0.09f);
+        DrawJoint(ctx, P(RagdollIndices.RightFoot), 0.09f);
         DrawJoint(ctx, P(RagdollIndices.Chest), 0.11f);
         DrawJoint(ctx, P(RagdollIndices.LeftShoulder), 0.085f);
         DrawJoint(ctx, P(RagdollIndices.RightShoulder), 0.085f);
@@ -63,6 +67,8 @@ internal static class PainterDollRenderer
         TryCapsule(rayOrigin, rayDir, P(RagdollIndices.Hip), P(RagdollIndices.Chest), 0.12f, RagdollIndices.Hip, ref sphereIndex, ref hitDistance);
         TryCapsule(rayOrigin, rayDir, P(RagdollIndices.Hip), P(RagdollIndices.LeftKnee), 0.1f, RagdollIndices.LeftKnee, ref sphereIndex, ref hitDistance);
         TryCapsule(rayOrigin, rayDir, P(RagdollIndices.Hip), P(RagdollIndices.RightKnee), 0.1f, RagdollIndices.RightKnee, ref sphereIndex, ref hitDistance);
+        TryCapsule(rayOrigin, rayDir, P(RagdollIndices.LeftKnee), P(RagdollIndices.LeftFoot), 0.09f, RagdollIndices.LeftFoot, ref sphereIndex, ref hitDistance);
+        TryCapsule(rayOrigin, rayDir, P(RagdollIndices.RightKnee), P(RagdollIndices.RightFoot), 0.09f, RagdollIndices.RightFoot, ref sphereIndex, ref hitDistance);
         TryCapsule(rayOrigin, rayDir, P(RagdollIndices.Chest), P(RagdollIndices.LeftShoulder), 0.08f, RagdollIndices.LeftShoulder, ref sphereIndex, ref hitDistance);
         TryCapsule(rayOrigin, rayDir, P(RagdollIndices.Chest), P(RagdollIndices.RightShoulder), 0.08f, RagdollIndices.RightShoulder, ref sphereIndex, ref hitDistance);
         TryCapsule(rayOrigin, rayDir, P(RagdollIndices.LeftShoulder), P(RagdollIndices.LeftHand), 0.07f, RagdollIndices.LeftHand, ref sphereIndex, ref hitDistance);

@@ -59,7 +59,7 @@ internal sealed class RagdollPlayGame
         _diagnostics.Draw(ctx, (_, lines) =>
         {
             lines.Add($"bones {RagdollIndices.Count}  joints {_ragdoll.Joints.Count}");
-            lines.Add($"joint {_ragdoll.LastJointCorrections}  angle {_ragdoll.LastAngularFixes}  self {_ragdoll.LastInternalFixes}");
+            lines.Add($"joint {_ragdoll.LastJointCorrections}  self {_ragdoll.LastInternalFixes}");
         });
     }
 

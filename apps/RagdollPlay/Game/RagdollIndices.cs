@@ -1,6 +1,6 @@
 namespace RagdollPlay.Game;
 
-/// <summary>Sphere indices — hip-rooted chain (no foot/pelvis triangle).</summary>
+/// <summary>Sphere indices — hip-rooted humanoid with feet.</summary>
 internal static class RagdollIndices
 {
     public const int Hip = 0;
@@ -12,6 +12,8 @@ internal static class RagdollIndices
     public const int RightShoulder = 6;
     public const int LeftHand = 7;
     public const int RightHand = 8;
+    public const int LeftFoot = 9;
+    public const int RightFoot = 10;
 
-    public const int Count = 9;
+    public const int Count = 11;
 }

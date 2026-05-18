@@ -16,13 +16,13 @@ internal static class RagdollPoseLimits
         swingLimits.Clear();
         hingeLimits.Clear();
 
-        AddSwing(spheres, swingLimits, RagdollIndices.Hip, RagdollIndices.Chest, maxDegrees: 36f, stiffness: 1f);
-        AddSwing(spheres, swingLimits, RagdollIndices.Chest, RagdollIndices.Head, maxDegrees: 50f, stiffness: 0.95f);
-        AddSwing(spheres, swingLimits, RagdollIndices.Chest, RagdollIndices.LeftShoulder, maxDegrees: 76f, stiffness: 0.9f);
-        AddSwing(spheres, swingLimits, RagdollIndices.Chest, RagdollIndices.RightShoulder, maxDegrees: 76f, stiffness: 0.9f);
+        AddSwing(spheres, swingLimits, RagdollIndices.Hip, RagdollIndices.Chest, maxDegrees: 32f, stiffness: 0.85f);
+        AddSwing(spheres, swingLimits, RagdollIndices.Chest, RagdollIndices.Head, maxDegrees: 45f, stiffness: 0.85f);
+        AddSwing(spheres, swingLimits, RagdollIndices.Chest, RagdollIndices.LeftShoulder, maxDegrees: 70f, stiffness: 0.8f);
+        AddSwing(spheres, swingLimits, RagdollIndices.Chest, RagdollIndices.RightShoulder, maxDegrees: 70f, stiffness: 0.8f);
 
-        AddKnee(spheres, hingeLimits, RagdollIndices.Hip, RagdollIndices.LeftKnee, hingeAxis: Vector3.UnitX);
-        AddKnee(spheres, hingeLimits, RagdollIndices.Hip, RagdollIndices.RightKnee, hingeAxis: -Vector3.UnitX);
+        AddKnee(spheres, hingeLimits, RagdollIndices.LeftKnee, RagdollIndices.LeftFoot, hingeAxis: Vector3.UnitX);
+        AddKnee(spheres, hingeLimits, RagdollIndices.RightKnee, RagdollIndices.RightFoot, hingeAxis: -Vector3.UnitX);
 
         AddElbow(spheres, hingeLimits, RagdollIndices.LeftShoulder, RagdollIndices.LeftHand, lateralSign: 1f);
         AddElbow(spheres, hingeLimits, RagdollIndices.RightShoulder, RagdollIndices.RightHand, lateralSign: -1f);
@@ -53,9 +53,9 @@ internal static class RagdollPoseLimits
             child,
             hingeAxis,
             rest,
-            minRadians: -8f * Deg,
-            maxRadians: 112f * Deg,
-            stiffness: 0.98f));
+            minRadians: -5f * Deg,
+            maxRadians: 95f * Deg,
+            stiffness: 0.75f));
     }
 
     private static void AddElbow(

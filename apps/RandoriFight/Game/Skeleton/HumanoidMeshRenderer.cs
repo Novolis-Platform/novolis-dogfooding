@@ -4,7 +4,6 @@ using Novolis.Raylib.Game;
 
 namespace RandoriFight.Game.Skeleton;
 
-/// <summary>Standard-rig skin mesh + optional skeleton overlay (Unity / metaball reference).</summary>
 internal static class HumanoidMeshRenderer
 {
     private static readonly Color Blade = Color.FromArgb(255, 198, 208, 222);
@@ -22,17 +21,13 @@ internal static class HumanoidMeshRenderer
         bool strikeWindow,
         bool showCutTrail)
     {
-        var skin = StandardRigBuilder.BuildSegments(skeleton, isPlayer);
-        MetaballMesh.DrawSkin(ctx, skin);
+        BodyMeshRenderer.Draw(ctx, skeleton, isPlayer, hitFlash);
 
         if (showSkeleton)
         {
             var bones = StandardRigBuilder.BuildSkeletonBones(skeleton);
             MetaballMesh.DrawSkeletonOverlay(ctx, bones);
         }
-
-        if (hitFlash)
-            ctx.DrawGlowSphere(skeleton[HumanoidBoneId.Head], 0.12f, Color.FromArgb(255, 255, 150, 100));
 
         DrawKatana(ctx, skeleton, strikeWindow, showCutTrail);
     }
@@ -43,9 +38,9 @@ internal static class HumanoidMeshRenderer
         var tip = s.BladeTip;
         ctx.DrawBolt(root, tip, Blade);
         var tsuba = Vector3.Lerp(root, s[HumanoidBoneId.RightHand], 0.32f);
-        ctx.DrawGlowSphere(tsuba, 0.05f, Tsuba);
-        ctx.DrawGlowSphere(root, 0.038f, Sageo);
-        ctx.DrawGlowSphere(tip, 0.034f, BladeEdge);
+        ctx.DrawGlowSphere(tsuba, 0.048f, Tsuba);
+        ctx.DrawGlowSphere(root, 0.035f, Sageo);
+        ctx.DrawGlowSphere(tip, 0.032f, BladeEdge);
 
         if (strikeWindow)
             ctx.DrawGlowSphereWires(tip, 0.2f, CutTrail);
