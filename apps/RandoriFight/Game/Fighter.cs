@@ -1,4 +1,5 @@
 using System.Numerics;
+using RandoriFight.Game.Skeleton;
 
 namespace RandoriFight.Game;
 
@@ -24,6 +25,9 @@ internal sealed class Fighter
 
     public KatanaPose CurrentPose =>
         KatanaPoses.Solve(State, MoveNormalizedTime, MoveAnimPhase, StateTime);
+
+    public SkeletonFrame CurrentSkeleton =>
+        HumanoidSkeleton.SolveFromLandmarks(CurrentPose, WorldPosition, Facing);
 
     public bool IsStrikeWindow => IsInActivePhase();
 
@@ -144,7 +148,7 @@ internal sealed class Fighter
         if (!IsAttacking || AttackHitApplied || !IsInActivePhase())
             return false;
 
-        var tip = WorldFromLocal(CurrentPose.BladeTip);
+        var tip = CurrentSkeleton.BladeTip;
         var target = defender.WorldPosition + new Vector3(0f, _activeMove.StrikeHeight, 0f);
         var dist = Vector3.Distance(tip, target);
         if (dist > _activeMove.Radius)
@@ -155,7 +159,7 @@ internal sealed class Fighter
         return true;
     }
 
-    public Vector3 BladeTipWorld() => WorldFromLocal(CurrentPose.BladeTip);
+    public Vector3 BladeTipWorld() => CurrentSkeleton.BladeTip;
 
     public Vector3 WorldFromLocal(Vector3 local) =>
         WorldPosition + new Vector3(local.X * Facing, local.Y, local.Z);
