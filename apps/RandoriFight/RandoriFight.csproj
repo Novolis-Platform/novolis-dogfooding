@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RandoriFight</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Raylib">
+      <ExcludeAssets>buildTransitive</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Novolis.Simulation.View" />
+  </ItemGroup>
+</Project>
