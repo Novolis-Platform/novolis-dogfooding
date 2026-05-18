@@ -23,7 +23,7 @@ internal sealed class RandoriFightGame
     private readonly Fighter _player = new() { IsPlayer = true };
     private readonly Fighter _opponent = new() { IsPlayer = false };
 
-    private string _banner = "Chūdan — F men  M kesa  H uke";
+    private string _banner = "Chūdan";
 
     public void Initialize(RayGameContext ctx)
     {
@@ -35,7 +35,7 @@ internal sealed class RandoriFightGame
     {
         UpdateInput(ctx);
         _player.FaceToward(_opponent.PositionX);
-        _player.Update(ctx.DeltaSeconds, ReadMoveAxis(ctx), ctx.IsKeyDown(KeyboardKey.H));
+        _player.Update(ctx.DeltaSeconds, ReadMoveAxis(ctx), TechniqueInput.ReadParryHeld(ctx));
         _ai.Update(_opponent, _player, ctx.DeltaSeconds);
         ResolveHits();
         UpdateBanner();
@@ -57,7 +57,7 @@ internal sealed class RandoriFightGame
         ctx.EndWorld();
 
         DrawHud(ctx);
-        ctx.Text("A/D ma-ai  |  F men  M kesa  N tsuki  H uke  |  Tab rig  R reset  F3 diag", 16, ctx.Height - 32, 17, HudText);
+        ctx.Text($"A/D ma-ai  |  {TechniqueInput.ControlsHint}  |  Tab rig  R reset", 12, ctx.Height - 36, 16, HudText);
         _diagnostics.Draw(ctx, (_, lines) =>
         {
             lines.Add($"p {_player.Health:F0}  ai {_opponent.Health:F0}");
@@ -70,15 +70,12 @@ internal sealed class RandoriFightGame
         if (!_player.IsAlive || _player.IsInHitStun)
             return;
 
-        if (!ctx.IsKeyDown(KeyboardKey.H) && !_player.IsAttacking)
+        if (!TechniqueInput.ReadParryHeld(ctx) && !_player.IsAttacking)
             _player.SetWalkInput(ReadMoveAxis(ctx));
 
-        if (ctx.IsKeyPressed(KeyboardKey.F))
-            _player.TryMen();
-        if (ctx.IsKeyPressed(KeyboardKey.M))
-            _player.TryKesa();
-        if (ctx.IsKeyPressed(KeyboardKey.N))
-            _player.TryThrust();
+        var technique = TechniqueInput.ReadAttackPressed(ctx);
+        if (technique is { } t)
+            _player.TryTechnique(t);
     }
 
     private static float ReadMoveAxis(RayGameContext ctx)
@@ -174,6 +171,9 @@ internal sealed class RandoriFightGame
         FighterState.Men => "men",
         FighterState.Kesa => "kesa",
         FighterState.Thrust => "tsuki",
+        FighterState.Do => "do",
+        FighterState.Kote => "kote",
+        FighterState.Kirioroshi => "kirioroshi",
         FighterState.Parry => "uke",
         FighterState.HitStun => "ukemi",
         FighterState.Ko => "fall",

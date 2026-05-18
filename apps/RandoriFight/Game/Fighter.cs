@@ -21,7 +21,8 @@ internal sealed class Fighter
     public bool IsAlive => Health > 0f && State != FighterState.Ko;
     public bool IsParrying => State == FighterState.Parry;
     public bool IsInHitStun => State == FighterState.HitStun;
-    public bool IsAttacking => State is FighterState.Men or FighterState.Kesa or FighterState.Thrust;
+    public bool IsAttacking => State is FighterState.Men or FighterState.Kesa or FighterState.Thrust
+        or FighterState.Do or FighterState.Kote or FighterState.Kirioroshi;
 
     public KatanaPose CurrentPose =>
         KatanaPoses.Solve(State, MoveNormalizedTime, MoveAnimPhase, StateTime);
@@ -46,7 +47,7 @@ internal sealed class Fighter
 
     public void FaceToward(float otherX)
     {
-        if (State is FighterState.Men or FighterState.Kesa or FighterState.Thrust or FighterState.HitStun)
+        if (IsAttacking || IsInHitStun)
             return;
 
         Facing = otherX >= PositionX ? 1 : -1;
@@ -84,9 +85,8 @@ internal sealed class Fighter
             Enter(FighterState.Idle);
     }
 
-    public bool TryMen() => TryAttack(FighterState.Men, CombatMoves.Men);
-    public bool TryKesa() => TryAttack(FighterState.Kesa, CombatMoves.Kesa);
-    public bool TryThrust() => TryAttack(FighterState.Thrust, CombatMoves.Thrust);
+    public bool TryTechnique(FighterState technique) =>
+        TryAttack(technique, CombatMoves.For(technique));
 
     public void Update(float deltaSeconds, float moveInput, bool parryHeld)
     {
@@ -150,19 +150,13 @@ internal sealed class Fighter
 
         var tip = CurrentSkeleton.BladeTip;
         var target = defender.WorldPosition + new Vector3(0f, _activeMove.StrikeHeight, 0f);
-        var dist = Vector3.Distance(tip, target);
-        if (dist > _activeMove.Radius)
+        if (Vector3.Distance(tip, target) > _activeMove.Radius)
             return false;
 
         AttackHitApplied = true;
         defender.ApplyDamage(_activeMove.Damage, _activeMove.HitStun);
         return true;
     }
-
-    public Vector3 BladeTipWorld() => CurrentSkeleton.BladeTip;
-
-    public Vector3 WorldFromLocal(Vector3 local) =>
-        WorldPosition + new Vector3(local.X * Facing, local.Y, local.Z);
 
     public float MoveAnimPhase => State == FighterState.Walk ? StateTime * 7.5f : 0f;
 
@@ -183,11 +177,15 @@ internal sealed class Fighter
         if (!IsAttacking)
             return false;
 
+        var t = MoveNormalizedTime;
         return State switch
         {
-            FighterState.Men => MoveNormalizedTime is >= 0.36f and <= 0.58f,
-            FighterState.Kesa => MoveNormalizedTime is >= 0.34f and <= 0.6f,
-            FighterState.Thrust => MoveNormalizedTime is >= 0.4f and <= 0.58f,
+            FighterState.Men => t is >= 0.36f and <= 0.58f,
+            FighterState.Kesa => t is >= 0.34f and <= 0.6f,
+            FighterState.Thrust => t is >= 0.4f and <= 0.58f,
+            FighterState.Do => t is >= 0.32f and <= 0.58f,
+            FighterState.Kote => t is >= 0.35f and <= 0.6f,
+            FighterState.Kirioroshi => t is >= 0.38f and <= 0.62f,
             _ => StateTime >= _activeMove.Startup && StateTime <= _activeMove.Startup + _activeMove.Active,
         };
     }

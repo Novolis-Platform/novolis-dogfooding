@@ -46,6 +46,9 @@ internal static class KatanaPoses
             FighterState.Men => SampleMen(phase),
             FighterState.Kesa => SampleKesa(phase),
             FighterState.Thrust => SampleThrust(phase),
+            FighterState.Do => SampleDo(phase),
+            FighterState.Kote => SampleKote(phase),
+            FighterState.Kirioroshi => SampleKirioroshi(phase),
             FighterState.Parry => ParryKamae,
             FighterState.HitStun => Blend(Chudan, HitReact, Math.Clamp(stateTime / 0.2f, 0f, 1f)),
             FighterState.Ko => KoPose,
@@ -99,6 +102,60 @@ internal static class KatanaPoses
 
         var r = EaseInOut((t - 0.45f) / 0.55f);
         return Blend(ThrustExtend, Chudan, r);
+    }
+
+    private static KatanaPose SampleDo(float t)
+    {
+        if (t < 0.32f)
+        {
+            var u = EaseIn(t / 0.32f);
+            return Blend(Chudan, DoWindup, u);
+        }
+
+        if (t < 0.58f)
+        {
+            var u = EaseOut((t - 0.32f) / 0.26f);
+            return Blend(DoWindup, DoCut, u);
+        }
+
+        var r = EaseInOut((t - 0.58f) / 0.42f);
+        return Blend(DoCut, Chudan, r);
+    }
+
+    private static KatanaPose SampleKote(float t)
+    {
+        if (t < 0.34f)
+        {
+            var u = EaseIn(t / 0.34f);
+            return Blend(Chudan, KoteWindup, u);
+        }
+
+        if (t < 0.6f)
+        {
+            var u = EaseOut((t - 0.34f) / 0.26f);
+            return Blend(KoteWindup, KoteCut, u);
+        }
+
+        var r = EaseInOut((t - 0.6f) / 0.4f);
+        return Blend(KoteCut, Chudan, r);
+    }
+
+    private static KatanaPose SampleKirioroshi(float t)
+    {
+        if (t < 0.36f)
+        {
+            var u = EaseIn(t / 0.36f);
+            return Blend(Chudan, KirioroshiWindup, u);
+        }
+
+        if (t < 0.6f)
+        {
+            var u = EaseOut((t - 0.36f) / 0.24f);
+            return Blend(KirioroshiWindup, KirioroshiCut, u);
+        }
+
+        var r = EaseInOut((t - 0.6f) / 0.4f);
+        return Blend(KirioroshiCut, Chudan, r);
     }
 
     private static KatanaPose WalkKamae(float walk)
@@ -170,6 +227,72 @@ internal static class KatanaPoses
         rightHand: new(0.28f, 1.04f, 0f),
         bladeRoot: new(0.3f, 1.04f, 0f),
         bladeTip: new(1.28f, 1.06f, 0f));
+
+    private static readonly KatanaPose DoWindup = Build(
+        leftFoot: new(-0.2f, 0f, 0.1f),
+        rightFoot: new(0.12f, 0f, -0.1f),
+        hips: new(-0.02f, 0.5f, 0f),
+        chest: new(-0.02f, 1.06f, 0f),
+        head: new(0f, 1.6f, 0f),
+        leftHand: new(-0.06f, 1.1f, 0.06f),
+        rightHand: new(0.02f, 1.16f, 0f),
+        bladeRoot: new(0f, 1.12f, 0f),
+        bladeTip: new(-0.35f, 1.38f, 0.12f));
+
+    private static readonly KatanaPose DoCut = Build(
+        leftFoot: new(-0.22f, 0f, 0.14f),
+        rightFoot: new(0.16f, 0f, -0.12f),
+        hips: new(0.1f, 0.45f, 0f),
+        chest: new(0.16f, 0.95f, 0f),
+        head: new(0.12f, 1.48f, 0f),
+        leftHand: new(0.12f, 0.9f, 0f),
+        rightHand: new(0.18f, 0.92f, 0f),
+        bladeRoot: new(0.2f, 0.92f, 0f),
+        bladeTip: new(1.05f, 0.98f, 0f));
+
+    private static readonly KatanaPose KoteWindup = Build(
+        leftFoot: new(-0.2f, 0f, 0.12f),
+        rightFoot: new(0.1f, 0f, -0.08f),
+        hips: new(0f, 0.5f, 0f),
+        chest: new(0.02f, 1.04f, 0f),
+        head: new(0.04f, 1.58f, 0f),
+        leftHand: new(0.04f, 1.02f, 0.04f),
+        rightHand: new(0.1f, 1.06f, 0f),
+        bladeRoot: new(0.12f, 1.06f, 0f),
+        bladeTip: new(0.55f, 1.28f, 0f));
+
+    private static readonly KatanaPose KoteCut = Build(
+        leftFoot: new(-0.23f, 0f, 0.14f),
+        rightFoot: new(0.17f, 0f, -0.1f),
+        hips: new(0.12f, 0.44f, 0f),
+        chest: new(0.18f, 0.92f, 0f),
+        head: new(0.14f, 1.46f, 0f),
+        leftHand: new(0.16f, 0.78f, 0f),
+        rightHand: new(0.22f, 0.8f, 0f),
+        bladeRoot: new(0.24f, 0.8f, 0f),
+        bladeTip: new(1.02f, 0.72f, 0f));
+
+    private static readonly KatanaPose KirioroshiWindup = Build(
+        leftFoot: new(-0.18f, 0f, 0.1f),
+        rightFoot: new(0.14f, 0f, -0.1f),
+        hips: new(-0.05f, 0.51f, 0f),
+        chest: new(-0.08f, 1.1f, 0f),
+        head: new(-0.06f, 1.64f, 0f),
+        leftHand: new(-0.02f, 1.2f, -0.02f),
+        rightHand: new(0.04f, 1.26f, 0f),
+        bladeRoot: new(0.02f, 1.2f, 0f),
+        bladeTip: new(-0.22f, 1.85f, -0.06f));
+
+    private static readonly KatanaPose KirioroshiCut = Build(
+        leftFoot: new(-0.24f, 0f, 0.16f),
+        rightFoot: new(0.18f, 0f, -0.12f),
+        hips: new(0.12f, 0.42f, 0f),
+        chest: new(0.2f, 0.9f, 0f),
+        head: new(0.16f, 1.44f, 0f),
+        leftHand: new(0.14f, 0.86f, 0f),
+        rightHand: new(0.2f, 0.9f, 0f),
+        bladeRoot: new(0.22f, 0.9f, 0f),
+        bladeTip: new(1.02f, 0.82f, 0f));
 
     private static readonly KatanaPose ParryKamae = Build(
         leftFoot: new(-0.2f, 0f, 0.12f),
