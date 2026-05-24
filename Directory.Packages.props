@@ -30,6 +30,7 @@
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Igpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Vulkan" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.PathTrace.Demos" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Presentation.Silk" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Compile" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />

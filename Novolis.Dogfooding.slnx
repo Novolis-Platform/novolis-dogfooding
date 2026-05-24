@@ -13,6 +13,7 @@
   <Folder Name="/rendering/">
     <Project Path="apps/rendering/RaytraceHello/RaytraceHello.csproj" />
     <Project Path="apps/rendering/SilkTraceHello/SilkTraceHello.csproj" />
+    <Project Path="apps/rendering/SilkTraceStudio/SilkTraceStudio.csproj" />
   </Folder>
   <Folder Name="/math/">
     <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />

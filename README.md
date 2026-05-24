@@ -32,7 +32,8 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `RaylibHello` | `raylib/` | Raylib |
 | `XFighter` | `raylib/` | Raylib (3D cockpit demo; moved from `novolis-raylib/samples`) |
 | `RaytraceHello` | `rendering/` | Raylib.Game, Rendering (ILGPU + DI + Presentation.Raylib) |
-| `SilkTraceHello` | `rendering/` | Rendering (Vulkan/ILGPU + Presentation.Silk) |
+| `SilkTraceHello` | `rendering/` | Rendering (env backend + PathTrace.Demos + Presentation.Silk) |
+| `SilkTraceStudio` | `rendering/` | Studio showcase: mouse orbit, backend hotkeys, status strip, glass/emissive scene |
 | `DoomLite3D` | `simulation/` | Raylib, Math, Simulation |
 | `BouncingBall` | `simulation/` | Raylib, Simulation, Physics.Collision |
 | `ArtillerySimulator` | `simulation/` | Raylib, Physics, Simulation |

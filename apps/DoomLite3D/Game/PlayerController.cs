@@ -96,16 +96,10 @@ internal sealed class PlayerController
         return RayCamera.Perspective(pose.Position, pose.Target, pose.Up, pose.FieldOfViewDegrees);
     }
 
-    public Ray3 GetLookRay()
+    public Novolis.Math.Geometry.Ray GetLookRay()
     {
         var origin = EyePosition;
         var dir = Camera.GetLookDirection();
-        return new Ray3(origin, dir);
+        return new Novolis.Math.Geometry.Ray(origin, dir);
     }
-}
-
-internal readonly struct Ray3(Vector3 origin, Vector3 direction)
-{
-    public Vector3 Origin { get; } = origin;
-    public Vector3 Direction { get; } = direction;
 }
