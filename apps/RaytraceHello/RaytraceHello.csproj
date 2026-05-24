@@ -7,7 +7,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Novolis.Raylib.Game" />
     <PackageReference Include="Novolis.Raylib.Presentation" />
-    <PackageReference Include="Novolis.Rendering.Backends.Cpu" />
+    <PackageReference Include="Novolis.Rendering.Backends.Igpu" />
     <PackageReference Include="Novolis.Rendering.DependencyInjection" />
   </ItemGroup>
 </Project>

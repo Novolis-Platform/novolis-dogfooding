@@ -30,7 +30,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 |-----|---------------------------|
 | `MathGridDemo` | Math.Arrays |
 | `RaylibHello` | Raylib |
-| `RaytraceHello` | Raylib, Rendering (CPU + DI), Raylib.Presentation |
+| `RaytraceHello` | Raylib, Rendering (ILGPU + DI), Raylib.Presentation |
 | `DoomLite3D` | Raylib, Math, Simulation |
 | `BouncingBall` | Raylib, Simulation, Physics.Collision |
 | `ArtillerySimulator` | Raylib, Physics, Simulation |

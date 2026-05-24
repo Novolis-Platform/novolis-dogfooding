@@ -25,8 +25,8 @@ internal static class Program
     public static void Main()
     {
         var services = new ServiceCollection();
-        services.AddRayTracing().UseCpuBackend();
-        services.AddSingleton<Novolis.Rendering.Backends.Vulkan.VulkanRayTracingBackend>();
+        services.AddRayTracing().UseIlgpuBackend();
+        services.AddSingleton<RaylibCpuFramePresenter>();
         services.AddSingleton<IFramePresenter>(sp =>
             new YFlippedFramePresenter(sp.GetRequiredService<RaylibCpuFramePresenter>()));
         var provider = services.BuildServiceProvider();
@@ -41,7 +41,7 @@ internal static class Program
         var orbitAngle = 0f;
         var orbitEnabled = false;
 
-        RayGame.Run("RaytraceHello — CPU path tracing", 960, 540, ctx =>
+        RayGame.Run("RaytraceHello — ILGPU path tracing", 960, 540, ctx =>
         {
             if (ctx.Width != frameWidth || ctx.Height != frameHeight)
             {
@@ -94,17 +94,29 @@ internal static class Program
             {
                 worker.EnqueueOrbit(camera, OrbitSamplesPerFrame);
             }
-            else if (worker.TryEnqueueAccumulate(camera, ref sample, AccumulateSamplesPerBatch))
+            else
             {
-                // sample advanced inside worker batch scheduling
+                worker.TryEnqueueAccumulate(camera, ref sample, AccumulateSamplesPerBatch);
             }
 
             frame.TryPresent(presenter);
-            DrawHud(ctx, backend.SampleCount, orbitEnabled);
+            DrawHud(ctx, backend, backend.SampleCount, orbitEnabled);
         });
 
         worker.Dispose();
+        if (backend is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
+
+    private static string ResolveBackendLabel(IRayTracingBackend backend) =>
+        backend.GetType().Name switch
+        {
+            "IlgpuRayTracingBackend" => "ILGPU path tracing",
+            "VulkanRayTracingBackend" => "Vulkan path tracing",
+            _ => "CPU path tracing",
+        };
 
     private static CompiledScene BuildShowcaseScene()
     {
@@ -124,13 +136,13 @@ internal static class Program
         return SceneCompiler.Compile(scene);
     }
 
-    private static void DrawHud(RayGameContext ctx, int sampleCount, bool orbitEnabled)
+    private static void DrawHud(RayGameContext ctx, IRayTracingBackend backend, int sampleCount, bool orbitEnabled)
     {
         const int pad = 12;
         var line = 22;
         var y = pad;
-        ctx.Rect(0, 0, 380, 88, System.Drawing.Color.FromArgb(160, 0, 0, 0));
-        ctx.Text("CPU ray tracing", pad, y, 22, System.Drawing.Color.White);
+        ctx.Rect(0, 0, 420, 88, System.Drawing.Color.FromArgb(160, 0, 0, 0));
+        ctx.Text(ResolveBackendLabel(backend), pad, y, 20, System.Drawing.Color.White);
         y += line;
         ctx.Text($"Samples {sampleCount}", pad, y, 18, System.Drawing.Color.LightGray);
         y += line;
