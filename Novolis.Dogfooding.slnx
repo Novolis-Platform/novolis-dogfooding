@@ -5,10 +5,18 @@
     <File Path="Novolis.Dogfooding.sln.DotSettings" />
     <File Path="nuget.config" />
   </Folder>
-  <Folder Name="/apps/">
-    <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
+  <Folder Name="/raylib/">
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
-    <Project Path="apps/RaytraceHello/RaytraceHello.csproj" />
+    <Project Path="apps/raylib/XFighter/XFighter.csproj" />
+  </Folder>
+  <Folder Name="/rendering/">
+    <Project Path="apps/rendering/RaytraceHello/RaytraceHello.csproj" />
+    <Project Path="apps/rendering/SilkTraceHello/SilkTraceHello.csproj" />
+  </Folder>
+  <Folder Name="/math/">
+    <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
+  </Folder>
+  <Folder Name="/simulation/">
     <Project Path="apps/DoomLite3D/DoomLite3D.csproj" />
     <Project Path="apps/BouncingBall/BouncingBall.csproj" />
     <Project Path="apps/ArtillerySimulator/ArtillerySimulator.csproj" />
@@ -16,9 +24,15 @@
     <Project Path="apps/PlatformerHop/PlatformerHop.csproj" />
     <Project Path="apps/RtsLite/RtsLite.csproj" />
     <Project Path="apps/RandoriFight/RandoriFight.csproj" />
+  </Folder>
+  <Folder Name="/commands/">
     <Project Path="apps/BridgeCommander/BridgeCommander.csproj" />
+  </Folder>
+  <Folder Name="/transports/">
     <Project Path="apps/WireFishViewer/WireFishViewer.csproj" />
     <Project Path="apps/WireFishViewer.Tests/WireFishViewer.Tests.csproj" />
+  </Folder>
+  <Folder Name="/machine-learning/">
     <Project Path="apps/NeuralRacing/NeuralRacing.csproj" />
     <Project Path="apps/NeuralRacing.Tests/NeuralRacing.Tests.csproj" />
   </Folder>

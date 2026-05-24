@@ -26,15 +26,17 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 
 ## Apps
 
-| App | Novolis packages exercised |
-|-----|---------------------------|
-| `MathGridDemo` | Math.Arrays |
-| `RaylibHello` | Raylib |
-| `RaytraceHello` | Raylib.Game, Rendering (ILGPU + DI + Presentation.Raylib) |
-| `DoomLite3D` | Raylib, Math, Simulation |
-| `BouncingBall` | Raylib, Simulation, Physics.Collision |
-| `ArtillerySimulator` | Raylib, Physics, Simulation |
-| `RagdollPlay` | Raylib, Physics.Joints, Simulation |
-| `BridgeCommander` | Commands |
-| `WireFishViewer` | Avalonia, Transports.WireFish, Messaging.Channels |
-| `NeuralRacing` | Simulation.Racing + MachineLearning.Neural (evolution demo; glue in app, not a library package) |
+| App | Folder | Novolis packages exercised |
+|-----|--------|---------------------------|
+| `MathGridDemo` | `math/` | Math.Arrays |
+| `RaylibHello` | `raylib/` | Raylib |
+| `XFighter` | `raylib/` | Raylib (3D cockpit demo; moved from `novolis-raylib/samples`) |
+| `RaytraceHello` | `rendering/` | Raylib.Game, Rendering (ILGPU + DI + Presentation.Raylib) |
+| `SilkTraceHello` | `rendering/` | Rendering (Vulkan/ILGPU + Presentation.Silk) |
+| `DoomLite3D` | `simulation/` | Raylib, Math, Simulation |
+| `BouncingBall` | `simulation/` | Raylib, Simulation, Physics.Collision |
+| `ArtillerySimulator` | `simulation/` | Raylib, Physics, Simulation |
+| `RagdollPlay` | `simulation/` | Raylib, Physics.Joints, Simulation |
+| `BridgeCommander` | `commands/` | Commands |
+| `WireFishViewer` | `transports/` | Avalonia, Transports.WireFish, Messaging.Channels |
+| `NeuralRacing` | `machine-learning/` | Simulation.Racing + MachineLearning.Neural (evolution demo; glue in app, not a library package) |

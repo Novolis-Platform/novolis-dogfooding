@@ -1,5 +1,6 @@
 using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
+using Novolis.Math.Geometry;
 using Novolis.Rendering.Compile;
 using Novolis.Rendering.DependencyInjection;
 using Novolis.Rendering.Materials;
@@ -7,8 +8,6 @@ using Novolis.Rendering.Presentation.Abstractions;
 using Novolis.Rendering.Presentation.Silk;
 using Novolis.Rendering.Runtime;
 using Novolis.Rendering.Scene;
-using Silk.NET.Input;
-
 namespace SilkTraceHello;
 
 internal static class Program
@@ -49,7 +48,7 @@ internal static class Program
                 sample = 0;
             }
 
-            if (ctx.IsKeyPressed(Key.R))
+            if (ctx.IsResetPressed())
             {
                 worker.WaitForIdle();
                 backend.ResetAccumulation();
@@ -57,7 +56,7 @@ internal static class Program
                 sample = 0;
             }
 
-            if (ctx.IsKeyPressed(Key.Space))
+            if (ctx.IsOrbitTogglePressed())
             {
                 orbitEnabled = !orbitEnabled;
                 worker.WaitForIdle();

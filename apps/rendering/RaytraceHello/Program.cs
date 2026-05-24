@@ -116,6 +116,18 @@ internal static class Program
         }
     }
 
+    private static string ResolveBackendLabel(IRayTracingBackend backend) =>
+        backend switch
+        {
+            Novolis.Rendering.Backends.Igpu.IlgpuRayTracingBackend igpu => igpu.BackendLabel,
+            _ => backend.GetType().Name switch
+            {
+                "VulkanRayTracingBackend" => "Vulkan path tracing",
+                "CpuRayTracingBackend" => "CPU path tracing",
+                _ => backend.GetType().Name,
+            },
+        };
+
     private static CompiledScene BuildShowcaseScene()
     {
         var scene = new SceneBuilder()
@@ -140,7 +152,7 @@ internal static class Program
         var line = 22;
         var y = pad;
         ctx.Rect(0, 0, 520, 110, System.Drawing.Color.FromArgb(160, 0, 0, 0));
-        ctx.Text(backend.BackendLabel, pad, y, 20, System.Drawing.Color.White);
+        ctx.Text(ResolveBackendLabel(backend), pad, y, 20, System.Drawing.Color.White);
         y += line;
         var sampleLabel = rendering && sampleCount == 0 ? "Samples …" : $"Samples {sampleCount}";
         ctx.Text(sampleLabel, pad, y, 18, System.Drawing.Color.LightGray);
