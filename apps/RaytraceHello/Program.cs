@@ -150,7 +150,7 @@ internal static class Program
         const int pad = 12;
         var line = 22;
         var y = pad;
-        ctx.Rect(0, 0, 420, 88, System.Drawing.Color.FromArgb(160, 0, 0, 0));
+        ctx.Rect(0, 0, 520, 110, System.Drawing.Color.FromArgb(160, 0, 0, 0));
         ctx.Text(ResolveBackendLabel(backend), pad, y, 20, System.Drawing.Color.White);
         y += line;
         var sampleLabel = rendering && sampleCount == 0 ? "Samples …" : $"Samples {sampleCount}";
@@ -161,7 +161,9 @@ internal static class Program
             : "off (accumulating, async)";
         ctx.Text($"Space orbit {orbitLabel} · R reset", pad, y, 16, System.Drawing.Color.Gray);
         y += line;
-        ctx.Text("Env: NOVOLIS_RAY_BACKEND=cpu | NOVOLIS_ILGPU_DEVICE=cuda", pad, y, 14, System.Drawing.Color.DimGray);
+        var rayBackend = Environment.GetEnvironmentVariable("NOVOLIS_RAY_BACKEND") ?? "(default ilgpu)";
+        var ilgpuDevice = Environment.GetEnvironmentVariable("NOVOLIS_ILGPU_DEVICE") ?? "(auto)";
+        ctx.Text($"Active env: RAY_BACKEND={rayBackend}  ILGPU_DEVICE={ilgpuDevice}", pad, y, 14, System.Drawing.Color.DimGray);
     }
 
     private sealed class FrameSnapshot
