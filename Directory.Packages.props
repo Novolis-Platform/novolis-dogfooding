@@ -1,5 +1,4 @@
 <Project>
-    <Import Project="build\version.props" Condition="Exists('build\version.props')" />
 <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
