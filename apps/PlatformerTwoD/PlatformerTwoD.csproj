@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PlatformerTwoD</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\PlatformerHop\Game\SideLevel.cs" Link="Shared\SideLevel.cs" />
+    <PackageReference Include="Novolis.Math.Arrays" />
+    <PackageReference Include="Novolis.Math.Geometry" />
+    <PackageReference Include="Novolis.Rendering.TwoD" />
+    <PackageReference Include="Novolis.Rendering.Backends.TwoD.Silk" />
+    <PackageReference Include="Novolis.Simulation.Kinematics" />
+    <PackageReference Include="Novolis.Simulation.World" />
+  </ItemGroup>
+</Project>

@@ -14,6 +14,22 @@ Live packet capture UI for `Novolis.Transports.WireFish` (WireShark-style layout
 dotnet run --project apps/WireFishViewer
 ```
 
+## SilkTwoDHello
+
+Orthographic 2D sample (`Rendering.TwoD` + Silk): platforms, `TwoDCollisionWorld`, HUD, menus.
+
+```bash
+dotnet run --project apps/rendering/SilkTwoDHello
+```
+
+## PlatformerTwoD
+
+Same tile demo as PlatformerHop, but **planar XZ** via `PlanarAgent` and **Silk TwoD** drawing (pairs with Raylib `PlatformerHop`).
+
+```bash
+dotnet run --project apps/PlatformerTwoD
+```
+
 ## DoomLite3D
 
 ```bash

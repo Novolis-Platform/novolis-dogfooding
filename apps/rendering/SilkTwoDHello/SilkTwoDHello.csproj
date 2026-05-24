@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>SilkTwoDHello</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Rendering.TwoD" />
+    <PackageReference Include="Novolis.Rendering.Backends.TwoD.Silk" />
+  </ItemGroup>
+</Project>

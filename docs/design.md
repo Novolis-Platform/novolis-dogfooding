@@ -29,7 +29,12 @@ Version pin: `Directory.Packages.props` → floating `2026.1.*` for Novolis pack
 
 Authenticate with `GITHUB_TOKEN`, `dotnet restore` from `nuget.config`, then build `Novolis.Dogfooding.slnx`.
 
+## 2D rendering dogfood
+
+`Novolis.Rendering.TwoD` + `Novolis.Rendering.Backends.TwoD.Silk` are consumed from GitHub Packages. See [two-d-simulation-gaps.md](two-d-simulation-gaps.md) for Simulation integration and coordinate conventions.
+
 ## Related
 
+- [two-d-simulation-gaps.md](two-d-simulation-gaps.md)
 - [nuget-setup.md](../../novolis-governance/docs/nuget-setup.md)
 - [release-policy.md](../../novolis-governance/docs/release-policy.md)

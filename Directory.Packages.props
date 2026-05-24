@@ -32,6 +32,8 @@
     <PackageVersion Include="Novolis.Rendering.Backends.Vulkan" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.PathTrace.Demos" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Presentation.Silk" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.TwoD" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Backends.TwoD.Silk" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Compile" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Materials" Version="2026.1.*" />
