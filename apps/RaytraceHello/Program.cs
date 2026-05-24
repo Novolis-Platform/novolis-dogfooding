@@ -15,8 +15,8 @@ namespace RaytraceHello;
 
 internal static class Program
 {
-    private const int OrbitSamplesPerFrame = 4;
-    private const int AccumulateSamplesPerBatch = 3;
+    private const int OrbitSamplesPerFrame = 16;
+    private const int AccumulateSamplesPerBatch = 4;
 
     private static readonly Vector3 CubeCenter = new(0f, 0.25f, 0f);
     private static readonly Vector3 CubeHalfExtents = new(0.25f, 0.25f, 0.25f);
@@ -25,7 +25,15 @@ internal static class Program
     public static void Main()
     {
         var services = new ServiceCollection();
-        services.AddRayTracing().UseIlgpuBackend();
+        services.AddRayTracing();
+        if (string.Equals(Environment.GetEnvironmentVariable("NOVOLIS_RAY_BACKEND"), "cpu", StringComparison.OrdinalIgnoreCase))
+        {
+            services.UseCpuBackend();
+        }
+        else
+        {
+            services.UseIlgpuBackend();
+        }
         services.AddSingleton<IFramePresenter, RaylibCpuFramePresenter>();
         var provider = services.BuildServiceProvider();
         var backend = provider.GetRequiredService<IRayTracingBackend>();
@@ -98,7 +106,7 @@ internal static class Program
             }
 
             frame.TryPresent(presenter);
-            DrawHud(ctx, backend, backend.SampleCount, orbitEnabled);
+            DrawHud(ctx, backend, frame.DisplayedSampleCount, orbitEnabled, worker.IsBusy);
         });
 
         worker.Dispose();
@@ -109,11 +117,14 @@ internal static class Program
     }
 
     private static string ResolveBackendLabel(IRayTracingBackend backend) =>
-        backend.GetType().Name switch
+        backend switch
         {
-            "IlgpuRayTracingBackend" => "ILGPU path tracing",
-            "VulkanRayTracingBackend" => "Vulkan path tracing",
-            _ => "CPU path tracing",
+            Novolis.Rendering.Backends.Igpu.IlgpuRayTracingBackend igpu => igpu.BackendLabel,
+            _ => backend.GetType().Name switch
+            {
+                "VulkanRayTracingBackend" => "Vulkan path tracing",
+                _ => "CPU path tracing",
+            },
         };
 
     private static CompiledScene BuildShowcaseScene()
@@ -134,7 +145,7 @@ internal static class Program
         return SceneCompiler.Compile(scene);
     }
 
-    private static void DrawHud(RayGameContext ctx, IRayTracingBackend backend, int sampleCount, bool orbitEnabled)
+    private static void DrawHud(RayGameContext ctx, IRayTracingBackend backend, int sampleCount, bool orbitEnabled, bool rendering)
     {
         const int pad = 12;
         var line = 22;
@@ -142,12 +153,15 @@ internal static class Program
         ctx.Rect(0, 0, 420, 88, System.Drawing.Color.FromArgb(160, 0, 0, 0));
         ctx.Text(ResolveBackendLabel(backend), pad, y, 20, System.Drawing.Color.White);
         y += line;
-        ctx.Text($"Samples {sampleCount}", pad, y, 18, System.Drawing.Color.LightGray);
+        var sampleLabel = rendering && sampleCount == 0 ? "Samples …" : $"Samples {sampleCount}";
+        ctx.Text(sampleLabel, pad, y, 18, System.Drawing.Color.LightGray);
         y += line;
         var orbitLabel = orbitEnabled
             ? $"on ({OrbitSamplesPerFrame} spp/frame, async)"
             : "off (accumulating, async)";
         ctx.Text($"Space orbit {orbitLabel} · R reset", pad, y, 16, System.Drawing.Color.Gray);
+        y += line;
+        ctx.Text("Env: NOVOLIS_RAY_BACKEND=cpu | NOVOLIS_ILGPU_DEVICE=cuda", pad, y, 14, System.Drawing.Color.DimGray);
     }
 
     private sealed class FrameSnapshot
@@ -156,6 +170,7 @@ internal static class Program
         private Rgba32[]? _pixels;
         private int _width;
         private int _height;
+        public int DisplayedSampleCount { get; private set; }
 
         public void Invalidate(int width, int height)
         {
@@ -169,11 +184,12 @@ internal static class Program
 
                 _width = width;
                 _height = height;
+                DisplayedSampleCount = 0;
                 Array.Clear(_pixels);
             }
         }
 
-        public void Publish(ReadOnlySpan<Rgba32> source, int width, int height)
+        public void Publish(ReadOnlySpan<Rgba32> source, int width, int height, int sampleCount)
         {
             lock (_gate)
             {
@@ -186,6 +202,7 @@ internal static class Program
                 source.CopyTo(_pixels);
                 _width = width;
                 _height = height;
+                DisplayedSampleCount = sampleCount;
             }
         }
 
@@ -209,6 +226,17 @@ internal static class Program
         private readonly object _gate = new();
         private Task? _task;
         private bool _disposed;
+
+        public bool IsBusy
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _task is { IsCompleted: false };
+                }
+            }
+        }
 
         public void EnqueueOrbit(CameraSnapshot camera, int samplesPerFrame)
         {
@@ -295,7 +323,7 @@ internal static class Program
                 return;
             }
 
-            frame.Publish(pixels, w, h);
+            frame.Publish(pixels, w, h, backend.SampleCount);
         }
     }
 }
