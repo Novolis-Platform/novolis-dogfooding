@@ -12,9 +12,11 @@
 
 ## Local development
 
-1. Pack libraries: `d:\novolis\scripts\pack-novolis-local.ps1`
-2. Restore using [`nuget.config`](../nuget.config) (`novolis-local` → `../artifacts/nuget-local`)
-3. `dotnet build Novolis.Dogfooding.slnx`
+Rider **Build Solution** (Ctrl+F9) clears stale `novolis.*` NuGet cache entries via [`Directory.Solution.targets`](../Directory.Solution.targets) → `scripts/prepare-dogfood-packages.ps1 -SkipPack -SkipRestore`, then MSBuild/Rider restore and compile. Keep **Restore NuGet packages before build** enabled in Rider settings. CI skips this hook and packs in its own step.
+
+1. **Full pipeline** (pack + restore + build): `./scripts/build.ps1` or Rider run config **Build Dogfood (pack + restore + build)**
+2. After library API changes: run `build.ps1` once, or MSBuild with `-p:DogfoodPrepareArgs=-SkipRestore` (includes pack)
+3. Disable the hook: `-p:SkipDogfoodPrepare=true`
 
 Optional: `submodules/` junctions via `scripts/link-local-repos.ps1` for **source browsing** only.
 
