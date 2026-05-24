@@ -18,12 +18,12 @@
 | GitHub Packages | `https://nuget.pkg.github.com/Novolis-Platform/index.json` |
 | nuget.org | Third-party dependencies only (`packageSourceMapping` in `nuget.config`) |
 
-Version pin: `Directory.Packages.props` → `NovolisPackageVersion` (4-part, e.g. `0.0.1.1`).
+Version pin: `Directory.Packages.props` → floating `2026.1.*` for Novolis packages.
 
 ## Local development
 
-1. Set `NOVOLIS_GITHUB_PACKAGES_PAT` (or `GITHUB_TOKEN` / `GH_TOKEN`) with `read:packages`
-2. `./scripts/build.ps1` or Rider Build Solution (runs `prepare-dogfood-packages.ps1` before restore)
+1. Authenticate to GitHub Packages (`gh auth refresh -s read:packages`, or set `NOVOLIS_GPR_TOKEN` / `GITHUB_TOKEN`)
+2. `dotnet restore` then `dotnet build` (Rider: normal **Build Solution**)
 
 ## CI
 

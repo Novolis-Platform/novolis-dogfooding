@@ -4,29 +4,26 @@
 
 - .NET SDK 10.0.100+ (`global.json`)
 - Git 2.40+
+- GitHub CLI (`gh`) with `read:packages`, or a PAT in `NOVOLIS_GPR_TOKEN` / `GITHUB_TOKEN`
 - For graphical samples: a desktop environment (Raylib apps)
 
-## Option A — local monorepo (recommended for maintainers)
+## Clone and build
 
-1. Clone or open `novolis-dogfooding` next to other `novolis-*` repos.
-2. Run `./scripts/link-local-repos.ps1` to junction `submodules/` to sibling folders.
-3. `dotnet build Novolis.Dogfooding.slnx`
-4. `dotnet run --project apps/MathGridDemo`
+```powershell
+git clone https://github.com/Novolis-Platform/novolis-dogfooding.git
+cd novolis-dogfooding
+gh auth refresh -h github.com -s read:packages
+dotnet restore
+dotnet build --no-restore
+dotnet run --project apps/MathGridDemo
+```
 
-Edits in `../novolis-math` are picked up on the next build without publishing packages.
-
-## Option B — submodules from GitHub
+## Optional: library source in `submodules/`
 
 ```bash
 git clone --recurse-submodules https://github.com/Novolis-Platform/novolis-dogfooding.git
-cd novolis-dogfooding
-dotnet build Novolis.Dogfooding.slnx
-```
-
-## Option C — refresh submodules
-
-```powershell
-./scripts/sync-submodules.ps1
-# or
+# or, after clone:
 git submodule update --init --recursive
 ```
+
+Submodules are not used at compile time; they are only for reading or debugging upstream code.

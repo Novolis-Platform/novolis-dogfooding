@@ -10,25 +10,27 @@ This repo does not publish packages and has **no GitHub Actions CI**. Library re
 git clone https://github.com/Novolis-Platform/novolis-dogfooding.git
 cd novolis-dogfooding
 
-# One-time: grant gh read:packages (no manual PAT if org packages are configured — see governance doc)
+# One-time: GitHub Packages read access (see governance doc)
 gh auth refresh -h github.com -s read:packages
-./scripts/build.ps1
+
+dotnet restore
+dotnet build --no-restore
 dotnet run --project apps/MathGridDemo
 ```
 
 Feed: `https://nuget.pkg.github.com/Novolis-Platform/index.json` (see `nuget.config`).
 
-Novolis package versions use floating `*` in `Directory.Packages.props` (latest from GitHub Packages). Org setup: [github-packages-org-settings.md](../novolis-governance/docs/github-packages-org-settings.md).
+Novolis package versions use floating `2026.1.*` in `Directory.Packages.props`. Org setup: [github-packages-org-settings.md](../novolis-governance/docs/github-packages-org-settings.md).
 
-## Scripts
+If restore returns 401, configure the `github` source once:
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/configure-github-packages-auth.ps1` | Wire NuGet credentials for the org feed |
-| `scripts/prepare-dogfood-packages.ps1` | Auth + clear `novolis.*` cache + restore |
-| `scripts/build.ps1` | Prepare + build solution |
-
-Rider **Build Solution** runs `prepare-dogfood-packages.ps1` via `Directory.Solution.targets` before restore.
+```powershell
+dotnet nuget update source github `
+  --username x-access-token `
+  --password (gh auth token) `
+  --store-password-in-clear-text `
+  --configfile nuget.config
+```
 
 ## Apps
 
@@ -46,4 +48,4 @@ Rider **Build Solution** runs `prepare-dogfood-packages.ps1` via `Directory.Solu
 
 ## Submodules (optional)
 
-`submodules/` and `scripts/sync-submodules.ps1` remain for browsing library **source**; builds do not use them. See `.novolis/repos.json`.
+`submodules/` is for browsing library **source** only; builds use GitHub Packages, not `ProjectReference`. See `.novolis/repos.json`. Refresh with `git submodule update --init --recursive`.
