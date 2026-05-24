@@ -8,6 +8,7 @@
   <Folder Name="/raylib/">
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
     <Project Path="apps/raylib/XFighter/XFighter.csproj" />
+    <Project Path="apps/raylib/XFighter.Tests/XFighter.Tests.csproj" />
   </Folder>
   <Folder Name="/rendering/">
     <Project Path="apps/rendering/RaytraceHello/RaytraceHello.csproj" />
