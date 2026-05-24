@@ -29,7 +29,10 @@
     <PackageVersion Include="Novolis.Rendering.Presentation.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Igpu" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Compile" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Materials" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Scene" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Kinematics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Racing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.MachineLearning.Neural" Version="2026.1.*" />
