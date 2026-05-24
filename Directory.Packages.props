@@ -26,7 +26,7 @@
     <PackageVersion Include="Novolis.Physics.Joints" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Game" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Raylib.Presentation" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Presentation.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Igpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />

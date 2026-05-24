@@ -6,8 +6,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Novolis.Raylib.Game" />
-    <PackageReference Include="Novolis.Raylib.Presentation" />
     <PackageReference Include="Novolis.Rendering.Backends.Igpu" />
     <PackageReference Include="Novolis.Rendering.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\..\novolis-rendering\src\Novolis.Rendering.Presentation.Raylib\Novolis.Rendering.Presentation.Raylib.csproj')">
+    <ProjectReference Include="..\..\..\novolis-rendering\src\Novolis.Rendering.Presentation.Raylib\Novolis.Rendering.Presentation.Raylib.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="!Exists('$(MSBuildThisFileDirectory)..\..\..\novolis-rendering\src\Novolis.Rendering.Presentation.Raylib\Novolis.Rendering.Presentation.Raylib.csproj')">
+    <PackageReference Include="Novolis.Rendering.Presentation.Raylib" />
   </ItemGroup>
 </Project>

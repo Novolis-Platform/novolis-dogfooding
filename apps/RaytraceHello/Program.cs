@@ -3,8 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Novolis.Math.Geometry;
 using Novolis.Raylib.Game;
 using Novolis.Raylib.Interact;
-using Novolis.Raylib.Presentation;
 using Novolis.Rendering.Compile;
+using Novolis.Rendering.Presentation.Raylib;
 using Novolis.Rendering.DependencyInjection;
 using Novolis.Rendering.Materials;
 using Novolis.Rendering.Presentation.Abstractions;
@@ -26,9 +26,7 @@ internal static class Program
     {
         var services = new ServiceCollection();
         services.AddRayTracing().UseIlgpuBackend();
-        services.AddSingleton<RaylibCpuFramePresenter>();
-        services.AddSingleton<IFramePresenter>(sp =>
-            new YFlippedFramePresenter(sp.GetRequiredService<RaylibCpuFramePresenter>()));
+        services.AddSingleton<IFramePresenter, RaylibCpuFramePresenter>();
         var provider = services.BuildServiceProvider();
         var backend = provider.GetRequiredService<IRayTracingBackend>();
         var presenter = provider.GetRequiredService<IFramePresenter>();
@@ -150,28 +148,6 @@ internal static class Program
             ? $"on ({OrbitSamplesPerFrame} spp/frame, async)"
             : "off (accumulating, async)";
         ctx.Text($"Space orbit {orbitLabel} · R reset", pad, y, 16, System.Drawing.Color.Gray);
-    }
-
-    /// <summary>Raylib textures are bottom-up; flip rows until Presentation package includes this.</summary>
-    private sealed class YFlippedFramePresenter(IFramePresenter inner) : IFramePresenter
-    {
-        private Rgba32[]? _scratch;
-
-        public void PresentCpuFrame(ReadOnlySpan<Rgba32> pixels, int width, int height)
-        {
-            var count = width * height;
-            if (_scratch is null || _scratch.Length != count)
-            {
-                _scratch = new Rgba32[count];
-            }
-
-            for (var y = 0; y < height; y++)
-            {
-                pixels.Slice(y * width, width).CopyTo(_scratch.AsSpan((height - 1 - y) * width, width));
-            }
-
-            inner.PresentCpuFrame(_scratch, width, height);
-        }
     }
 
     private sealed class FrameSnapshot
