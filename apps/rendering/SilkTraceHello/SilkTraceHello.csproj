@@ -2,22 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>SilkTraceHello</RootNamespace>
-    <!-- Sibling checkout: d:\novolis\novolis-rendering next to novolis-dogfooding -->
-    <NovolisRenderingSrc Condition="'$(NovolisRenderingSrc)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\..\novolis-rendering\src')">$(MSBuildThisFileDirectory)..\..\..\..\novolis-rendering\src\</NovolisRenderingSrc>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(NovolisRenderingSrc)' != ''">
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.Backends.Igpu\Novolis.Rendering.Backends.Igpu.csproj" />
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.Backends.Vulkan\Novolis.Rendering.Backends.Vulkan.csproj" />
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.Compile\Novolis.Rendering.Compile.csproj" />
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.DependencyInjection\Novolis.Rendering.DependencyInjection.csproj" />
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.Materials\Novolis.Rendering.Materials.csproj" />
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.Presentation.Silk\Novolis.Rendering.Presentation.Silk.csproj" />
-    <ProjectReference Include="$(NovolisRenderingSrc)Novolis.Rendering.Scene\Novolis.Rendering.Scene.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(NovolisRenderingSrc)' == ''">
     <PackageReference Include="Novolis.Rendering.Backends.Igpu" />
     <PackageReference Include="Novolis.Rendering.Backends.Vulkan" />
     <PackageReference Include="Novolis.Rendering.Compile" />
