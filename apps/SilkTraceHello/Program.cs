@@ -1,17 +1,15 @@
 using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
-using Novolis.Math.Geometry;
-using Novolis.Raylib.Game;
-using Novolis.Raylib.Interact;
 using Novolis.Rendering.Compile;
-using Novolis.Rendering.Presentation.Raylib;
 using Novolis.Rendering.DependencyInjection;
 using Novolis.Rendering.Materials;
 using Novolis.Rendering.Presentation.Abstractions;
+using Novolis.Rendering.Presentation.Silk;
 using Novolis.Rendering.Runtime;
 using Novolis.Rendering.Scene;
+using Silk.NET.Input;
 
-namespace RaytraceHello;
+namespace SilkTraceHello;
 
 internal static class Program
 {
@@ -26,18 +24,9 @@ internal static class Program
     {
         var services = new ServiceCollection();
         services.AddRayTracing();
-        if (string.Equals(Environment.GetEnvironmentVariable("NOVOLIS_RAY_BACKEND"), "cpu", StringComparison.OrdinalIgnoreCase))
-        {
-            services.UseCpuBackend();
-        }
-        else
-        {
-            services.UseIlgpuBackend();
-        }
-        services.AddSingleton<IFramePresenter, RaylibCpuFramePresenter>();
+        RegisterBackend(services);
         var provider = services.BuildServiceProvider();
         var backend = provider.GetRequiredService<IRayTracingBackend>();
-        var presenter = provider.GetRequiredService<IFramePresenter>();
         var compiled = BuildShowcaseScene();
         var frame = new FrameSnapshot();
         var worker = new BackgroundTracer(backend, frame);
@@ -47,7 +36,7 @@ internal static class Program
         var orbitAngle = 0f;
         var orbitEnabled = false;
 
-        RayGame.Run("RaytraceHello — ILGPU path tracing", 960, 540, ctx =>
+        SilkGame.Run("SilkTraceHello — path tracing", 960, 540, ctx =>
         {
             if (ctx.Width != frameWidth || ctx.Height != frameHeight)
             {
@@ -60,7 +49,7 @@ internal static class Program
                 sample = 0;
             }
 
-            if (ctx.IsKeyPressed(KeyboardKey.R))
+            if (ctx.IsKeyPressed(Key.R))
             {
                 worker.WaitForIdle();
                 backend.ResetAccumulation();
@@ -68,7 +57,7 @@ internal static class Program
                 sample = 0;
             }
 
-            if (ctx.IsKeyPressed(KeyboardKey.Space))
+            if (ctx.IsKeyPressed(Key.Space))
             {
                 orbitEnabled = !orbitEnabled;
                 worker.WaitForIdle();
@@ -94,7 +83,7 @@ internal static class Program
                 CubeCenter,
                 Vector3.UnitY,
                 52f,
-                frameWidth / (float)frameHeight);
+                frameWidth / (float)Math.Max(1, frameHeight));
 
             if (orbitEnabled)
             {
@@ -105,8 +94,11 @@ internal static class Program
                 worker.TryEnqueueAccumulate(camera, ref sample, AccumulateSamplesPerBatch);
             }
 
-            frame.TryPresent(presenter);
-            DrawHud(ctx, backend, frame.DisplayedSampleCount, orbitEnabled, worker.IsBusy);
+            frame.TryPresent(ctx.FramePresenter);
+            var rayBackend = Environment.GetEnvironmentVariable("NOVOLIS_RAY_BACKEND") ?? "(default ilgpu)";
+            var ilgpuDevice = Environment.GetEnvironmentVariable("NOVOLIS_ILGPU_DEVICE") ?? "(auto)";
+            ctx.SetTitle(
+                $"{backend.BackendLabel} | samples {frame.DisplayedSampleCount} | orbit {(orbitEnabled ? "on" : "off")} | RAY_BACKEND={rayBackend} ILGPU={ilgpuDevice}");
         });
 
         worker.Dispose();
@@ -114,6 +106,24 @@ internal static class Program
         {
             disposable.Dispose();
         }
+    }
+
+    private static void RegisterBackend(IServiceCollection services)
+    {
+        var backend = Environment.GetEnvironmentVariable("NOVOLIS_RAY_BACKEND");
+        if (string.Equals(backend, "cpu", StringComparison.OrdinalIgnoreCase))
+        {
+            services.UseCpuBackend();
+            return;
+        }
+
+        if (string.Equals(backend, "vulkan", StringComparison.OrdinalIgnoreCase))
+        {
+            services.UseVulkanBackend();
+            return;
+        }
+
+        services.UseIlgpuBackend();
     }
 
     private static CompiledScene BuildShowcaseScene()
@@ -132,27 +142,6 @@ internal static class Program
             .AddDirectionalLight(new Vector3(0.6f, -0.4f, 0.5f), new Vector3(0.55f, 0.65f, 0.85f), 0.45f)
             .Build();
         return SceneCompiler.Compile(scene);
-    }
-
-    private static void DrawHud(RayGameContext ctx, IRayTracingBackend backend, int sampleCount, bool orbitEnabled, bool rendering)
-    {
-        const int pad = 12;
-        var line = 22;
-        var y = pad;
-        ctx.Rect(0, 0, 520, 110, System.Drawing.Color.FromArgb(160, 0, 0, 0));
-        ctx.Text(backend.BackendLabel, pad, y, 20, System.Drawing.Color.White);
-        y += line;
-        var sampleLabel = rendering && sampleCount == 0 ? "Samples …" : $"Samples {sampleCount}";
-        ctx.Text(sampleLabel, pad, y, 18, System.Drawing.Color.LightGray);
-        y += line;
-        var orbitLabel = orbitEnabled
-            ? $"on ({OrbitSamplesPerFrame} spp/frame, async)"
-            : "off (accumulating, async)";
-        ctx.Text($"Space orbit {orbitLabel} · R reset", pad, y, 16, System.Drawing.Color.Gray);
-        y += line;
-        var rayBackend = Environment.GetEnvironmentVariable("NOVOLIS_RAY_BACKEND") ?? "(default ilgpu)";
-        var ilgpuDevice = Environment.GetEnvironmentVariable("NOVOLIS_ILGPU_DEVICE") ?? "(auto)";
-        ctx.Text($"Active env: RAY_BACKEND={rayBackend}  ILGPU_DEVICE={ilgpuDevice}", pad, y, 14, System.Drawing.Color.DimGray);
     }
 
     private sealed class FrameSnapshot
@@ -217,17 +206,6 @@ internal static class Program
         private readonly object _gate = new();
         private Task? _task;
         private bool _disposed;
-
-        public bool IsBusy
-        {
-            get
-            {
-                lock (_gate)
-                {
-                    return _task is { IsCompleted: false };
-                }
-            }
-        }
 
         public void EnqueueOrbit(CameraSnapshot camera, int samplesPerFrame)
         {
