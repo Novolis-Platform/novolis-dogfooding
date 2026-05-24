@@ -12,7 +12,7 @@
           BeforeTargets="Restore"
           Inputs="$(_DogfoodPrepareScript);$(_DogfoodRoot)nuget.config"
           Outputs="$(_DogfoodRoot)artifacts\dogfood-prepare.stamp"
-          Condition="'$(SkipDogfoodPrepare)' != 'true'">
+          Condition="'$(SkipDogfoodPrepare)' != 'true' and '$(GITHUB_ACTIONS)' != 'true'">
     <Message Importance="high" Text="PrepareDogfoodPackages: GitHub Packages auth + cache refresh" />
     <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(_DogfoodPrepareScript)&quot; $(DogfoodPrepareArgs)"
           WorkingDirectory="$(_DogfoodRoot)"

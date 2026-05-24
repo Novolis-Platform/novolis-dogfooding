@@ -25,6 +25,7 @@
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="*" />
     <PackageVersion Include="Novolis.Physics.Joints" Version="*" />
     <PackageVersion Include="Novolis.Raylib" Version="*" />
+    <PackageVersion Include="Novolis.Raylib.Game" Version="*" />
     <PackageVersion Include="Novolis.Raylib.Presentation" Version="*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="*" />
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="*" />

@@ -2,9 +2,13 @@ name: Merge
 on:
   push:
     branches: [main]
+permissions:
+  contents: read
+  packages: read
 jobs:
   ci:
     uses: Novolis-Platform/novolis-workflows/.github/workflows/dotnet-pull-request.yml@main
     with:
-      solution: Novolis.Dogfooding.slnx
+      solution: Novolis.Dogfooding.CI.slnx
       run_tests: false
+      skip_dogfood_prepare: true

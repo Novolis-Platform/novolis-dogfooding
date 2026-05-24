@@ -50,4 +50,8 @@ Rider **Build Solution** runs `prepare-dogfood-packages.ps1` via `Directory.Solu
 
 ## CI
 
-Push/PR workflows restore from **GitHub Packages** using `GITHUB_TOKEN` (`packages: read`). No local pack step.
+Push/PR workflows build `Novolis.Dogfooding.CI.slnx` (apps whose packages are already on GitHub Packages). Add projects to that solution as more library repos publish via `merge.yml`.
+
+Full `Novolis.Dogfooding.slnx` needs Raylib, Simulation, Physics, etc. on the feed — run `merge.yml` on those repos first, then extend the CI solution.
+
+CI uses `GITHUB_TOKEN` with `packages: read` (no `prepare-dogfood-packages` hook in Actions).

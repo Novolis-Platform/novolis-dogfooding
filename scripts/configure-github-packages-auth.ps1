@@ -41,11 +41,7 @@ GitHub Packages (NuGet) requires authentication even for public packages.
   Actions: ensure org packages grant 'novolis-dogfooding' Actions access (see novolis-governance/docs/github-packages-org-settings.md).
   Local:   gh auth refresh -h github.com -s read:packages
 "@
-    if ($inActions) {
-        Write-Error $msg
-    }
-    Write-Warning $msg
-    exit 0
+    Write-Error $msg
 }
 
 # Do not use gh OAuth without read:packages — it causes 403 on restore.
