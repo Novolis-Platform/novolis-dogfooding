@@ -30,6 +30,8 @@
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Kinematics" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.Racing" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.MachineLearning.Neural" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.View" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />

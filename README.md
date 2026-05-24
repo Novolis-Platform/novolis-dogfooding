@@ -37,3 +37,4 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `RagdollPlay` | Raylib, Physics.Joints, Simulation |
 | `BridgeCommander` | Commands |
 | `WireFishViewer` | Avalonia, Transports.WireFish, Messaging.Channels |
+| `NeuralRacing` | Simulation.Racing + MachineLearning.Neural (evolution demo; glue in app, not a library package) |
