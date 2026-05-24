@@ -16,9 +16,9 @@ $ConfigFile = (Resolve-Path $ConfigFile).Path
 $source = "https://nuget.pkg.github.com/Novolis-Platform/index.json"
 $inActions = $env:GITHUB_ACTIONS -eq 'true' -or $env:CI -eq 'true'
 
-function Test-GhReadPackages {
+function Test-GhLoggedIn {
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { return $false }
-    return (gh auth status 2>&1 | Out-String) -match 'read:packages'
+    return (gh auth status 2>&1 | Out-String) -match 'Logged in to github\.com'
 }
 
 function Get-GprToken {
@@ -27,7 +27,7 @@ function Get-GprToken {
         $value = [Environment]::GetEnvironmentVariable($name)
         if ($value) { return $value }
     }
-    if ((Test-GhReadPackages) -and (Get-Command gh -ErrorAction SilentlyContinue)) {
+    if (Test-GhLoggedIn) {
         $gh = gh auth token 2>$null
         if ($gh) { return $gh.Trim() }
     }
@@ -44,7 +44,7 @@ GitHub Packages (NuGet) requires authentication even for public packages.
     Write-Error $msg
 }
 
-# Do not use gh OAuth without read:packages — it causes 403 on restore.
+# Prefer gh / env tokens with packages scope (read:packages or write:packages).
 dotnet nuget remove source github --configfile $ConfigFile 2>$null | Out-Null
 dotnet nuget add source $source `
     --name github `
