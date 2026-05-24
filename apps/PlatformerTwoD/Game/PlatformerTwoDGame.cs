@@ -1,4 +1,5 @@
 using System.Numerics;
+using Novolis.Dogfooding.TwoD;
 using Novolis.Math.Geometry;
 using Novolis.Rendering.Backends.TwoD.Silk;
 using Novolis.Rendering.TwoD;
@@ -19,7 +20,7 @@ internal sealed class PlatformerTwoDGame
         var scene = ctx.Scene;
         scene.Camera.ClearColor = new Rgba32(30, 36, 52);
         scene.Camera.WorldUnitsPerPixel = 1f / 32f;
-        BuildPlatforms(scene);
+        DenseGridPlatforms.AddSolidCells(scene, _level.Tiles, SideLevel.CellSize, new Rgba32(90, 110, 150));
         _player.Reset(_level);
         _cameraX = _player.Position.X;
     }
@@ -61,48 +62,11 @@ internal sealed class PlatformerTwoDGame
             2f,
             new Rgba32(180, 200, 220));
 
-        if (_playerMarker is not null)
-        {
-            scene.StaticPolygons.Remove(_playerMarker);
-        }
-
-        _playerMarker = CreatePlayerMarker(_player.Position, SideLevel.PlayerRadius);
-        scene.StaticPolygons.Add(_playerMarker);
-    }
-
-    private void BuildPlatforms(TwoDScene scene)
-    {
-        var tiles = _level.Tiles;
-        var cell = SideLevel.CellSize;
-        var fill = new Rgba32(90, 110, 150);
-
-        for (var z = 0u; z < tiles.Height; z++)
-        for (var x = 0u; x < tiles.Width; x++)
-        {
-            if (tiles[x, z, 0] == 0)
-            {
-                continue;
-            }
-
-            var minX = x * cell;
-            var minZ = z * cell;
-            scene.AddPlatform(minX, minZ, minX + cell, minZ + cell, fill);
-        }
-    }
-
-    private static TwoDStaticPolygon CreatePlayerMarker(Vector3 pos, float radius)
-    {
-        return new TwoDStaticPolygon(
-            TwoDScenePrimitives.Rectangle(
-                pos.X - radius,
-                pos.Z - radius,
-                pos.X + radius,
-                pos.Z + radius),
-            new Rgba32(255, 180, 90))
-        {
-            DrawFilled = true,
-            DrawOutline = true,
-            SortKey = 1000,
-        };
+        _playerMarker = DenseGridPlatforms.ReplaceSquareMarker(
+            scene,
+            _playerMarker,
+            _player.Position,
+            SideLevel.PlayerRadius,
+            new Rgba32(255, 180, 90));
     }
 }

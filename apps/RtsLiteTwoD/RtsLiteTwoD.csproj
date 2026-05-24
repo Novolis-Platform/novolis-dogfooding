@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RtsLiteTwoD</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\RtsLite\Game\RtsArena.cs" Link="Shared\RtsArena.cs" />
+    <Compile Include="..\RtsLite\Game\RtsUnit.cs" Link="Shared\RtsUnit.cs" />
+    <Compile Include="..\RtsLite\Game\RtsBuilding.cs" Link="Shared\RtsBuilding.cs" />
+    <Compile Include="..\RtsLite\Game\RtsBuildingType.cs" Link="Shared\RtsBuildingType.cs" />
+    <Compile Include="..\RtsLite\Game\RtsSelection.cs" Link="Shared\RtsSelection.cs" />
+    <Compile Include="..\RtsLite\Game\RtsBuildPlacer.cs" Link="Shared\RtsBuildPlacer.cs" />
+    <ProjectReference Include="..\shared\Novolis.Dogfooding.TwoD\Novolis.Dogfooding.TwoD.csproj" />
+    <PackageReference Include="Novolis.Rendering.Backends.TwoD.Silk" />
+    <PackageReference Include="Novolis.Simulation.Kinematics" />
+  </ItemGroup>
+</Project>

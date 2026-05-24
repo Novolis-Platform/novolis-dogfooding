@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/shared/">
+    <Project Path="apps/shared/Novolis.Dogfooding.TwoD/Novolis.Dogfooding.TwoD.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
@@ -27,6 +30,7 @@
     <Project Path="apps/PlatformerHop/PlatformerHop.csproj" />
     <Project Path="apps/PlatformerTwoD/PlatformerTwoD.csproj" />
     <Project Path="apps/RtsLite/RtsLite.csproj" />
+    <Project Path="apps/RtsLiteTwoD/RtsLiteTwoD.csproj" />
     <Project Path="apps/RandoriFight/RandoriFight.csproj" />
   </Folder>
   <Folder Name="/commands/">

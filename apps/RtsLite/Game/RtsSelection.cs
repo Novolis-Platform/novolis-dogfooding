@@ -1,8 +1,4 @@
-using System.Drawing;
 using System.Numerics;
-using Novolis.Raylib.Game;
-using Novolis.Raylib.Interact;
-using Input = Novolis.Raylib.Interact.Input;
 
 namespace RtsLite.Game;
 
@@ -52,15 +48,10 @@ internal sealed class RtsSelection
         }
     }
 
-    public void DrawDragRect(RayGameContext ctx)
-    {
-        if (!_dragging || _dragStart is not { } start)
-            return;
+    public bool IsDragging => _dragging;
 
-        var mouse = Input.GetMousePosition();
-        var rect = NormalizedRect(start, mouse);
-        ctx.HudRect((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height, Color.FromArgb(60, 120, 200, 255));
-    }
+    public ScreenRect? ActiveDragRect(Vector2 mouse) =>
+        _dragging && _dragStart is { } start ? NormalizedRect(start, mouse) : null;
 
     private static void SelectSingle(IList<RtsUnit> units, Vector3 ground)
     {

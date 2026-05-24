@@ -1,6 +1,4 @@
-using System.Drawing;
 using System.Numerics;
-using Novolis.Raylib.Game;
 
 namespace RtsLite.Game;
 
@@ -36,35 +34,32 @@ internal sealed class RtsBuildPlacer
         return arena.CanPlace(type, gx, gz, team);
     }
 
-    public void DrawGhost(RayGameContext ctx, Novolis.Raylib.Rendering.Camera camera, RtsBuildingArt art, RtsArena arena, Vector3 ground, UnitTeam team)
+    public bool TryGetGhostFootprint(
+        RtsArena arena,
+        Vector3 ground,
+        UnitTeam team,
+        out Vector3 center,
+        out float width,
+        out float depth,
+        out bool canPlace)
     {
+        center = default;
+        width = 0f;
+        depth = 0f;
+        canPlace = false;
         if (ActiveType is not { } type)
-            return;
-
-        var ok = CanPlaceAt(arena, ground, team);
-        var tint = ok
-            ? Color.FromArgb(200, 120, 255, 140)
-            : Color.FromArgb(200, 255, 90, 90);
+        {
+            return false;
+        }
 
         arena.WorldToGrid(ground, out var gx, out var gz);
-        var center = arena.CellCenter(gx + type.FootprintW() / 2, gz + type.FootprintH() / 2);
-        var scale = type switch
-        {
-            RtsBuildingType.ConstructionYard => 2.8f,
-            RtsBuildingType.PowerPlant => 1.2f,
-            RtsBuildingType.Barracks => 2.1f,
-            RtsBuildingType.OreRefinery => 2.2f,
-            RtsBuildingType.WarFactory => 2.4f,
-            _ => 1.5f,
-        };
-        art.Draw(camera, ctx, type, center, scale, tint);
-
-        var w = type.FootprintW() * RtsArena.CellSize;
-        var h = type.FootprintH() * RtsArena.CellSize;
-        var boxCenter = new Vector3(
+        canPlace = arena.CanPlace(type, gx, gz, team);
+        width = type.FootprintW() * RtsArena.CellSize;
+        depth = type.FootprintH() * RtsArena.CellSize;
+        center = new Vector3(
             (gx + type.FootprintW() * 0.5f) * RtsArena.CellSize,
-            0.05f,
+            0f,
             (gz + type.FootprintH() * 0.5f) * RtsArena.CellSize);
-        ctx.DrawShipWires(boxCenter, new Vector3(w, 0.1f, h), tint);
+        return true;
     }
 }

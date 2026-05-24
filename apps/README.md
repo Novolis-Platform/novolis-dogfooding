@@ -30,6 +30,22 @@ Same tile demo as PlatformerHop, but **planar XZ** via `PlanarAgent` and **Silk 
 dotnet run --project apps/PlatformerTwoD
 ```
 
+## RtsLiteTwoD
+
+Top-down RTS on **orthographic TwoD** (shared arena/units with `RtsLite`; no PNG billboards). Keyboard pivot: **J** select, **H** move order.
+
+```bash
+dotnet run --project apps/RtsLiteTwoD
+```
+
+## RtsLite (Raylib)
+
+Pseudo-3D C&amp;C-style camera + building sprites — kept for Raylib/billboard dogfood.
+
+```bash
+dotnet run --project apps/RtsLite
+```
+
 ## DoomLite3D
 
 ```bash

@@ -8,15 +8,22 @@ Orthographic 2D lives in **`Novolis.Rendering.TwoD`** (+ **`Backends.TwoD.Silk`*
 |-----|-------|---------|
 | `apps/rendering/SilkTwoDHello` | Rendering.TwoD + Silk | Collision, platforms, HUD, menus — no Simulation |
 | `apps/PlatformerTwoD` | Simulation.Kinematics + World + Rendering.TwoD | Same tile demo as `PlatformerHop`, planar XZ via `PlanarAgent` |
+| `apps/RtsLiteTwoD` | Shared RTS sim + Rendering.TwoD | Top-down orthographic RTS (Raylib `RtsLite` = pseudo-3D + PNG billboards) |
 
 Run:
 
 ```bash
 dotnet run --project apps/rendering/SilkTwoDHello
 dotnet run --project apps/PlatformerTwoD
+dotnet run --project apps/RtsLiteTwoD
 ```
 
-`PlatformerHop` (Raylib pseudo-3D side view) remains for Raylib dogfood; `PlatformerTwoD` is the Silk orthographic counterpart.
+| Raylib (3D-style) | TwoD (orthographic) |
+|-------------------|---------------------|
+| `PlatformerHop` | `PlatformerTwoD` |
+| `RtsLite` | `RtsLiteTwoD` |
+
+Shared helpers: `apps/shared/Novolis.Dogfooding.TwoD` (`DenseGridPlatforms`, `OrthoPanCamera`).
 
 ## Side-view vs planar XZ
 
@@ -51,7 +58,7 @@ static Vector3 SideToPlanar(Vector3 side) => new(side.X, 0f, side.Y);
 3. **No Simulation → TwoD scene builder** — tile grids are app-wired (`AddPlatform` per cell). A shared **dogfood helper** (not a platform package) could emit platforms from `DenseGrid<byte>` if more 2D apps appear.
 4. **ViewPose bridge** — still app-only for path tracing ([simulation-viewpose-to-rendering-bridge](../../novolis-governance/docs/imports-todo/internal-novolis-audit/simulation-viewpose-to-rendering-bridge.md)); irrelevant for orthographic TwoD.
 5. **NeuralRacing / headless sims** — no visualization; 2D would be a new app if needed.
-6. **RtsLite / top-down** — good fit for `PlanarAgent` + TwoD billboards; still on Raylib today.
+6. **RtsLite / top-down** — `RtsLiteTwoD` dogfoods orthographic RTS; PNG billboards still Raylib-only in `RtsLite`.
 7. **Assets** — no committed PNGs under dogfooding for `SilkTwoDPngLoader`; polygon/HUD dogfood works without art.
 
 ### Explicit non-goals
@@ -59,6 +66,10 @@ static Vector3 SideToPlanar(Vector3 side) => new(side.X, 0f, side.Y);
 - `Vector2`, `Vector3d`, or planar types in Math/Physics
 - `Novolis.Simulation.*` referencing `Novolis.Rendering.*`
 - `Quaternion` helpers for 2D (Y-axis spin only if ever needed — use BCL `Quaternion` in apps)
+
+## Dropped: TerraFX
+
+Low-level GPU interop (VMA, D3D12) was considered and **not** adopted — Novolis stays on **Silk.NET** for Vulkan/OpenGL presenters.
 
 ## Rendering gaps (for follow-up)
 

@@ -71,13 +71,32 @@ internal sealed class RtsLiteGame
         ctx.BeginWorld(camera);
         DrawArena(ctx);
         DrawBuildings(ctx, camera);
-        if (_build.IsActive)
-            _build.DrawGhost(ctx, camera, _art, _arena, ground, UnitTeam.Player);
+        if (_build.IsActive && _build.TryGetGhostFootprint(_arena, ground, UnitTeam.Player, out var gCenter, out var gW, out var gD, out var ok))
+        {
+            var tint = ok
+                ? Color.FromArgb(200, 120, 255, 140)
+                : Color.FromArgb(200, 255, 90, 90);
+            if (_build.ActiveType is { } ghostType)
+            {
+                var scale = ghostType switch
+                {
+                    RtsBuildingType.ConstructionYard => 2.8f,
+                    RtsBuildingType.PowerPlant => 1.2f,
+                    RtsBuildingType.Barracks => 2.1f,
+                    RtsBuildingType.OreRefinery => 2.2f,
+                    RtsBuildingType.WarFactory => 2.4f,
+                    _ => 1.5f,
+                };
+                _art.Draw(camera, ctx, ghostType, gCenter, scale, tint);
+            }
+
+            ctx.DrawShipWires(gCenter with { Y = 0.05f }, new Vector3(gW, 0.1f, gD), tint);
+        }
         DrawUnits(ctx);
         ctx.EndWorld();
 
-        if (!_build.IsActive)
-            _selection.DrawDragRect(ctx);
+        if (!_build.IsActive && _selection.ActiveDragRect(Input.GetMousePosition()) is { } drag)
+            ctx.HudRect((int)drag.X, (int)drag.Y, (int)drag.Width, (int)drag.Height, Color.FromArgb(60, 120, 200, 255));
 
         DrawSidebar(ctx);
         RtsMinimap.Draw(ctx, _arena, _units);
