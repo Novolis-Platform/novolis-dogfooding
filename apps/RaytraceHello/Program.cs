@@ -130,15 +130,15 @@ internal static class Program
     private static CompiledScene BuildShowcaseScene()
     {
         var scene = new SceneBuilder()
-            .AddGround(MaterialPresets.Standard(new Vector3(0.38f, 0.4f, 0.44f), 0.85f))
+            .AddGround(MaterialPresets.Standard(new Vector3(0.42f, 0.44f, 0.48f), roughness: 0.92f))
             .AddBox(
                 CubeCenter,
                 CubeHalfExtents,
-                MaterialPresets.Standard(MaterialPresets.Colors.Red, roughness: 0.35f, metallic: 0.15f))
+                MaterialPresets.Standard(MaterialPresets.Colors.Red, roughness: 0.4f, metallic: 0.05f))
             .AddBox(
                 new Vector3(-0.45f, 0.32f, 0.12f),
                 new Vector3(0.3f, 0.32f, 0.025f),
-                MaterialPresets.Metal(MaterialPresets.Colors.Silver, roughness: 0.03f))
+                MaterialPresets.Metal(MaterialPresets.Colors.Silver, roughness: 0.06f))
             .AddDirectionalLight(new Vector3(-0.35f, -1f, -0.25f), new Vector3(1f, 0.98f, 0.95f), 1.1f)
             .AddDirectionalLight(new Vector3(0.6f, -0.4f, 0.5f), new Vector3(0.55f, 0.65f, 0.85f), 0.45f)
             .Build();
