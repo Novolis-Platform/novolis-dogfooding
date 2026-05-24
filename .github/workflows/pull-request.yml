@@ -1,0 +1,10 @@
+name: Pull request
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  ci:
+    uses: Novolis-Platform/novolis-workflows/.github/workflows/dotnet-pull-request.yml@main
+    with:
+      solution: Novolis.Dogfooding.slnx
+      run_tests: false
