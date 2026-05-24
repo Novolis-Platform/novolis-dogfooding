@@ -10,15 +10,15 @@ This repo does not publish packages. Library repos publish via their `merge.yml`
 git clone https://github.com/Novolis-Platform/novolis-dogfooding.git
 cd novolis-dogfooding
 
-# PAT with read:packages (or use `gh auth login` and GH_TOKEN)
-$env:NOVOLIS_GITHUB_PACKAGES_PAT = "ghp_..."
+# One-time: grant gh read:packages (no manual PAT if org packages are configured — see governance doc)
+gh auth refresh -h github.com -s read:packages
 ./scripts/build.ps1
 dotnet run --project apps/MathGridDemo
 ```
 
 Feed: `https://nuget.pkg.github.com/Novolis-Platform/index.json` (see `nuget.config`).
 
-Package versions are pinned in `Directory.Packages.props` (`NovolisPackageVersion`, currently **0.0.1.1**). Bump when library repos publish new builds.
+Novolis package versions use floating `*` in `Directory.Packages.props` (latest from GitHub Packages). Org setup: [github-packages-org-settings.md](../novolis-governance/docs/github-packages-org-settings.md).
 
 ## Scripts
 
