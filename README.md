@@ -10,8 +10,8 @@ This repo does not publish packages and has **no GitHub Actions CI**. Library re
 git clone https://github.com/Novolis-Platform/novolis-dogfooding.git
 cd novolis-dogfooding
 
-# One-time: GitHub Packages read access (see governance doc)
-gh auth refresh -h github.com -s read:packages
+# One-time per machine: user NuGet.Config (not repo nuget.config)
+..\novolis-governance\scripts\configure-gpr-user-nuget.ps1
 
 dotnet restore
 dotnet build --no-restore
@@ -22,15 +22,7 @@ Feed: `https://nuget.pkg.github.com/Novolis-Platform/index.json` (see `nuget.con
 
 Novolis package versions use floating `2026.1.*` in `Directory.Packages.props`. Org setup: [github-packages-org-settings.md](../novolis-governance/docs/github-packages-org-settings.md).
 
-If restore returns 401, configure the `github` source once:
-
-```powershell
-dotnet nuget update source github `
-  --username x-access-token `
-  --password (gh auth token) `
-  --store-password-in-clear-text `
-  --configfile nuget.config
-```
+If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live in `%APPDATA%\NuGet\NuGet.Config`).
 
 ## Apps
 

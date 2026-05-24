@@ -22,7 +22,7 @@ Version pin: `Directory.Packages.props` → floating `2026.1.*` for Novolis pack
 
 ## Local development
 
-1. Authenticate to GitHub Packages (`gh auth refresh -s read:packages`, or set `NOVOLIS_GPR_TOKEN` / `GITHUB_TOKEN`)
+1. Once per machine: `..\novolis-governance\scripts\configure-gpr-user-nuget.ps1` (writes `%APPDATA%\NuGet\NuGet.Config` from `gh auth token`)
 2. `dotnet restore` then `dotnet build` (Rider: normal **Build Solution**)
 
 ## CI
