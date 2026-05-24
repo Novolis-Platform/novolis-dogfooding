@@ -1,5 +1,6 @@
 <Project>
-  <PropertyGroup>
+    <Import Project="build\version.props" Condition="Exists('build\version.props')" />
+<PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
   </PropertyGroup>
@@ -13,27 +14,27 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
-    <PackageVersion Include="Novolis.Avalonia.Controls" Version="*" />
-    <PackageVersion Include="Novolis.Avalonia.Layout" Version="*" />
-    <PackageVersion Include="Novolis.Commands.Abstractions" Version="*" />
-    <PackageVersion Include="Novolis.Commands.Engine" Version="*" />
-    <PackageVersion Include="Novolis.Commands.Queueing" Version="*" />
-    <PackageVersion Include="Novolis.Math.Arrays" Version="*" />
-    <PackageVersion Include="Novolis.Math.Geometry" Version="*" />
-    <PackageVersion Include="Novolis.Messaging.Channels" Version="*" />
-    <PackageVersion Include="Novolis.Physics.Ballistics" Version="*" />
-    <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="*" />
-    <PackageVersion Include="Novolis.Physics.Joints" Version="*" />
-    <PackageVersion Include="Novolis.Raylib" Version="*" />
-    <PackageVersion Include="Novolis.Raylib.Game" Version="*" />
-    <PackageVersion Include="Novolis.Raylib.Presentation" Version="*" />
-    <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="*" />
-    <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="*" />
-    <PackageVersion Include="Novolis.Simulation.Kinematics" Version="*" />
-    <PackageVersion Include="Novolis.Simulation.View" Version="*" />
-    <PackageVersion Include="Novolis.Simulation.World" Version="*" />
-    <PackageVersion Include="Novolis.Simulation.World.Builders" Version="*" />
-    <PackageVersion Include="Novolis.Transports.WireFish" Version="*" />
+    <PackageVersion Include="Novolis.Avalonia.Controls" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Commands.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Commands.Engine" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Commands.Queueing" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Messaging.Channels" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Physics.Ballistics" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Physics.Joints" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Game" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Presentation" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.Kinematics" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.View" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.World" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />
     <PackageVersion Include="PacketDotNet" Version="1.4.7" />
     <PackageVersion Include="Hex1b" Version="0.154.0" />
     <PackageVersion Include="TUnit" Version="1.44.39" />
