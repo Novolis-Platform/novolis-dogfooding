@@ -30,11 +30,6 @@ if (Test-Path $StampFile) {
 & (Join-Path $PSScriptRoot "configure-github-packages-auth.ps1") -ConfigFile $NuGetConfig
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "Clearing cached Novolis.* packages..." -ForegroundColor DarkGray
-$globalPackages = Join-Path $env:USERPROFILE ".nuget\packages"
-Get-ChildItem -Path $globalPackages -Directory -Filter "novolis.*" -ErrorAction SilentlyContinue |
-    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-
 if (-not $SkipRestore) {
     Write-Host "Restoring $Solution from GitHub Packages..." -ForegroundColor Cyan
     dotnet restore $Solution --configfile $NuGetConfig --force
