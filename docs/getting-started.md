@@ -17,13 +17,3 @@ dotnet restore
 dotnet build --no-restore
 dotnet run --project apps/MathGridDemo
 ```
-
-## Optional: library source in `submodules/`
-
-```bash
-git clone --recurse-submodules https://github.com/Novolis-Platform/novolis-dogfooding.git
-# or, after clone:
-git submodule update --init --recursive
-```
-
-Submodules are not used at compile time; they are only for reading or debugging upstream code.

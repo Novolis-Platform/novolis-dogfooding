@@ -1,8 +1,8 @@
 # Dogfood apps
 
-Small executables that reference library projects under `../submodules/` via `ProjectReference`.
+Small executables that consume **published Novolis packages** from GitHub Packages (`PackageReference` in each `.csproj`).
 
-Add a folder here, reference `..\..\submodules\novolis-<domain>\...`, and register the project in `Novolis.Dogfooding.slnx`.
+Add a folder under `apps/`, declare packages in `Directory.Packages.props`, and register the project in `Novolis.Dogfooding.slnx`.
 
 ## WireFish Viewer
 

@@ -6,5 +6,5 @@ artifacts/
 *.suo
 .DS_Store
 
-# Populated by sync-submodules.ps1 or link-local-repos.ps1 (not committed as a tree)
+# Legacy local library clones (not used by the build)
 submodules/

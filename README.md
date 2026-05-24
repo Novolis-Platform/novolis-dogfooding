@@ -45,7 +45,3 @@ dotnet nuget update source github `
 | `RagdollPlay` | Raylib, Physics.Joints, Simulation |
 | `BridgeCommander` | Commands |
 | `WireFishViewer` | Avalonia, Transports.WireFish, Messaging.Channels |
-
-## Submodules (optional)
-
-`submodules/` is for browsing library **source** only; builds use GitHub Packages, not `ProjectReference`. See `.novolis/repos.json`. Refresh with `git submodule update --init --recursive`.
