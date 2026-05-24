@@ -1,7 +1,0 @@
-<Solution>
-  <!-- CI smoke: apps whose Novolis.* packages are on GitHub Packages. Expand as more repos publish via merge.yml. -->
-  <Folder Name="/apps/">
-    <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
-    <Project Path="apps/BridgeCommander/BridgeCommander.csproj" />
-  </Folder>
-</Solution>

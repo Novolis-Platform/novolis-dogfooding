@@ -2,7 +2,7 @@
 
 Integration workspace that **consumes published Novolis packages** from [GitHub Packages](https://github.com/orgs/Novolis-Platform/packages) (`PackageReference` only).
 
-This repo does not publish packages. Library repos publish via their `merge.yml` workflows.
+This repo does not publish packages and has **no GitHub Actions CI**. Library repos validate and publish via their own `merge.yml` / `release.yml` workflows; dogfooding is for local integration against what is already on the feed.
 
 ## Quick start
 
@@ -47,11 +47,3 @@ Rider **Build Solution** runs `prepare-dogfood-packages.ps1` via `Directory.Solu
 ## Submodules (optional)
 
 `submodules/` and `scripts/sync-submodules.ps1` remain for browsing library **source**; builds do not use them. See `.novolis/repos.json`.
-
-## CI
-
-Push/PR workflows build `Novolis.Dogfooding.CI.slnx` (apps whose packages are already on GitHub Packages). Add projects to that solution as more library repos publish via `merge.yml`.
-
-Full `Novolis.Dogfooding.slnx` needs Raylib, Simulation, Physics, etc. on the feed — run `merge.yml` on those repos first, then extend the CI solution.
-
-CI uses `GITHUB_TOKEN` with `packages: read` (no `prepare-dogfood-packages` hook in Actions).
