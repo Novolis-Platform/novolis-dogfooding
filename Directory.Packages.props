@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Published from library repos to GitHub Packages (merge.yml). -->
+    <NovolisPackageVersion>0.0.1.1</NovolisPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia" Version="12.0.2" />
@@ -8,24 +10,30 @@
     <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
-    <PackageVersion Include="Novolis.Math.Arrays" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Math.Geometry" Version="0.3.0-local" />
-    <PackageVersion Include="Novolis.Physics.Ballistics" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Physics.Joints" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Raylib" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Simulation.Kinematics" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Simulation.View" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Simulation.World" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Simulation.World.Builders" Version="0.4.0-local" />
-    <PackageVersion Include="Novolis.Transports.WireFish" Version="0.1.0-preview.1" />
-    <PackageVersion Include="Novolis.Messaging.Channels" Version="0.1.0-preview.1" />
-    <PackageVersion Include="Novolis.Commands.Abstractions" Version="1.0.0" />
-    <PackageVersion Include="Novolis.Commands.Engine" Version="1.0.0" />
-    <PackageVersion Include="Novolis.Commands.Queueing" Version="1.0.0" />
+    <PackageVersion Include="Novolis.Avalonia.Controls" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Avalonia.Layout" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Commands.Abstractions" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Commands.Engine" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Commands.Queueing" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Math.Arrays" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Math.Geometry" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Messaging.Channels" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Physics.Ballistics" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Physics.Joints" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Raylib" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Raylib.Presentation" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Simulation.Kinematics" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Simulation.View" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Simulation.World" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Simulation.World.Builders" Version="$(NovolisPackageVersion)" />
+    <PackageVersion Include="Novolis.Transports.WireFish" Version="$(NovolisPackageVersion)" />
     <PackageVersion Include="PacketDotNet" Version="1.4.7" />
     <PackageVersion Include="Hex1b" Version="0.154.0" />
     <PackageVersion Include="TUnit" Version="1.44.39" />

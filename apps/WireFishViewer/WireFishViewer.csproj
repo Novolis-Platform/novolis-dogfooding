@@ -12,9 +12,9 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="PacketDotNet" />
-    <ProjectReference Include="..\..\submodules\novolis-avalonia\src\Novolis.Avalonia.Controls\Novolis.Avalonia.Controls.csproj" />
-    <ProjectReference Include="..\..\submodules\novolis-avalonia\src\Novolis.Avalonia.Layout\Novolis.Avalonia.Layout.csproj" />
-    <ProjectReference Include="..\..\submodules\novolis-transports\src\Novolis.Transports.WireFish\Novolis.Transports.WireFish.csproj" />
-    <ProjectReference Include="..\..\submodules\novolis-messaging\src\Novolis.Messaging.Channels\Novolis.Messaging.Channels.csproj" />
+    <PackageReference Include="Novolis.Avalonia.Controls" />
+    <PackageReference Include="Novolis.Avalonia.Layout" />
+    <PackageReference Include="Novolis.Transports.WireFish" />
+    <PackageReference Include="Novolis.Messaging.Channels" />
   </ItemGroup>
 </Project>

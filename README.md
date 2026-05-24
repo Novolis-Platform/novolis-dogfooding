@@ -1,75 +1,53 @@
 # novolis-dogfooding
 
-Integration workspace for the Novolis platform: **git submodules** of library repos plus **small executable apps** that reference submodule projects directly (no NuGet round-trip).
+Integration workspace that **consumes published Novolis packages** from [GitHub Packages](https://github.com/orgs/Novolis-Platform/packages) (`PackageReference` only).
 
-This is **not** a package repository. Nothing here is published to NuGet. Use [novolis-template-dotnet](https://github.com/Novolis-Platform/novolis-template-dotnet) for new libraries.
+This repo does not publish packages. Library repos publish via their `merge.yml` workflows.
 
-## Layout
-
-| Path | Purpose |
-|------|---------|
-| `submodules/` | One submodule per library repo (see `.novolis/repos.json`) |
-| `apps/` | Small programs that `ProjectReference` into `submodules/` |
-| `scripts/` | Submodule sync and local monorepo linking |
-
-## Quick start (local monorepo)
-
-When you already have sibling clones under `d:\novolis\` (or similar):
+## Quick start
 
 ```powershell
-./scripts/link-local-repos.ps1
-dotnet build Novolis.Dogfooding.slnx
+git clone https://github.com/Novolis-Platform/novolis-dogfooding.git
+cd novolis-dogfooding
+
+# PAT with read:packages (or use `gh auth login` and GH_TOKEN)
+$env:NOVOLIS_GITHUB_PACKAGES_PAT = "ghp_..."
+./scripts/build.ps1
 dotnet run --project apps/MathGridDemo
 ```
 
-## Quick start (GitHub clones)
+Feed: `https://nuget.pkg.github.com/Novolis-Platform/index.json` (see `nuget.config`).
 
-```powershell
-git clone --recurse-submodules https://github.com/Novolis-Platform/novolis-dogfooding.git
-cd novolis-dogfooding
-dotnet build Novolis.Dogfooding.slnx
-```
+Package versions are pinned in `Directory.Packages.props` (`NovolisPackageVersion`, currently **0.0.1.1**). Bump when library repos publish new builds.
 
-Or after a shallow clone:
+## Scripts
 
-```powershell
-./scripts/sync-submodules.ps1
-```
+| Script | Purpose |
+|--------|---------|
+| `scripts/configure-github-packages-auth.ps1` | Wire NuGet credentials for the org feed |
+| `scripts/prepare-dogfood-packages.ps1` | Auth + clear `novolis.*` cache + restore |
+| `scripts/build.ps1` | Prepare + build solution |
+
+Rider **Build Solution** runs `prepare-dogfood-packages.ps1` via `Directory.Solution.targets` before restore.
 
 ## Apps
 
-| App | Purpose |
-|-----|---------|
-| `BridgeCommander` | Hex1b TUI dogfood for **Novolis.Commands** (sci-fi bridge captain simulator) |
-| `BouncingBall` | Simulation + Raylib physics demo |
-| `ArtillerySimulator` | Ballistics + terrain |
-| `MathGridDemo` | Math arrays |
-| `WireFishViewer` | Packet viewer (Avalonia) |
+| App | Novolis packages exercised |
+|-----|---------------------------|
+| `MathGridDemo` | Math.Arrays |
+| `RaylibHello` | Raylib |
+| `RaytraceHello` | Raylib, Rendering (CPU + DI), Raylib.Presentation |
+| `DoomLite3D` | Raylib, Math, Simulation |
+| `BouncingBall` | Raylib, Simulation, Physics.Collision |
+| `ArtillerySimulator` | Raylib, Physics, Simulation |
+| `RagdollPlay` | Raylib, Physics.Joints, Simulation |
+| `BridgeCommander` | Commands |
+| `WireFishViewer` | Avalonia, Transports.WireFish, Messaging.Channels |
 
-### Bridge Commander (Novolis.Commands)
+## Submodules (optional)
 
-```powershell
-dotnet run --project apps/BridgeCommander
-```
-
-Full-screen TUI: type orders (`helm heading 270`, `tactical fire`, `belay that`), see parse/execute history, switch bridge stations, exercise ambiguity (`fire`). References `../novolis-commands` via project path.
-
-## Adding an app
-
-1. Create `apps/YourApp/YourApp.csproj` with `ProjectReference` paths under `$(NovolisSubmoduleRoot)…` or sibling `novolis-*` repos.
-2. Add the project to `Novolis.Dogfooding.slnx`.
-3. Open a PR; CI builds all apps with submodules checked out.
-
-## Submodules
-
-Tracked repos are listed in [`.novolis/repos.json`](.novolis/repos.json). Infra repos (`novolis-workflows`, `novolis-governance`, `novolis-registry`, …) are intentionally excluded.
-
-Update all submodules:
-
-```powershell
-git submodule update --remote --merge
-```
+`submodules/` and `scripts/sync-submodules.ps1` remain for browsing library **source**; builds do not use them. See `.novolis/repos.json`.
 
 ## CI
 
-Push and PR workflows build `Novolis.Dogfooding.slnx` with `submodules: recursive`. There is no release or NuGet publish pipeline.
+Push/PR workflows restore from **GitHub Packages** using `GITHUB_TOKEN` (`packages: read`). No local pack step.

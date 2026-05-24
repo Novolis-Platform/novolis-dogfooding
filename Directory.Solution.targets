@@ -1,21 +1,19 @@
 <Project>
   <!--
-    Solution-only targets (https://learn.microsoft.com/visualstudio/msbuild/customize-solution-build).
-    Rider Build Solution (Ctrl+F9) and `dotnet build Novolis.Dogfooding.slnx` import this file.
+    Before solution restore: authenticate to GitHub Packages and refresh Novolis.* cache.
   -->
   <PropertyGroup>
     <_DogfoodRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</_DogfoodRoot>
     <_DogfoodPrepareScript>$([System.IO.Path]::Combine('$(_DogfoodRoot)', 'scripts', 'prepare-dogfood-packages.ps1'))</_DogfoodPrepareScript>
-    <!-- Skip pack/restore during MSBuild (nested dotnet calls break the build). Rider restores after cache clear. -->
-    <DogfoodPrepareArgs Condition="'$(DogfoodPrepareArgs)' == ''">-SkipPack -SkipRestore</DogfoodPrepareArgs>
+    <DogfoodPrepareArgs Condition="'$(DogfoodPrepareArgs)' == ''">-SkipRestore</DogfoodPrepareArgs>
   </PropertyGroup>
 
-  <Target Name="PrepareDogfoodLocalPackages"
+  <Target Name="PrepareDogfoodPackages"
           BeforeTargets="Restore"
-          Inputs="$(_DogfoodPrepareScript)"
+          Inputs="$(_DogfoodPrepareScript);$(_DogfoodRoot)nuget.config"
           Outputs="$(_DogfoodRoot)artifacts\dogfood-prepare.stamp"
-          Condition="'$(SkipDogfoodPrepare)' != 'true' And '$(CI)' != 'true' And '$(GITHUB_ACTIONS)' != 'true' And '$(TF_BUILD)' != 'true'">
-    <Message Importance="high" Text="PrepareDogfoodLocalPackages: pack (optional), refresh *-local NuGet cache, restore" />
+          Condition="'$(SkipDogfoodPrepare)' != 'true'">
+    <Message Importance="high" Text="PrepareDogfoodPackages: GitHub Packages auth + cache refresh" />
     <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(_DogfoodPrepareScript)&quot; $(DogfoodPrepareArgs)"
           WorkingDirectory="$(_DogfoodRoot)"
           StandardOutputImportance="high"

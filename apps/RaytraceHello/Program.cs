@@ -26,7 +26,7 @@ internal static class Program
         {
             if (sample == 0)
             {
-                backend.ResizeAsync(ctx.ScreenWidth, ctx.ScreenHeight).GetAwaiter().GetResult();
+                backend.ResizeAsync(ctx.Width, ctx.Height).GetAwaiter().GetResult();
                 backend.UploadSceneAsync(compiled).GetAwaiter().GetResult();
             }
 
@@ -35,7 +35,7 @@ internal static class Program
                 Vector3.Zero,
                 Vector3.UnitY,
                 60f,
-                ctx.ScreenWidth / (float)ctx.ScreenHeight);
+                ctx.Width / (float)ctx.Height);
 
             backend.RenderAsync(camera, sample).GetAwaiter().GetResult();
             sample++;
