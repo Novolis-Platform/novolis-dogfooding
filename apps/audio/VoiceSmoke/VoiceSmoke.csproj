@@ -2,18 +2,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>VoiceSmoke</RootNamespace>
-    <Description>Dogfood Novolis.Audio.Voice — Sherpa Piper TTS and ATC phraseology.</Description>
+    <Description>Dogfood Novolis.Audio.Voice — Sherpa Piper TTS and ATC phraseology (GPR only).</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Novolis.Audio.Voice" />
     <PackageReference Include="Novolis.Audio.Voice.Atc" />
-    <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" GeneratePathProperty="true" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(PkgNovolis_Audio_Voice_SherpaOnnx)\contentFiles\any\any\models\**\*"
-             Condition="Exists('$(PkgNovolis_Audio_Voice_SherpaOnnx)\contentFiles\any\any\models\tokens.txt')">
-      <Link>models\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <!-- Direct ref required so bundled model contentFiles copy to output (transitive PackageCopyToOutput). -->
+    <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" />
   </ItemGroup>
 </Project>

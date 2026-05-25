@@ -3,8 +3,6 @@ using Novolis.Audio.Voice.Atc;
 using Novolis.Audio.Voice.SherpaOnnx;
 
 var useNull = args.Contains("--null", StringComparer.OrdinalIgnoreCase);
-if (!useNull)
-    ConfigureBundledModelFromOutput();
 var writeWav = args.Contains("--wav", StringComparer.OrdinalIgnoreCase);
 var speakOnly = args.Contains("--speak-only", StringComparer.OrdinalIgnoreCase);
 
@@ -13,9 +11,9 @@ IVoiceService voice = useNull
     : AtcVoiceProfile.Apply(new VoiceServiceBuilder()).BuildService();
 
 var paths = SherpaVoiceModelPaths.TryResolve(modelDirectory: null, VoiceModelCatalog.EnUsPiperAmy);
-Console.WriteLine(paths is null || !VoiceModelMaterialization.IsMaterializedOnnx(paths.ModelFile)
-    ? "Voice: null/silent fallback (model not materialized — run git lfs pull on novolis-audio or use GPR nupkg content)."
-    : $"Voice: Sherpa model {paths.ProfileId} @ {paths.SampleRateHz} Hz");
+Console.WriteLine(paths is null
+    ? DescribeMissingModel(AppContext.BaseDirectory)
+    : $"Voice: Sherpa model {paths.ProfileId} @ {paths.SampleRateHz} Hz ({paths.ModelDirectory})");
 
 var samples = new[]
 {
@@ -40,28 +38,22 @@ if (writeWav && !speakOnly)
 Console.WriteLine("VoiceSmoke OK");
 return 0;
 
-static void ConfigureBundledModelFromOutput()
+static string DescribeMissingModel(string baseDir)
 {
-    foreach (var root in GetSearchRoots())
-    {
-        foreach (var sub in new[] { "en-us-piper-amy", "" })
-        {
-            var models = string.IsNullOrEmpty(sub)
-                ? Path.Combine(root, "models")
-                : Path.Combine(root, "models", sub);
-            if (!File.Exists(Path.Combine(models, "tokens.txt")))
-                continue;
+    var profileDir = Path.Combine(baseDir, "models", VoiceModelCatalog.EnUsPiperAmy.Id);
+    var flatDir = Path.Combine(baseDir, "models");
+    if (!Directory.Exists(flatDir) && !Directory.Exists(profileDir))
+        return "Voice: null/silent fallback (no models/ under output — rebuild VoiceSmoke after restore).";
 
-            Environment.SetEnvironmentVariable(SherpaVoiceModelPaths.EnvModelDirectory, models);
-            return;
-        }
-    }
-}
+    var onnx = Directory.GetFiles(profileDir, "*.onnx", SearchOption.TopDirectoryOnly)
+        .Concat(Directory.Exists(flatDir) ? Directory.GetFiles(flatDir, "*.onnx") : [])
+        .FirstOrDefault();
+    if (onnx is not null && VoiceModelMaterialization.IsGitLfsPointer(onnx))
+        return "Voice: null/silent fallback (ONNX is a Git LFS pointer — run: git lfs pull in novolis-audio).";
 
-static IEnumerable<string> GetSearchRoots()
-{
-    yield return AppContext.BaseDirectory;
-    var dir = new DirectoryInfo(AppContext.BaseDirectory);
-    for (var i = 0; i < 6 && dir?.Parent is not null; i++, dir = dir.Parent)
-        yield return dir.FullName;
+    var phontab = Path.Combine(profileDir, "espeak-ng-data", "phontab");
+    if (Directory.Exists(phontab))
+        return "Voice: null/silent fallback (broken espeak-ng-data in GPR — upgrade Novolis.Audio.Voice.SherpaOnnx after republish).";
+
+    return "Voice: null/silent fallback (need models/en-us-piper-amy from Novolis.Audio.Voice.SherpaOnnx on GitHub Packages — restore/build after package upgrade).";
 }
