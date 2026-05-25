@@ -1,8 +1,11 @@
+using System.IO.Compression;
 using Novolis.Audio.Voice;
 using Novolis.Audio.Voice.Atc;
 using Novolis.Audio.Voice.SherpaOnnx;
 
 var useNull = args.Contains("--null", StringComparer.OrdinalIgnoreCase);
+if (!useNull)
+    EnsureBundledModelExtractedFromNuGet();
 var writeWav = args.Contains("--wav", StringComparer.OrdinalIgnoreCase);
 var speakOnly = args.Contains("--speak-only", StringComparer.OrdinalIgnoreCase);
 
@@ -38,6 +41,26 @@ if (writeWav && !speakOnly)
 Console.WriteLine("VoiceSmoke OK");
 return 0;
 
+static void EnsureBundledModelExtractedFromNuGet()
+{
+    var baseDir = AppContext.BaseDirectory;
+    var profileDir = Path.Combine(baseDir, "models", VoiceModelCatalog.EnUsPiperAmy.Id);
+    var zipPath = Path.Combine(baseDir, "models", $"{VoiceModelCatalog.EnUsPiperAmy.Id}.zip");
+    var phontab = Path.Combine(profileDir, "espeak-ng-data", "phontab");
+
+    if (File.Exists(Path.Combine(profileDir, "tokens.txt")) && File.Exists(phontab))
+        return;
+
+    if (!File.Exists(zipPath))
+        return;
+
+    if (Directory.Exists(profileDir))
+        Directory.Delete(profileDir, recursive: true);
+
+    Directory.CreateDirectory(profileDir);
+    ZipFile.ExtractToDirectory(zipPath, profileDir);
+}
+
 static string DescribeMissingModel(string baseDir)
 {
     var profileDir = Path.Combine(baseDir, "models", VoiceModelCatalog.EnUsPiperAmy.Id);
@@ -52,8 +75,8 @@ static string DescribeMissingModel(string baseDir)
         return "Voice: null/silent fallback (ONNX is a Git LFS pointer — run: git lfs pull in novolis-audio).";
 
     var phontab = Path.Combine(profileDir, "espeak-ng-data", "phontab");
-    if (Directory.Exists(phontab))
-        return "Voice: null/silent fallback (broken espeak-ng-data in GPR — upgrade Novolis.Audio.Voice.SherpaOnnx after republish).";
+    if (Directory.Exists(phontab) || (File.Exists(phontab) is false && Directory.Exists(Path.Combine(profileDir, "espeak-ng-data"))))
+        return "Voice: null/silent fallback (stale/broken model extract — dotnet clean and rebuild VoiceSmoke).";
 
     return "Voice: null/silent fallback (need models/en-us-piper-amy from Novolis.Audio.Voice.SherpaOnnx on GitHub Packages — restore/build after package upgrade).";
 }
