@@ -8,22 +8,48 @@ if (!useNull)
     EnsureBundledModelExtractedFromNuGet();
 var writeWav = args.Contains("--wav", StringComparer.OrdinalIgnoreCase);
 var speakOnly = args.Contains("--speak-only", StringComparer.OrdinalIgnoreCase);
+var calm = args.Contains("--calm", StringComparer.OrdinalIgnoreCase);
+
+var atcOptions = calm
+    ? new AtcVoiceOptions
+    {
+        SpeakingRate = 1f,
+        ApplyRadioEffects = false,
+        EffectChainId = "none",
+    }
+    : new AtcVoiceOptions
+    {
+        SpeakingRate = 1.18f,
+        Drive = 3.2f,
+        OutputGainDb = 6f,
+        HissLevel = 0.005f,
+    };
 
 IVoiceService voice = useNull
     ? new VoiceServiceBuilder().UseNullSynthesizer().UseNullPlayback().BuildService()
-    : AtcVoiceProfile.Apply(new VoiceServiceBuilder()).BuildService();
+    : AtcVoiceProfile.Apply(new VoiceServiceBuilder(), atcOptions).BuildService();
 
 var paths = SherpaVoiceModelPaths.TryResolve(modelDirectory: null, VoiceModelCatalog.EnUsPiperAmy);
 Console.WriteLine(paths is null
     ? DescribeMissingModel(AppContext.BaseDirectory)
     : $"Voice: Sherpa model {paths.ProfileId} @ {paths.SampleRateHz} Hz ({paths.ModelDirectory})");
+Console.WriteLine(calm
+    ? "Profile: calm (dry, 1.0x rate)"
+    : $"Profile: ATC radio (rate {atcOptions.SpeakingRate:0.00}x, drive {atcOptions.Drive:0.0})");
 
-var samples = new[]
-{
-    "Tower, ready for departure.",
-    "Comms: hail transmitted on open channel.",
-    "SAS one two three climbing flight level three five zero.",
-};
+var samples = calm
+    ? new[]
+    {
+        "Tower, ready for departure.",
+        "Comms: hail transmitted on open channel.",
+        "SAS one two three climbing flight level three five zero.",
+    }
+    : new[]
+    {
+        "NOVAMICS TOWER, NOVAMICS one two three, request immediate departure runway two two!",
+        "Contact departure on one two four decimal three two five, expedite climb, good day.",
+        "MAYDAY MAYDAY MAYDAY, NOVAMICS one two three, declaring emergency, request vectors nearest suitable.",
+    };
 
 foreach (var text in samples)
 {

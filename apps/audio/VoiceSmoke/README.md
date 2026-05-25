@@ -6,7 +6,10 @@ Dogfoods **Novolis.Audio.Voice** from GitHub Packages only (`2026.1.*`).
 dotnet restore
 dotnet run --project apps/audio/VoiceSmoke
 dotnet run --project apps/audio/VoiceSmoke -- --null
+dotnet run --project apps/audio/VoiceSmoke -- --calm
 ```
+
+Default profile is **urgent ATC radio**: faster speaking rate (`1.18x`), band-limited bandwidth, compression/drive, gain, and light channel hiss (`Novolis.Audio.Voice.Atc` **2026.1.5+**). Use `--calm` for the older dry Piper delivery.
 
 Requires a direct `PackageReference` to `Novolis.Audio.Voice.SherpaOnnx` so bundled Piper models copy from the nupkg (not a sibling checkout).
 
