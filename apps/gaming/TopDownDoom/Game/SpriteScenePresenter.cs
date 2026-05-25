@@ -24,7 +24,7 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
         SyncMonsters(scene, world);
         SyncPickups(scene, world);
         SyncBarrels(scene, world);
-        SyncProjectiles(scene, world);
+        SyncProjectiles(scene, world, art);
     }
 
     public void Clear(TwoDScene scene)
@@ -125,21 +125,26 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
         }
     }
 
-    private void SyncProjectiles(TwoDScene scene, TopDownCombatWorld world)
+    private void SyncProjectiles(TwoDScene scene, TopDownCombatWorld world, CharacterArtLibrary art)
     {
-        scene.StaticPolygons.RemoveAll(p => p.SortKey is >= 70 and < 85);
+        scene.Sprites.RemoveAll(s => s.SortKey is >= 70 and < 85);
         foreach (var shot in world.Projectiles)
         {
-            var color = shot.FromPlayer ? new Rgba32(255, 240, 120) : new Rgba32(255, 80, 80);
-            var poly = TwoDScenePrimitives.Rectangle(
-                shot.Position.X - 0.08f,
-                shot.Position.Z - 0.08f,
-                shot.Position.X + 0.08f,
-                shot.Position.Z + 0.08f);
-            scene.StaticPolygons.Add(new TwoDStaticPolygon(poly, color)
+            var rocket = shot.SplashRadius > 1.5f;
+            var size = rocket ? 0.2f : 0.12f;
+            var tint = shot.FromPlayer
+                ? new Rgba32(255, 240, 120, 240)
+                : new Rgba32(255, 90, 90, 240);
+            scene.Sprites.Add(new TwoDSpriteInstance
             {
-                DrawFilled = true,
-                SortKey = 80,
+                Texture = art.Particles.Spark,
+                SortKey = rocket ? 84 : 80,
+                Tint = tint,
+                Transform =
+                {
+                    Position = shot.Position,
+                    Scale = new Vector3(size, 1f, size),
+                },
             });
         }
     }

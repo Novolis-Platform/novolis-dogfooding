@@ -72,7 +72,7 @@ internal static class ProceduralDoomSprites
                     PickupArtKind.BlueKey => PixelKey(x, y, size),
                     PickupArtKind.Exit => PixelExitPad(x, y, size),
                     PickupArtKind.Barrel => PixelBarrel(x, y, size),
-                    _ => Rgba32.Transparent,
+                    _ => default,
                 };
             }
         }
@@ -115,16 +115,16 @@ internal static class ProceduralDoomSprites
         switch (archetype)
         {
             case DoomArchetype.Marine:
-                FillRect(atlas, fw, fh, ox, 28, 16 + bob, 10, 4, palette.Gun);
-                FillRect(atlas, fw, fh, ox, 14, 10 + bob, 3, 6, palette.Accent);
+                FillRect(atlas, fw, fh, ox, 28, (int)(16 + bob), 10, 4, palette.Gun);
+                FillRect(atlas, fw, fh, ox, 14, (int)(10 + bob), 3, 6, palette.Accent);
                 break;
             case DoomArchetype.Zombie:
-                FillRect(atlas, fw, fh, ox, 12, 18 + bob, 4, 8, palette.Gore);
-                FillRect(atlas, fw, fh, ox, 26, 20 + bob, 6, 3, palette.Gore);
+                FillRect(atlas, fw, fh, ox, 12, (int)(18 + bob), 4, 8, palette.Gore);
+                FillRect(atlas, fw, fh, ox, 26, (int)(20 + bob), 6, 3, palette.Gore);
                 break;
             case DoomArchetype.Imp:
-                Set(atlas, fw, fh, ox, 16, 6 + bob, palette.Horn);
-                Set(atlas, fw, fh, ox, 24, 6 + bob, palette.Horn);
+                Set(atlas, fw, fh, ox, 16, (int)(6 + bob), palette.Horn);
+                Set(atlas, fw, fh, ox, 24, (int)(6 + bob), palette.Horn);
                 FillEllipse(atlas, fw, fh, ox, 30, 24 + bob, 4, 4, palette.Accent);
                 break;
             case DoomArchetype.Pinky:
@@ -135,7 +135,7 @@ internal static class ProceduralDoomSprites
 
         if (frame is 3 or 4)
         {
-            FillRect(atlas, fw, fh, ox, 32, 14 + bob, 12, 3, new Rgba32(255, 220, 80));
+            FillRect(atlas, fw, fh, ox, 32, (int)(14 + bob), 12, 3, new Rgba32(255, 220, 80));
         }
     }
 
@@ -202,7 +202,7 @@ internal static class ProceduralDoomSprites
             return new Rgba32(240, 240, 240);
         }
 
-        return Rgba32.Transparent;
+        return default;
     }
 
     private static Rgba32 PixelArmor(int x, int y, int size)
@@ -212,7 +212,7 @@ internal static class ProceduralDoomSprites
             return new Rgba32(70, 130, 220);
         }
 
-        return Rgba32.Transparent;
+        return default;
     }
 
     private static Rgba32 PixelAmmoBox(int x, int y, int size)
@@ -227,7 +227,7 @@ internal static class ProceduralDoomSprites
             return new Rgba32(220, 200, 60);
         }
 
-        return Rgba32.Transparent;
+        return default;
     }
 
     private static Rgba32 PixelKey(int x, int y, int size)
@@ -242,7 +242,7 @@ internal static class ProceduralDoomSprites
             return new Rgba32(120, 180, 255);
         }
 
-        return Rgba32.Transparent;
+        return default;
     }
 
     private static Rgba32 PixelExitPad(int x, int y, int size)
@@ -252,7 +252,7 @@ internal static class ProceduralDoomSprites
             return new Rgba32(40, 200, 80, (byte)(120 + (x + y) % 80));
         }
 
-        return Rgba32.Transparent;
+        return default;
     }
 
     private static Rgba32 PixelBarrel(int x, int y, int size)
@@ -263,7 +263,7 @@ internal static class ProceduralDoomSprites
         var dy = y - cy;
         if (dx * dx + dy * dy > 11 * 11)
         {
-            return Rgba32.Transparent;
+            return default;
         }
 
         if (y % 4 < 2)

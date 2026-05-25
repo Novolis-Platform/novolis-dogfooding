@@ -21,6 +21,7 @@ internal sealed class TopDownDoomGame
     private readonly LevelFlow _flow = DemoLevelAuthoring.CreateFlow();
     private readonly GameScreenStack _menuFlows = new();
     private SpriteScenePresenter? _sprites;
+    private FxPresenter? _fx;
     private bool _playing;
     private bool _paused;
     private float _combatZoom;
@@ -30,6 +31,7 @@ internal sealed class TopDownDoomGame
         var contentRoot = AppContext.BaseDirectory;
         _art.Initialize(ctx.Scene.Textures, contentRoot);
         _sprites = new SpriteScenePresenter(_art);
+        _fx = new FxPresenter(_art);
         BuildLevel(ctx.Scene);
         ctx.SetTitle($"Top-Down Doom — {_art.SourceLabel}");
 
@@ -107,10 +109,24 @@ internal sealed class TopDownDoomGame
 
         var camTarget = _world.PlayerPosition + new Vector3(0f, 0f, 1.2f);
         var t = 1f - MathF.Exp(-10f * ctx.DeltaSeconds);
-        scene.Camera.Position = Vector3.Lerp(scene.Camera.Position, camTarget, t);
+        var shake = _world.Juice.Shake;
+        var shakeOffset = shake > 0.01f
+            ? new Vector3(
+                (Random.Shared.NextSingle() - 0.5f) * 0.35f * shake,
+                0f,
+                (Random.Shared.NextSingle() - 0.5f) * 0.35f * shake)
+            : Vector3.Zero;
+        scene.Camera.Position = Vector3.Lerp(scene.Camera.Position, camTarget + shakeOffset, t);
+        scene.Camera.ClearColor = LerpClearColor(
+            new Rgba32(14, 10, 18),
+            new Rgba32(28, 12, 14),
+            MathF.Min(1f, shake * 0.6f + (_world.Monsters.Count > 0 ? 0.15f : 0f)));
+
+        EmitAmbientParticles(ctx.DeltaSeconds);
 
         scene.Update(ctx.DeltaSeconds);
         _sprites?.Sync(scene, _world, ctx.DeltaSeconds);
+        _fx?.Sync(scene, _world.Juice);
         DrawCombatHints(scene);
         DrawHud(scene, ctx);
     }
@@ -123,6 +139,7 @@ internal sealed class TopDownDoomGame
             _world.SpawnMonster(MonsterRole.Fodder, 12f, 6f);
             _world.SpawnMonster(MonsterRole.Fodder, 14f, 8f);
             _world.SpawnMonster(MonsterRole.Charger, 16f, 17f);
+            _world.Juice.Boom(_world.PlayerPosition + new Vector3(2f, 0f, 0f), 0.6f);
         }
 
         if (_world.HasBlueKey)
@@ -249,6 +266,11 @@ internal sealed class TopDownDoomGame
         {
             scene.Hud.AddText("MONSTER CLOSET!", 10, 100, 2.2f, new Rgba32(255, 90, 70));
         }
+
+        if (_world.FoundShotgun && _world.ActiveWeapon.Name == "Shotgun")
+        {
+            scene.Hud.AddText("SHOTGUN!", 10, 122, 2f, new Rgba32(255, 220, 80));
+        }
     }
 
     private void ShowDeathMenu(SilkTwoDGameContext ctx)
@@ -294,7 +316,9 @@ internal sealed class TopDownDoomGame
         _world.HasBlueKey = false;
         _world.ExitUnlocked = false;
         _world.ClosetAmbushTriggered = false;
-        _world.ActiveWeapon = WeaponCatalog.Shotgun;
+        _world.FoundShotgun = false;
+        _world.ActiveWeapon = WeaponCatalog.Pistol;
+        _world.Juice.Clear();
         BuildLevel(scene);
     }
 
@@ -325,6 +349,58 @@ internal sealed class TopDownDoomGame
             right,
         ]);
         scene.StaticPolygons.Add(new TwoDStaticPolygon(shape, color) { DrawFilled = true, SortKey = 55 });
+    }
+
+    private void EmitAmbientParticles(float dt)
+    {
+        if (_world.Juice.AmbientCooldown > 0f)
+        {
+            return;
+        }
+
+        _world.Juice.AmbientCooldown = 0.06f;
+        var p = _world.PlayerPosition;
+        var offset = new Vector3(
+            (Random.Shared.NextSingle() - 0.5f) * 8f,
+            0f,
+            (Random.Shared.NextSingle() - 0.5f) * 8f);
+        ParticlePresets.AmbientEmber(_world.Juice.Particles, p + offset);
+
+        foreach (var barrel in _world.Barrels)
+        {
+            if (Random.Shared.NextSingle() < 0.02f)
+            {
+                ParticlePresets.BarrelFuse(_world.Juice.Particles, barrel.Position);
+            }
+        }
+
+        foreach (var pickup in _world.Pickups)
+        {
+            if (Random.Shared.NextSingle() < 0.12f)
+            {
+                ParticlePresets.HitSparks(
+                    _world.Juice.Particles,
+                    pickup.Position,
+                    pickup.Kind switch
+                    {
+                        PickupKind.BlueKey => new Rgba32(100, 160, 255, 180),
+                        PickupKind.Health => new Rgba32(80, 255, 100, 180),
+                        PickupKind.Exit => new Rgba32(200, 255, 220, 180),
+                        _ => new Rgba32(255, 220, 100, 140),
+                    },
+                    2);
+            }
+        }
+    }
+
+    private static Rgba32 LerpClearColor(Rgba32 a, Rgba32 b, float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        return new Rgba32(
+            (byte)(a.R + (b.R - a.R) * t),
+            (byte)(a.G + (b.G - a.G) * t),
+            (byte)(a.B + (b.B - a.B) * t),
+            255);
     }
 }
 
