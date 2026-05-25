@@ -18,6 +18,9 @@
     <PackageVersion Include="Novolis.Commands.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Engine" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Queueing" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.Identity" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.MenuFlows" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.Multiplayer.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Messaging.Channels" Version="2026.1.*" />

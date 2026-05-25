@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>GamingSmoke</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Game.Identity" />
+    <PackageReference Include="Novolis.Game.MenuFlows" />
+    <PackageReference Include="Novolis.Game.Multiplayer.Abstractions" />
+  </ItemGroup>
+</Project>
