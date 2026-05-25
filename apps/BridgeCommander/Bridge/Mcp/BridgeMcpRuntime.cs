@@ -10,7 +10,7 @@ internal static class BridgeMcpRuntime
         get
         {
             lock (Gate)
-                return _session ??= BridgeSession.Create();
+                return _session ??= BridgeSession.Create(BridgeSessionOptions.WithoutVoice);
         }
     }
 
@@ -19,7 +19,7 @@ internal static class BridgeMcpRuntime
         lock (Gate)
         {
             _session?.Initialize();
-            _session ??= BridgeSession.Create();
+            _session ??= BridgeSession.Create(BridgeSessionOptions.WithoutVoice);
         }
     }
 
@@ -29,7 +29,7 @@ internal static class BridgeMcpRuntime
         lock (Gate)
         {
             previous = _session;
-            _session = BridgeSession.Create();
+            _session = BridgeSession.Create(BridgeSessionOptions.WithoutVoice);
         }
 
         if (previous is not null)

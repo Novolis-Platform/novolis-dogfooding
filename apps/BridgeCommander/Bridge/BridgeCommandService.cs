@@ -1,3 +1,4 @@
+using Novolis.Audio.Voice;
 using Novolis.Commands;
 using Novolis.Commands.Engine;
 using Novolis.Commands.Queueing;
@@ -12,7 +13,7 @@ public sealed class BridgeCommandService : IAsyncDisposable
     private readonly BridgeActivityTracker _activity;
     private readonly CancellationTokenSource _runCts = new();
 
-    public BridgeCommandService(BridgeState state, BridgeActivityTracker activity)
+    public BridgeCommandService(BridgeState state, BridgeActivityTracker activity, IVoiceService? voice = null)
     {
         _activity = activity;
 
@@ -27,7 +28,7 @@ public sealed class BridgeCommandService : IAsyncDisposable
         _queue = new ChannelCommandQueue();
         _runner = new CommandQueueRunner<BridgeState>(
             _queue,
-            new BridgeCommandProcessor(activity));
+            new BridgeCommandProcessor(activity, voice));
         _ = Task.Run(() => _runner.RunAsync(state, _runCts.Token));
     }
 

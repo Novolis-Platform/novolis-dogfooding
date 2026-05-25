@@ -8,6 +8,13 @@ Sci-fi bridge captain TUI dogfooding [Novolis.Commands](https://github.com/Novol
 dotnet run --project apps/BridgeCommander
 ```
 
+Spoken bridge acknowledgments use **Novolis.Audio.Voice.Atc** (Sherpa Piper TTS from GPR). Disable with `--no-voice` (MCP/QA modes disable voice automatically).
+
+```bash
+dotnet run --project apps/audio/VoiceSmoke
+dotnet run --project apps/audio/VoiceSmoke -- --null
+```
+
 ## MCP (agent / QA automation)
 
 Stdio MCP server for Cursor and other MCP clients:

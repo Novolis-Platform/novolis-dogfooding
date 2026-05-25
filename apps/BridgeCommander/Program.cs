@@ -15,6 +15,8 @@ if (args.Contains("--qa-smoke", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
+var voiceEnabled = !args.Contains("--no-voice", StringComparer.OrdinalIgnoreCase);
+
 if (args.Contains("--mcp-test", StringComparer.OrdinalIgnoreCase))
 {
     Environment.Exit(await BridgeMcpIntegrationTest.RunAsync());
@@ -31,12 +33,14 @@ if (args.Contains("--mcp-play", StringComparer.OrdinalIgnoreCase))
 var transmitIndex = Array.FindIndex(args, a => string.Equals(a, "--transmit", StringComparison.OrdinalIgnoreCase));
 if (transmitIndex >= 0 && transmitIndex + 1 < args.Length)
 {
-    await using var cliSession = BridgeSession.Create();
+    await using var cliSession = BridgeSession.Create(
+        voiceEnabled ? BridgeSessionOptions.Default : BridgeSessionOptions.WithoutVoice);
     var result = await cliSession.TransmitAsync(string.Join(' ', args[(transmitIndex + 1)..]));
     Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
     return;
 }
 
-await using var session = BridgeSession.Create();
+await using var session = BridgeSession.Create(
+    voiceEnabled ? BridgeSessionOptions.Default : BridgeSessionOptions.WithoutVoice);
 var app = BridgeHexApp.Create(session);
 await app.RunAsync();

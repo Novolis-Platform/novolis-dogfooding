@@ -44,6 +44,9 @@
     <Project Path="apps/NeuralRacing/NeuralRacing.csproj" />
     <Project Path="apps/NeuralRacing.Tests/NeuralRacing.Tests.csproj" />
   </Folder>
+  <Folder Name="/audio/">
+    <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
+  </Folder>
   <Folder Name="/gaming/">
     <Project Path="apps/gaming/GamingSmoke/GamingSmoke.csproj" />
     <Project Path="apps/gaming/TopDownDoom/TopDownDoom.csproj" />

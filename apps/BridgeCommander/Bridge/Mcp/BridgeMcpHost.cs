@@ -26,7 +26,7 @@ public static class BridgeMcpHost
 
     public static async Task<int> RunQaSmokeAsync(CancellationToken cancellationToken = default)
     {
-        await using var session = BridgeSession.Create();
+        await using var session = BridgeSession.Create(BridgeSessionOptions.WithoutVoice);
         var failures = new List<string>();
 
         foreach (var name in BridgeQaScenarios.Names)

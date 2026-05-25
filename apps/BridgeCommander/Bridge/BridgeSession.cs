@@ -1,3 +1,5 @@
+using Novolis.Audio.Voice;
+
 namespace BridgeCommander.Bridge;
 
 /// <summary>
@@ -9,19 +11,28 @@ public sealed class BridgeSession : IAsyncDisposable
     public BridgeCommandService Commands { get; }
     public BridgeActivityTracker Activity { get; }
 
-    private BridgeSession(BridgeState state, BridgeCommandService commands, BridgeActivityTracker activity)
+    public IVoiceService? Voice { get; }
+
+    private BridgeSession(
+        BridgeState state,
+        BridgeCommandService commands,
+        BridgeActivityTracker activity,
+        IVoiceService? voice)
     {
         State = state;
         Commands = commands;
         Activity = activity;
+        Voice = voice;
     }
 
-    public static BridgeSession Create()
+    public static BridgeSession Create(BridgeSessionOptions? options = null)
     {
+        options ??= BridgeSessionOptions.Default;
         var state = new BridgeState();
         var activity = new BridgeActivityTracker();
-        var commands = new BridgeCommandService(state, activity);
-        var session = new BridgeSession(state, commands, activity);
+        var voice = BridgeVoice.CreateService(options.VoiceEnabled);
+        var commands = new BridgeCommandService(state, activity, voice);
+        var session = new BridgeSession(state, commands, activity, voice);
         session.Initialize();
         return session;
     }
