@@ -67,6 +67,17 @@ static Vector3 SideToPlanar(Vector3 side) => new(side.X, 0f, side.Y);
 - `Novolis.Simulation.*` referencing `Novolis.Rendering.*`
 - `Quaternion` helpers for 2D (Y-axis spin only if ever needed — use BCL `Quaternion` in apps)
 
+## Avalonia hosts
+
+Package **`Novolis.Avalonia.Rendering`** (`novolis-avalonia`):
+
+| Control | Renders |
+|---------|---------|
+| `TwoDSceneControl` | `TwoDScene` via OpenGL (`SilkTwoDRenderer`) |
+| `Rgba32FrameControl` | CPU `Rgba32` frames (`IFramePresenter`) — path trace preview |
+
+Sample: `novolis-avalonia/samples/RenderingAvalonia`. Dogfood apps can add `PackageReference` to `Novolis.Avalonia.Rendering` after GPR publish (no cross-repo `ProjectReference`).
+
 ## Dropped: TerraFX
 
 Low-level GPU interop (VMA, D3D12) was considered and **not** adopted — Novolis stays on **Silk.NET** for Vulkan/OpenGL presenters.
