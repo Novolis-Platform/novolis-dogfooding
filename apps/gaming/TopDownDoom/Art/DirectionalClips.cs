@@ -9,7 +9,7 @@ internal sealed class DirectionalClips
     private readonly Dictionary<string, TwoDAnimationClip> _move = new(StringComparer.OrdinalIgnoreCase);
 
     public float WorldHalfHeight { get; init; } = 0.62f;
-    public TwoDAnimationClip? ShootOverlay { get; init; }
+    public TwoDAnimationClip? ShootOverlay { get; set; }
 
     public void AddIdle(string suffix, TwoDAnimationClip clip) => _idle[suffix] = clip;
 

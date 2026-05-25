@@ -50,7 +50,7 @@ internal sealed class CharacterArtLibrary
             Imp = ProceduralDoomSprites.CreateImp(registry);
             Bruiser = ProceduralDoomSprites.CreateBruiser(registry);
             Explosion = ProceduralDoomSprites.CreateExplosionClip(registry);
-            SourceLabel = "built-in doom sprites (run scripts/fetch-fun-art.ps1 for CC0 art)";
+            SourceLabel = "built-in 8-way sprites (fetch-fun-art.ps1 for hand-drawn CC0)";
         }
 
         if (Explosion is null)

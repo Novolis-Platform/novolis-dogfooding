@@ -3,20 +3,22 @@ using Novolis.Rendering.TwoD;
 
 namespace TopDownDoom.Art;
 
-/// <summary>Built-in Doom-flavored sprites — no downloads required.</summary>
+/// <summary>Built-in 8-way top-down characters (no rotation).</summary>
 internal static class ProceduralDoomSprites
 {
+    private static readonly string[] DirectionSuffixes = ["down", "up", "right", "up_right", "down_right"];
+
     public static CharacterAnimationSet CreateMarine(TwoDTextureRegistry registry) =>
-        CreateArchetype(registry, DoomArchetype.Marine, 0.52f);
+        CreateDirectional(registry, DoomArchetype.Marine, 0.68f);
 
     public static CharacterAnimationSet CreateZombie(TwoDTextureRegistry registry) =>
-        CreateArchetype(registry, DoomArchetype.Zombie, 0.5f);
+        CreateDirectional(registry, DoomArchetype.Zombie, 0.64f);
 
     public static CharacterAnimationSet CreateImp(TwoDTextureRegistry registry) =>
-        CreateArchetype(registry, DoomArchetype.Imp, 0.44f);
+        CreateDirectional(registry, DoomArchetype.Imp, 0.58f);
 
     public static CharacterAnimationSet CreateBruiser(TwoDTextureRegistry registry) =>
-        CreateArchetype(registry, DoomArchetype.Pinky, 0.72f);
+        CreateDirectional(registry, DoomArchetype.Pinky, 0.82f);
 
     public static TwoDAnimationClip CreateExplosionClip(TwoDTextureRegistry registry)
     {
@@ -66,12 +68,12 @@ internal static class ProceduralDoomSprites
             {
                 pixels[y * size + x] = kind switch
                 {
-                    PickupArtKind.Health => PixelMedkit(x, y, size),
-                    PickupArtKind.Armor => PixelArmor(x, y, size),
-                    PickupArtKind.Ammo => PixelAmmoBox(x, y, size),
-                    PickupArtKind.BlueKey => PixelKey(x, y, size),
-                    PickupArtKind.Exit => PixelExitPad(x, y, size),
-                    PickupArtKind.Barrel => PixelBarrel(x, y, size),
+                    PickupArtKind.Health => PixelMedkit(x, y),
+                    PickupArtKind.Armor => PixelArmor(x, y),
+                    PickupArtKind.Ammo => PixelAmmoBox(x, y),
+                    PickupArtKind.BlueKey => PixelKey(x, y),
+                    PickupArtKind.Exit => PixelExitPad(x, y),
+                    PickupArtKind.Barrel => PixelBarrel(x, y),
                     _ => default,
                 };
             }
@@ -80,63 +82,121 @@ internal static class ProceduralDoomSprites
         return registry.Register(pixels, size, size, kind.ToString());
     }
 
-    private static CharacterAnimationSet CreateArchetype(
+    private static CharacterAnimationSet CreateDirectional(
         TwoDTextureRegistry registry,
         DoomArchetype archetype,
         float worldHalfHeight)
     {
-        const int fw = 40;
-        const int fh = 40;
-        const int frames = 8;
+        var facing = new DirectionalClips { WorldHalfHeight = worldHalfHeight };
+        foreach (var suffix in DirectionSuffixes)
+        {
+            var view = ViewFromSuffix(suffix);
+            var idle = BuildDirectionClip(registry, archetype, view, frames: 6, fps: 9f, walkCycle: true);
+            var move = BuildDirectionClip(registry, archetype, view, frames: 6, fps: 12f, walkCycle: true);
+            facing.AddIdle(suffix, idle);
+            facing.AddMove(suffix, move);
+        }
+
+        var shoot = BuildDirectionClip(registry, archetype, ViewFromSuffix("down"), frames: 4, fps: 14f, walkCycle: false, shooting: true);
+        facing.ShootOverlay = shoot;
+        var fallback = facing.Select(0f, false, false).Clip;
+        return new CharacterAnimationSet(fallback, worldHalfHeight, shoot, facing: facing);
+    }
+
+    private static TwoDAnimationClip BuildDirectionClip(
+        TwoDTextureRegistry registry,
+        DoomArchetype archetype,
+        ViewAngle view,
+        int frames,
+        float fps,
+        bool walkCycle,
+        bool shooting = false)
+    {
+        const int fw = 48;
+        const int fh = 48;
         var atlas = new Rgba32[fw * frames * fh];
         for (var f = 0; f < frames; f++)
         {
-            var bob = MathF.Sin(f * MathF.PI * 0.5f) * 1.5f;
-            DrawFrame(atlas, fw, fh, f, archetype, bob);
+            var bob = walkCycle ? MathF.Sin(f / (float)frames * MathF.PI * 2f) * 2f : 0f;
+            DrawCharacter(atlas, fw, fh, f, archetype, view, bob, shooting);
         }
 
-        var id = registry.Register(atlas, fw * frames, fh, $"procedural-{archetype}");
+        var id = registry.Register(atlas, fw * frames, fh, $"proc-{archetype}-{view}");
         var sheet = new TwoDSpriteSheet(id, fw, fh, fw * frames, fh);
-        var walk = new TwoDAnimationClip(sheet, [0, 1, 2, 3, 4, 5, 6, 7], 11f);
-        var shoot = new TwoDAnimationClip(sheet, [2, 3, 4, 3, 2], 16f);
-        return new CharacterAnimationSet(walk, worldHalfHeight, shoot);
+        return new TwoDAnimationClip(sheet, Enumerable.Range(0, frames).ToArray(), fps);
     }
 
-    private static void DrawFrame(Rgba32[] atlas, int fw, int fh, int frame, DoomArchetype archetype, float bob)
+    private static ViewAngle ViewFromSuffix(string suffix) => suffix switch
+    {
+        "up" => ViewAngle.Up,
+        "right" => ViewAngle.Right,
+        "up_right" => ViewAngle.UpRight,
+        "down_right" => ViewAngle.DownRight,
+        _ => ViewAngle.Down,
+    };
+
+    private static void DrawCharacter(
+        Rgba32[] atlas,
+        int fw,
+        int fh,
+        int frame,
+        DoomArchetype archetype,
+        ViewAngle view,
+        float bob,
+        bool shooting)
     {
         var ox = frame * fw;
-        var palette = PaletteFor(archetype);
-        var wide = archetype == DoomArchetype.Pinky ? 1.25f : 1f;
+        var pal = PaletteFor(archetype);
+        var cx = 24f;
+        var cz = 28f + bob;
+        var wide = archetype == DoomArchetype.Pinky ? 1.2f : 1f;
 
-        FillEllipse(atlas, fw, fh, ox, 20, 22 + bob, 11 * wide, 13, palette.Body);
-        FillEllipse(atlas, fw, fh, ox, 20, 12 + bob, 7 * wide, 8, palette.Skin);
-        FillEllipse(atlas, fw, fh, ox, 20, 8 + bob, 5 * wide, 5, palette.Highlight);
+        FillEllipse(atlas, fw, fh, ox, cx, cz + 10f, 9f * wide, 4f, new Rgba32(0, 0, 0, 50));
+
+        var (bodyRx, bodyRz, headOffX, headOffZ, gunX, gunZ) = LayoutForView(view, wide);
+        FillEllipse(atlas, fw, fh, ox, cx, cz, bodyRx, bodyRz, pal.Body);
+        FillEllipse(atlas, fw, fh, ox, cx + headOffX, cz + headOffZ, 5.5f * wide, 5f, pal.Skin);
+        FillEllipse(atlas, fw, fh, ox, cx + headOffX, cz + headOffZ, 3.5f, 3f, pal.Highlight);
 
         switch (archetype)
         {
             case DoomArchetype.Marine:
-                FillRect(atlas, fw, fh, ox, 28, (int)(16 + bob), 10, 4, palette.Gun);
-                FillRect(atlas, fw, fh, ox, 14, (int)(10 + bob), 3, 6, palette.Accent);
+                FillRect(atlas, fw, fh, ox, (int)(cx + gunX), (int)(cz + gunZ), 11, 4, pal.Gun);
+                if (shooting)
+                {
+                    FillRect(atlas, fw, fh, ox, (int)(cx + gunX + 8), (int)(cz + gunZ - 1), 6, 2, new Rgba32(255, 240, 120));
+                }
+                FillRect(atlas, fw, fh, ox, (int)(cx - 4), (int)(cz - 2), 4, 8, pal.Accent);
                 break;
             case DoomArchetype.Zombie:
-                FillRect(atlas, fw, fh, ox, 12, (int)(18 + bob), 4, 8, palette.Gore);
-                FillRect(atlas, fw, fh, ox, 26, (int)(20 + bob), 6, 3, palette.Gore);
+                FillRect(atlas, fw, fh, ox, (int)(cx - 6), (int)(cz + 4), 5, 10, pal.Gore);
+                FillRect(atlas, fw, fh, ox, (int)(cx + gunX), (int)(cz + 2), 7, 3, pal.Gore);
                 break;
             case DoomArchetype.Imp:
-                Set(atlas, fw, fh, ox, 16, (int)(6 + bob), palette.Horn);
-                Set(atlas, fw, fh, ox, 24, (int)(6 + bob), palette.Horn);
-                FillEllipse(atlas, fw, fh, ox, 30, 24 + bob, 4, 4, palette.Accent);
+                Set(atlas, fw, fh, ox, (int)(cx + headOffX - 4), (int)(cz + headOffZ - 5), pal.Horn);
+                Set(atlas, fw, fh, ox, (int)(cx + headOffX + 4), (int)(cz + headOffZ - 5), pal.Horn);
+                FillEllipse(atlas, fw, fh, ox, cx + gunX, cz + gunZ, 5, 4, pal.Accent);
                 break;
             case DoomArchetype.Pinky:
-                FillEllipse(atlas, fw, fh, ox, 12, 26 + bob, 6, 5, palette.Gore);
-                FillEllipse(atlas, fw, fh, ox, 28, 26 + bob, 6, 5, palette.Gore);
+                FillEllipse(atlas, fw, fh, ox, cx - 7, cz + 6, 5, 5, pal.Gore);
+                FillEllipse(atlas, fw, fh, ox, cx + 7, cz + 6, 5, 5, pal.Gore);
                 break;
         }
+    }
 
-        if (frame is 3 or 4)
+    private static (float BodyRx, float BodyRz, float HeadOffX, float HeadOffZ, float GunX, float GunZ) LayoutForView(
+        ViewAngle view,
+        float wide)
+    {
+        return view switch
         {
-            FillRect(atlas, fw, fh, ox, 32, (int)(14 + bob), 12, 3, new Rgba32(255, 220, 80));
-        }
+            ViewAngle.Up => (8f * wide, 10f, 0f, -8f, 0f, -12f),
+            ViewAngle.Down => (10f * wide, 11f, 0f, 6f, 0f, 10f),
+            ViewAngle.Right => (7f * wide, 12f, 7f, 0f, 14f, 2f),
+            ViewAngle.UpRight => (9f * wide, 10f, 5f, -5f, 10f, -4f),
+            ViewAngle.DownRight => (9f * wide, 10f, 5f, 5f, 10f, 8f),
+            _ => (10f, 11f, 0f, 6f, 0f, 10f),
+        };
     }
 
     private static (Rgba32 Body, Rgba32 Skin, Rgba32 Highlight, Rgba32 Gun, Rgba32 Gore, Rgba32 Accent, Rgba32 Horn) PaletteFor(
@@ -144,37 +204,37 @@ internal static class ProceduralDoomSprites
         archetype switch
         {
             DoomArchetype.Marine => (
-                new Rgba32(48, 92, 56),
-                new Rgba32(210, 170, 120),
-                new Rgba32(70, 120, 80),
-                new Rgba32(60, 60, 70),
+                new Rgba32(42, 78, 48),
+                new Rgba32(220, 185, 140),
+                new Rgba32(180, 210, 160),
+                new Rgba32(55, 58, 68),
                 new Rgba32(120, 20, 20),
-                new Rgba32(90, 140, 200),
+                new Rgba32(70, 130, 210),
                 new Rgba32(40, 40, 40)),
             DoomArchetype.Zombie => (
-                new Rgba32(70, 110, 50),
-                new Rgba32(140, 150, 90),
-                new Rgba32(90, 130, 60),
-                new Rgba32(80, 60, 50),
-                new Rgba32(140, 30, 30),
-                new Rgba32(50, 70, 40),
+                new Rgba32(58, 92, 42),
+                new Rgba32(150, 165, 95),
+                new Rgba32(100, 130, 70),
+                new Rgba32(70, 55, 45),
+                new Rgba32(150, 35, 35),
+                new Rgba32(45, 65, 38),
                 new Rgba32(60, 50, 40)),
             DoomArchetype.Imp => (
-                new Rgba32(160, 45, 55),
-                new Rgba32(220, 80, 70),
-                new Rgba32(255, 120, 60),
-                new Rgba32(80, 30, 30),
-                new Rgba32(100, 20, 20),
-                new Rgba32(255, 180, 40),
-                new Rgba32(40, 20, 20)),
+                new Rgba32(150, 42, 52),
+                new Rgba32(230, 95, 75),
+                new Rgba32(255, 150, 70),
+                new Rgba32(70, 25, 30),
+                new Rgba32(110, 20, 25),
+                new Rgba32(255, 200, 50),
+                new Rgba32(50, 15, 15)),
             DoomArchetype.Pinky => (
-                new Rgba32(150, 60, 90),
-                new Rgba32(200, 100, 120),
-                new Rgba32(220, 130, 150),
-                new Rgba32(100, 40, 60),
-                new Rgba32(180, 40, 50),
-                new Rgba32(255, 100, 140),
-                new Rgba32(80, 30, 40)),
+                new Rgba32(140, 55, 85),
+                new Rgba32(210, 110, 125),
+                new Rgba32(240, 150, 165),
+                new Rgba32(95, 38, 58),
+                new Rgba32(175, 45, 55),
+                new Rgba32(255, 110, 145),
+                new Rgba32(75, 28, 38)),
             _ => (
                 new Rgba32(120, 120, 120),
                 new Rgba32(180, 180, 180),
@@ -185,7 +245,7 @@ internal static class ProceduralDoomSprites
                 new Rgba32(40, 40, 40)),
         };
 
-    private static Rgba32 PixelMedkit(int x, int y, int size)
+    private static Rgba32 PixelMedkit(int x, int y)
     {
         if (x is >= 10 and <= 21 && y is >= 8 and <= 23)
         {
@@ -205,17 +265,12 @@ internal static class ProceduralDoomSprites
         return default;
     }
 
-    private static Rgba32 PixelArmor(int x, int y, int size)
-    {
-        if (x is >= 9 and <= 22 && y is >= 10 and <= 22 && (x + y) % 3 == 0)
-        {
-            return new Rgba32(70, 130, 220);
-        }
+    private static Rgba32 PixelArmor(int x, int y) =>
+        x is >= 9 and <= 22 && y is >= 10 and <= 22 && (x + y) % 3 == 0
+            ? new Rgba32(70, 130, 220)
+            : default;
 
-        return default;
-    }
-
-    private static Rgba32 PixelAmmoBox(int x, int y, int size)
+    private static Rgba32 PixelAmmoBox(int x, int y)
     {
         if (x is >= 8 and <= 23 && y is >= 12 and <= 24)
         {
@@ -230,7 +285,7 @@ internal static class ProceduralDoomSprites
         return default;
     }
 
-    private static Rgba32 PixelKey(int x, int y, int size)
+    private static Rgba32 PixelKey(int x, int y)
     {
         if (x is >= 14 and <= 22 && y is >= 10 and <= 16)
         {
@@ -245,33 +300,21 @@ internal static class ProceduralDoomSprites
         return default;
     }
 
-    private static Rgba32 PixelExitPad(int x, int y, int size)
-    {
-        if (x is >= 6 and <= 25 && y is >= 14 and <= 26)
-        {
-            return new Rgba32(40, 200, 80, (byte)(120 + (x + y) % 80));
-        }
+    private static Rgba32 PixelExitPad(int x, int y) =>
+        x is >= 6 and <= 25 && y is >= 14 and <= 26
+            ? new Rgba32(40, 200, 80, (byte)(120 + (x + y) % 80))
+            : default;
 
-        return default;
-    }
-
-    private static Rgba32 PixelBarrel(int x, int y, int size)
+    private static Rgba32 PixelBarrel(int x, int y)
     {
-        var cx = 16f;
-        var cy = 18f;
-        var dx = x - cx;
-        var dy = y - cy;
+        var dx = x - 16f;
+        var dy = y - 18f;
         if (dx * dx + dy * dy > 11 * 11)
         {
             return default;
         }
 
-        if (y % 4 < 2)
-        {
-            return new Rgba32(220, 60, 30);
-        }
-
-        return new Rgba32(160, 40, 20);
+        return y % 4 < 2 ? new Rgba32(220, 60, 30) : new Rgba32(160, 40, 20);
     }
 
     private static void Set(Rgba32[] atlas, int fw, int fh, int ox, int x, int y, Rgba32 color)
@@ -284,16 +327,7 @@ internal static class ProceduralDoomSprites
         atlas[y * fw + ox + x] = color;
     }
 
-    private static void FillRect(
-        Rgba32[] atlas,
-        int fw,
-        int fh,
-        int ox,
-        int x,
-        int y,
-        int w,
-        int h,
-        Rgba32 color)
+    private static void FillRect(Rgba32[] atlas, int fw, int fh, int ox, int x, int y, int w, int h, Rgba32 color)
     {
         for (var py = y; py < y + h; py++)
         {
@@ -339,6 +373,15 @@ internal static class ProceduralDoomSprites
         Zombie,
         Imp,
         Pinky,
+    }
+
+    private enum ViewAngle
+    {
+        Down,
+        Up,
+        Right,
+        UpRight,
+        DownRight,
     }
 }
 

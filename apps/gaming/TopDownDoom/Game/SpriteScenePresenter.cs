@@ -1,5 +1,4 @@
 using System.Numerics;
-using Novolis.Math.Geometry;
 using Novolis.Rendering.TwoD;
 using TopDownDoom.Art;
 using TopDownDoom.Design;
@@ -24,7 +23,7 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
         SyncMonsters(scene, world);
         SyncPickups(scene, world);
         SyncBarrels(scene, world);
-        SyncProjectiles(scene, world, art);
+        SyncProjectiles(scene, world);
     }
 
     public void Clear(TwoDScene scene)
@@ -46,24 +45,17 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
 
     private void SyncPlayer(TwoDScene scene, TopDownCombatWorld world)
     {
-        var clip = _shootDisplayTimer > 0f && art.Player.Shoot is not null
-            ? art.Player.Shoot
-            : art.Player.Walk;
-        var moving = world.PlayerVelocity.LengthSquared() > 0.2f;
-        if (!moving && _shootDisplayTimer <= 0f)
-        {
-            clip = art.Player.Walk;
-        }
-
-        _playerSprite ??= new TwoDAnimatedSprite { Clip = clip, Loop = true, SortKey = 120 };
-        _playerSprite.Clip = clip;
-        _playerSprite.Transform.Position = world.PlayerPosition;
-        _playerSprite.Transform.RotationY = world.PlayerFacingRadians;
-        ApplyScale(_playerSprite.Transform, clip.Sheet, art.Player.WorldHalfHeight);
-        if (!scene.AnimatedSprites.Contains(_playerSprite))
-        {
-            scene.AnimatedSprites.Add(_playerSprite);
-        }
+        var moving = world.PlayerVelocity.LengthSquared() > 0.35f;
+        var shooting = _shootDisplayTimer > 0f;
+        ApplyCharacter(
+            scene,
+            ref _playerSprite,
+            art.Player,
+            world.PlayerPosition,
+            world.PlayerFacingRadians,
+            moving,
+            shooting,
+            sortKey: 120);
     }
 
     private void SyncMonsters(TwoDScene scene, TopDownCombatWorld world)
@@ -82,20 +74,58 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
         {
             if (!_monsterSprites.TryGetValue(monster, out var sprite))
             {
-                var set = art.ForRole(monster.Role);
-                sprite = new TwoDAnimatedSprite { Clip = set.Walk, Loop = true, SortKey = 90 };
+                sprite = new TwoDAnimatedSprite { Loop = true, SortKey = 90 };
                 _monsterSprites[monster] = sprite;
                 scene.AnimatedSprites.Add(sprite);
             }
 
-            var set2 = art.ForRole(monster.Role);
-            sprite.Clip = set2.Walk;
-            sprite.Transform.Position = monster.Position;
-            sprite.Transform.RotationY = MathF.Atan2(
+            var face = MathF.Atan2(
                 world.PlayerPosition.Z - monster.Position.Z,
                 world.PlayerPosition.X - monster.Position.X);
-            ApplyScale(sprite.Transform, set2.Walk.Sheet, set2.WorldHalfHeight);
+            var set = art.ForRole(monster.Role);
+            var moving = Distance(monster.Position, world.PlayerPosition) > 1.2f;
+            ApplyToSprite(sprite, set, monster.Position, face, moving, shooting: false);
+            if (!scene.AnimatedSprites.Contains(sprite))
+            {
+                scene.AnimatedSprites.Add(sprite);
+            }
         }
+    }
+
+    private void ApplyCharacter(
+        TwoDScene scene,
+        ref TwoDAnimatedSprite? sprite,
+        CharacterAnimationSet set,
+        Vector3 position,
+        float facing,
+        bool moving,
+        bool shooting,
+        int sortKey)
+    {
+        sprite ??= new TwoDAnimatedSprite { Loop = true, SortKey = sortKey };
+        sprite.SortKey = sortKey;
+        ApplyToSprite(sprite, set, position, facing, moving, shooting);
+        if (!scene.AnimatedSprites.Contains(sprite))
+        {
+            scene.AnimatedSprites.Add(sprite);
+        }
+    }
+
+    private static void ApplyToSprite(
+        TwoDAnimatedSprite sprite,
+        CharacterAnimationSet set,
+        Vector3 position,
+        float facingRadians,
+        bool moving,
+        bool shooting)
+    {
+        var (clip, flipX, halfHeight) = set.Resolve(facingRadians, moving, shooting);
+        sprite.Clip = clip;
+        sprite.Transform.Position = position;
+        sprite.Transform.FlipX = flipX;
+        sprite.Transform.RotationY = set.Facing is null ? facingRadians : 0f;
+        var aspect = clip.Sheet.FrameWidth / (float)Math.Max(1, clip.Sheet.FrameHeight);
+        sprite.Transform.Scale = new Vector3(halfHeight * aspect, 1f, halfHeight);
     }
 
     private void SyncPickups(TwoDScene scene, TopDownCombatWorld world)
@@ -112,7 +142,7 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
                 PickupKind.Exit => art.ExitIcon,
                 _ => art.AmmoIcon,
             };
-            AddWorldSprite(scene, pickup.Position, tex, 0.35f, 45);
+            AddWorldSprite(scene, pickup.Position, tex, 0.38f, 45);
         }
     }
 
@@ -121,20 +151,20 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
         scene.Sprites.RemoveAll(s => s.SortKey is >= 50 and < 70);
         foreach (var barrel in world.Barrels)
         {
-            AddWorldSprite(scene, barrel.Position, art.BarrelIcon, 0.4f, 55);
+            AddWorldSprite(scene, barrel.Position, art.BarrelIcon, 0.42f, 55);
         }
     }
 
-    private void SyncProjectiles(TwoDScene scene, TopDownCombatWorld world, CharacterArtLibrary art)
+    private void SyncProjectiles(TwoDScene scene, TopDownCombatWorld world)
     {
         scene.Sprites.RemoveAll(s => s.SortKey is >= 70 and < 85);
         foreach (var shot in world.Projectiles)
         {
             var rocket = shot.SplashRadius > 1.5f;
-            var size = rocket ? 0.2f : 0.12f;
+            var size = rocket ? 0.22f : 0.14f;
             var tint = shot.FromPlayer
-                ? new Rgba32(255, 240, 120, 240)
-                : new Rgba32(255, 90, 90, 240);
+                ? new Novolis.Math.Geometry.Rgba32(255, 240, 120, 240)
+                : new Novolis.Math.Geometry.Rgba32(255, 90, 90, 240);
             scene.Sprites.Add(new TwoDSpriteInstance
             {
                 Texture = art.Particles.Spark,
@@ -163,9 +193,10 @@ internal sealed class SpriteScenePresenter(CharacterArtLibrary art)
         });
     }
 
-    private static void ApplyScale(TwoDTransform transform, TwoDSpriteSheet sheet, float worldHalfHeight)
+    private static float Distance(Vector3 a, Vector3 b)
     {
-        var aspect = sheet.FrameWidth / (float)Math.Max(1, sheet.FrameHeight);
-        transform.Scale = new Vector3(worldHalfHeight * aspect, 1f, worldHalfHeight);
+        var dx = a.X - b.X;
+        var dz = a.Z - b.Z;
+        return MathF.Sqrt(dx * dx + dz * dz);
     }
 }
