@@ -18,10 +18,29 @@ internal static class CharacterAtlasBuilder
         }
 
         var files = Directory.EnumerateFiles(folder, "*.png", SearchOption.TopDirectoryOnly)
-            .Where(p => Path.GetFileName(p).StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+            .Where(p => MatchesNamePrefix(Path.GetFileName(p), namePrefix))
             .OrderBy(static p => p, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         return BuildClipFromFiles(registry, files, framesPerSecond, namePrefix);
+    }
+
+    public static TwoDAnimationClip? TryBuildClipFromExactPrefix(
+        TwoDTextureRegistry registry,
+        string folder,
+        string exactPrefix,
+        float framesPerSecond) =>
+        TryBuildClipFromNamePrefix(registry, folder, exactPrefix, framesPerSecond);
+
+    private static bool MatchesNamePrefix(string fileName, string prefix)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        if (!baseName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var rest = baseName[prefix.Length..];
+        return rest.Length == 0 || rest[0] is ' ' or '(';
     }
 
     public static TwoDAnimationClip? TryBuildClipFromFolder(

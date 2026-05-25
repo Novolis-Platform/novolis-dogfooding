@@ -3,7 +3,7 @@ using Novolis.Rendering.TwoD;
 namespace TopDownDoom.Art;
 
 /// <summary>
-/// CC0 square characters — one zip, cohesive style.
+/// CC0 square characters — 8-way idle/jump; no Y-rotation.
 /// https://opengameart.org/content/hand-drawn-square-characters-animated-8-directions-top-down-free-cc0
 /// </summary>
 internal static class SquareCharacterArtLoader
@@ -31,34 +31,34 @@ internal static class SquareCharacterArtLoader
             return false;
         }
 
-        var hero = Path.Combine(sprites, "Hero");
-        var skeleton = Path.Combine(sprites, "Skeleton");
-        var monster = Path.Combine(sprites, "Monster");
-        var deathFx = Path.Combine(sprites, "Death FX");
-
-        var heroWalk = CharacterAtlasBuilder.TryBuildClipFromNamePrefix(registry, hero, "idle_down", 9f);
-        if (heroWalk is null)
+        var heroDir = Path.Combine(sprites, "Hero");
+        var heroFacing = DirectionalArtLoader.TryLoadFolder(registry, heroDir, worldHalfHeight: 0.72f);
+        if (heroFacing is null)
         {
             return false;
         }
 
-        player = new CharacterAnimationSet(heroWalk, 0.58f, heroWalk);
-        fodder = LoadRole(registry, skeleton, heroWalk, 0.52f);
-        imp = LoadRole(registry, monster, heroWalk, 0.5f);
-        bruiser = LoadRole(registry, monster, heroWalk, 0.68f);
+        var fallback = heroFacing.Select(0f, false, false).Clip;
+        player = new CharacterAnimationSet(fallback, heroFacing.WorldHalfHeight, facing: heroFacing);
+        fodder = LoadRole(registry, Path.Combine(sprites, "Skeleton"), heroFacing, 0.66f) ?? player;
+        imp = LoadRole(registry, Path.Combine(sprites, "Monster"), heroFacing, 0.6f) ?? player;
+        bruiser = LoadRole(registry, Path.Combine(sprites, "Monster"), heroFacing, 0.82f) ?? imp;
+
+        var deathFx = Path.Combine(sprites, "Death FX");
         explosion = CharacterAtlasBuilder.TryBuildClipFromFolder(registry, deathFx, 14f);
-        label = "CC0 square characters (Hero / Skeleton / Monster)";
+        label = "CC0 square characters (8-way)";
         return true;
     }
 
-    private static CharacterAnimationSet LoadRole(
+    private static CharacterAnimationSet? LoadRole(
         TwoDTextureRegistry registry,
         string folder,
-        TwoDAnimationClip fallback,
+        DirectionalClips fallbackFacing,
         float halfHeight)
     {
-        var clip = CharacterAtlasBuilder.TryBuildClipFromNamePrefix(registry, folder, "idle_down", 9f) ?? fallback;
-        return new CharacterAnimationSet(clip, halfHeight, clip);
+        var facing = DirectionalArtLoader.TryLoadFolder(registry, folder, halfHeight) ?? fallbackFacing;
+        var clip = facing.Select(0f, false, false).Clip;
+        return new CharacterAnimationSet(clip, facing.WorldHalfHeight, facing: facing);
     }
 
     private static string? FindSpritesFolder(string root)
