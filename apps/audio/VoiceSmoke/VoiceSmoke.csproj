@@ -7,6 +7,13 @@
   <ItemGroup>
     <PackageReference Include="Novolis.Audio.Voice" />
     <PackageReference Include="Novolis.Audio.Voice.Atc" />
-    <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" />
+    <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" GeneratePathProperty="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(PkgNovolis_Audio_Voice_SherpaOnnx)\contentFiles\any\any\models\**\*"
+             Condition="Exists('$(PkgNovolis_Audio_Voice_SherpaOnnx)\contentFiles\any\any\models\tokens.txt')">
+      <Link>models\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
