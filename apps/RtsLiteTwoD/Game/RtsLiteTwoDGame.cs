@@ -8,26 +8,28 @@ using Silk.NET.Input;
 
 namespace RtsLiteTwoD.Game;
 
+/// <summary>
+/// Top-down C&amp;C-style lite RTS on <see cref="TwoDScene"/> (orthographic).
+/// For the classic RA diagonal camera + PNG billboards, run <c>RtsLite</c> (Raylib).
+/// </summary>
 internal sealed class RtsLiteTwoDGame
 {
-    private static readonly Rgba32 Sky = new(30, 36, 52);
     private static readonly Rgba32 Sand = new(168, 142, 88);
-    private static readonly Rgba32 SandDark = new(138, 112, 68);
     private static readonly Rgba32 Water = new(48, 110, 118);
     private static readonly Rgba32 Tiberium = new(58, 168, 62);
     private static readonly Rgba32 WallRock = new(90, 78, 62);
     private static readonly Rgba32 AlliedBuilding = new(72, 118, 188);
     private static readonly Rgba32 SovietBuilding = new(188, 62, 52);
-    private static readonly Rgba32 AlliedUnit = new(100, 160, 255);
-    private static readonly Rgba32 SovietUnit = new(255, 100, 80);
-    private static readonly Rgba32 OrderLine = new(255, 240, 120, 180);
+    private static readonly Rgba32 AlliedUnit = new(90, 140, 220);
+    private static readonly Rgba32 SovietUnit = new(220, 80, 60);
+    private static readonly Rgba32 OrderLine = new(255, 240, 120, 140);
     private static readonly Rgba32 HudText = new(235, 228, 200);
 
     private readonly OrthoPanCamera _camera = new();
     private readonly RtsSelection _selection = new();
     private readonly RtsBuildPlacer _build = new();
     private readonly List<RtsUnit> _units = [];
-    private readonly List<TwoDStaticPolygon> _dynamicMarkers = [];
+    private readonly List<TwoDStaticPolygon> _frameOverlays = [];
 
     private RtsArena _arena = null!;
     private float _enemyPulse;
@@ -38,19 +40,22 @@ internal sealed class RtsLiteTwoDGame
     {
         _arena = RtsArena.Create();
         SpawnForces();
-        _camera.Center = _arena.CellCenter(RtsArena.GridSize / 2, RtsArena.GridSize / 2);
+        _camera.Center = _arena.SpawnPlayer + new Vector3(6f, 0f, 4f);
+        _camera.WorldUnitsPerPixel = 1f / 22f;
+        ctx.Scene.Camera.ClearColor = new Rgba32(40, 48, 58);
         _camera.ApplyTo(ctx.Scene.Camera, ctx.Width, ctx.Height);
-        ctx.Scene.Camera.ClearColor = Sky;
     }
 
     public void Update(SilkTwoDGameContext ctx)
     {
         var scene = ctx.Scene;
         UpdateCamera(ctx);
-        HandleBuildKeys(ctx);
 
-        var ground = ScreenToGround(scene.Camera, ctx, PivotScreen(ctx));
-        HandleSelection(ctx, ground);
+        var mouse = ReadMouse(ctx);
+        var ground = ScreenToGround(scene.Camera, mouse);
+        HandleBuildKeys(ctx);
+        HandleSelection(ctx, ground, mouse);
+
         TickUnits(ctx.DeltaSeconds);
         TickProduction(ctx.DeltaSeconds);
 
@@ -61,33 +66,16 @@ internal sealed class RtsLiteTwoDGame
             _terrainBuilt = true;
         }
 
+        ClearFrameOverlays(scene);
         DrawBuildGhost(scene, ground);
         DrawUnits(scene);
         DrawHud(ctx);
     }
 
-    private void DrawBuildGhost(TwoDScene scene, Vector3 ground)
-    {
-        if (!_build.TryGetGhostFootprint(_arena, ground, UnitTeam.Player, out var center, out var w, out var d, out var ok))
-        {
-            return;
-        }
-
-        var color = ok ? new Rgba32(120, 255, 140, 200) : new Rgba32(255, 90, 90, 200);
-        scene.StaticPolygons.Add(new TwoDStaticPolygon(
-            TwoDScenePrimitives.Rectangle(center.X - w * 0.5f, center.Z - d * 0.5f, center.X + w * 0.5f, center.Z + d * 0.5f),
-            color)
-        {
-            DrawFilled = true,
-            DrawOutline = true,
-            SortKey = 1100,
-        });
-    }
-
     private void UpdateCamera(SilkTwoDGameContext ctx)
     {
         var dt = ctx.DeltaSeconds;
-        var pan = 12f * dt / _camera.WorldUnitsPerPixel;
+        var pan = 14f * dt / _camera.WorldUnitsPerPixel;
         if (ctx.IsKeyDown(Key.W))
         {
             _camera.Pan(new Vector3(0f, 0f, -pan));
@@ -116,6 +104,11 @@ internal sealed class RtsLiteTwoDGame
         if (ctx.IsKeyPressed(Key.Minus) || ctx.IsKeyPressed(Key.KeypadSubtract))
         {
             _camera.Zoom(1f);
+        }
+
+        if (MathF.Abs(ctx.MouseDelta.Y) > 0.01f)
+        {
+            _camera.Zoom(ctx.MouseDelta.Y > 0 ? -0.15f : 0.15f);
         }
 
         _camera.ApplyTo(ctx.Scene.Camera, ctx.Width, ctx.Height);
@@ -154,12 +147,11 @@ internal sealed class RtsLiteTwoDGame
         }
     }
 
-    private void HandleSelection(SilkTwoDGameContext ctx, Vector3 ground)
+    private void HandleSelection(SilkTwoDGameContext ctx, Vector3 ground, Vector2 mouse)
     {
-        var mouse = PivotScreen(ctx);
-        var leftPressed = ctx.IsKeyPressed(Key.J);
-        var leftDown = ctx.IsKeyDown(Key.J);
-        var rightPressed = ctx.IsKeyPressed(Key.H);
+        var leftPressed = ctx.IsMouseButtonPressed(MouseButton.Left) || ctx.IsKeyPressed(Key.J);
+        var leftDown = ctx.IsMouseButtonDown(MouseButton.Left) || ctx.IsKeyDown(Key.J);
+        var rightPressed = ctx.IsMouseButtonPressed(MouseButton.Right) || ctx.IsKeyPressed(Key.H);
 
         if (_build.IsActive)
         {
@@ -176,13 +168,13 @@ internal sealed class RtsLiteTwoDGame
             return;
         }
 
-        _selection.Update(_units, p => ScreenToGround(ctx.Scene.Camera, ctx, p), leftPressed, leftDown, rightPressed, mouse);
+        _selection.Update(_units, p => ScreenToGround(ctx.Scene.Camera, p), leftPressed, leftDown, rightPressed, mouse);
     }
 
-    private static Vector2 PivotScreen(SilkTwoDGameContext ctx) =>
-        new(ctx.Width * 0.5f, ctx.Height * 0.5f);
+    private static Vector2 ReadMouse(SilkTwoDGameContext ctx) =>
+        new(ctx.MousePosition.X, ctx.MousePosition.Y);
 
-    private static Vector3 ScreenToGround(TwoDCamera camera, SilkTwoDGameContext ctx, Vector2 screen) =>
+    private static Vector3 ScreenToGround(TwoDCamera camera, Vector2 screen) =>
         camera.ScreenToWorld(screen.X, screen.Y);
 
     private void SpawnForces()
@@ -260,6 +252,9 @@ internal sealed class RtsLiteTwoDGame
 
     private void BuildTerrain(TwoDScene scene)
     {
+        var size = RtsArena.GridSize * RtsArena.CellSize;
+        RtsLiteTwoDRender.AddSandField(scene, size, Sand);
+
         for (var z = 0u; z < _arena.Walls.Height; z++)
         for (var x = 0u; x < _arena.Walls.Width; x++)
         {
@@ -273,16 +268,11 @@ internal sealed class RtsLiteTwoDGame
 
             if (_arena.Walls[x, z, 0] == 0)
             {
-                if ((x + z) % 5 == 0)
-                {
-                    scene.AddPlatform(minX, minZ, minX + 0.95f, minZ + 0.95f, SandDark);
-                }
-
                 continue;
             }
 
-            var color = x is >= 16 and <= 22 && z is >= 16 and <= 22 ? Water : WallRock;
-            scene.AddPlatform(minX, minZ, minX + 1f, minZ + 1f, color);
+            var pond = x is >= 16 and <= 22 && z is >= 16 and <= 22;
+            scene.AddPlatform(minX, minZ, minX + 1f, minZ + 1f, pond ? Water : WallRock);
         }
     }
 
@@ -291,68 +281,79 @@ internal sealed class RtsLiteTwoDGame
         foreach (var b in _arena.Buildings)
         {
             var center = b.WorldCenter(_arena);
-            var w = b.Width * RtsArena.CellSize * 0.9f;
-            var h = b.Height * RtsArena.CellSize * 0.9f;
+            var w = b.Width * RtsArena.CellSize * 0.92f;
+            var d = b.Height * RtsArena.CellSize * 0.92f;
             var color = b.Team == UnitTeam.Player ? AlliedBuilding : SovietBuilding;
-            scene.AddPlatform(center.X - w * 0.5f, center.Z - h * 0.5f, center.X + w * 0.5f, center.Z + h * 0.5f, color);
+            scene.AddPlatform(center.X - w * 0.5f, center.Z - d * 0.5f, center.X + w * 0.5f, center.Z + d * 0.5f, color);
         }
     }
 
-    private void DrawUnits(TwoDScene scene)
+    private void ClearFrameOverlays(TwoDScene scene)
     {
-        foreach (var marker in _dynamicMarkers)
+        foreach (var marker in _frameOverlays)
         {
             scene.StaticPolygons.Remove(marker);
         }
 
-        _dynamicMarkers.Clear();
+        _frameOverlays.Clear();
+    }
 
+    private void DrawBuildGhost(TwoDScene scene, Vector3 ground)
+    {
+        if (!_build.TryGetGhostFootprint(_arena, ground, UnitTeam.Player, out var center, out var w, out var d, out var ok))
+        {
+            return;
+        }
+
+        _frameOverlays.Add(RtsLiteTwoDRender.AddFootprintGhost(scene, center, w, d, ok));
+    }
+
+    private void DrawUnits(TwoDScene scene)
+    {
         foreach (var unit in _units)
         {
             var color = unit.Team == UnitTeam.Player ? AlliedUnit : SovietUnit;
+            var yaw = FacingYaw(unit);
             if (unit.Selected)
             {
-                _dynamicMarkers.Add(DenseGridPlatforms.AddSquareMarker(
+                _frameOverlays.Add(RtsLiteTwoDRender.AddTankMarker(
                     scene,
                     unit.Position,
-                    RtsUnit.Radius * 1.4f,
-                    new Rgba32(255, 255, 255, 120),
+                    new Rgba32(255, 255, 255, 90),
+                    yaw,
                     sortKey: 900));
             }
 
-            _dynamicMarkers.Add(DenseGridPlatforms.AddSquareMarker(scene, unit.Position, RtsUnit.Radius, color));
+            _frameOverlays.Add(RtsLiteTwoDRender.AddTankMarker(scene, unit.Position, color, yaw, sortKey: 1000));
 
-            if (unit.MoveTarget is { } target)
+            if (unit.Team == UnitTeam.Player && unit.Selected && unit.MoveTarget is { } target)
             {
-                DrawOrderLine(scene, unit.Position, target);
+                if (RtsLiteTwoDRender.AddOrderSegment(scene, unit.Position, target, OrderLine) is { } line)
+                {
+                    _frameOverlays.Add(line);
+                }
             }
         }
     }
 
-    private static void DrawOrderLine(TwoDScene scene, Vector3 from, Vector3 to)
+    private static float FacingYaw(RtsUnit unit)
     {
-        var midZ = (from.Z + to.Z) * 0.5f;
-        var thickness = 0.08f;
-        scene.StaticPolygons.Add(new TwoDStaticPolygon(
-            TwoDScenePrimitives.Rectangle(
-                MathF.Min(from.X, to.X),
-                midZ - thickness,
-                MathF.Max(from.X, to.X),
-                midZ + thickness),
-            OrderLine)
+        if (unit.MoveTarget is { } target)
         {
-            DrawFilled = true,
-            SortKey = 500,
-        });
+            var d = target - unit.Position;
+            return MathF.Atan2(d.Z, d.X);
+        }
+
+        return unit.Team == UnitTeam.Player ? 0f : MathF.PI;
     }
 
     private void DrawHud(SilkTwoDGameContext ctx)
     {
         var scene = ctx.Scene;
         scene.Hud.Elements.Clear();
-        scene.Hud.AddText("RTS Lite TwoD — orthographic top-down", 12, 12, 2f, HudText);
-        scene.Hud.AddText("WASD pan  +/- zoom  |  1-5 build  B cancel", 12, 36, 2f, HudText);
-        scene.Hud.AddText("J tap select  J hold box  H move order (screen center pivot)", 12, 60, 2f, HudText);
+        scene.Hud.AddText("RTS Lite TwoD (top-down) — RA camera: run RtsLite", 12, 12, 2f, HudText);
+        scene.Hud.AddText("WASD pan  wheel/+/- zoom  |  1-5 build  B cancel", 12, 36, 2f, HudText);
+        scene.Hud.AddText("LMB select/drag  RMB move order  |  build: LMB place", 12, 60, 2f, HudText);
         var selected = _units.Count(u => u.Team == UnitTeam.Player && u.Selected);
         scene.Hud.AddText($"units {_units.Count}  selected {selected}", 12, 84, 2f, HudText);
         if (_build.ActiveType is { } t)

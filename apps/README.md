@@ -32,7 +32,7 @@ dotnet run --project apps/PlatformerTwoD
 
 ## RtsLiteTwoD
 
-Top-down RTS on **orthographic TwoD** (shared arena/units with `RtsLite`; no PNG billboards). Keyboard pivot: **J** select, **H** move order.
+Top-down RTS on **orthographic TwoD** (shared sim with `RtsLite`; sand field + tiberium patches, tank markers). **Mouse:** LMB select, RMB orders. Classic **diagonal RA camera + sprites:** `RtsLite` (Raylib).
 
 ```bash
 dotnet run --project apps/RtsLiteTwoD
