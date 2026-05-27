@@ -39,6 +39,6 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `ArtillerySimulator` | `simulation/` | Raylib, Physics, Simulation |
 | `RagdollPlay` | `simulation/` | Raylib, Physics.Joints, Simulation |
 | `VoiceSmoke` | `audio/` | Audio.Voice, Voice.Atc (Sherpa Piper TTS, phraseology) |
-| `BridgeCommander` | `commands/` | Commands, Audio.Voice.Atc (spoken status lines; `--no-voice` to disable) |
+| `BridgeCommander` | `commands/` | Spectre bridge + voiced patrol exchange; `--interactive` / `--no-voice` |
 | `WireFishViewer` | `transports/` | Avalonia, Transports.WireFish, Messaging.Channels |
 | `NeuralRacing` | `machine-learning/` | Simulation.Racing + MachineLearning.Neural (evolution demo; glue in app, not a library package) |

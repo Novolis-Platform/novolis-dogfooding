@@ -3,26 +3,28 @@ using Novolis.Audio.Voice;
 namespace BridgeCommander.Bridge;
 
 /// <summary>
-/// Headless bridge session shared by the TUI and MCP automation.
+/// Headless bridge session shared by Spectre UI and MCP automation.
 /// </summary>
 public sealed class BridgeSession : IAsyncDisposable
 {
     public BridgeState State { get; }
     public BridgeCommandService Commands { get; }
     public BridgeActivityTracker Activity { get; }
-
     public IVoiceService? Voice { get; }
+    public BridgeVoiceAnnouncer Announcer { get; }
 
     private BridgeSession(
         BridgeState state,
         BridgeCommandService commands,
         BridgeActivityTracker activity,
-        IVoiceService? voice)
+        IVoiceService? voice,
+        BridgeVoiceAnnouncer announcer)
     {
         State = state;
         Commands = commands;
         Activity = activity;
         Voice = voice;
+        Announcer = announcer;
     }
 
     public static BridgeSession Create(BridgeSessionOptions? options = null)
@@ -30,9 +32,10 @@ public sealed class BridgeSession : IAsyncDisposable
         options ??= BridgeSessionOptions.Default;
         var state = new BridgeState();
         var activity = new BridgeActivityTracker();
-        var voice = BridgeVoice.CreateService(options.VoiceEnabled);
-        var commands = new BridgeCommandService(state, activity, voice);
-        var session = new BridgeSession(state, commands, activity, voice);
+        var voice = BridgeVoice.CreateService(options.VoiceEnabled, options.VoiceProfile);
+        var announcer = new BridgeVoiceAnnouncer(voice, options.AwaitVoicePlayback);
+        var commands = new BridgeCommandService(state, activity, announcer);
+        var session = new BridgeSession(state, commands, activity, voice, announcer);
         session.Initialize();
         return session;
     }
@@ -46,8 +49,8 @@ public sealed class BridgeSession : IAsyncDisposable
             DateTimeOffset.UtcNow,
             "",
             HistoryKind.System,
-            "Bridge online. Prefix every order with a station (helm, tactical, weaps…)."));
-        State.StatusLine = "Standing by. Prefix orders with a station (helm, tactical, weaps…).";
+            "Bridge online. All stations standing by."));
+        State.StatusLine = "Standing by for orders. Prefix with helm, tactical, weaps, engineering…";
         State.Heading = 180;
         State.HeadingBy = 0;
         State.SpeedWarp = 5;

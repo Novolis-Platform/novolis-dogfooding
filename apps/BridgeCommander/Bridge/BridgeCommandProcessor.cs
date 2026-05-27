@@ -1,9 +1,8 @@
-using Novolis.Audio.Voice;
 using Novolis.Commands;
 
 namespace BridgeCommander.Bridge;
 
-public sealed class BridgeCommandProcessor(BridgeActivityTracker activity, IVoiceService? voice = null)
+public sealed class BridgeCommandProcessor(BridgeActivityTracker activity, BridgeVoiceAnnouncer announcer)
     : ICommandProcessor<BridgeState>
 {
     public async ValueTask ProcessAsync(
@@ -42,6 +41,7 @@ public sealed class BridgeCommandProcessor(BridgeActivityTracker activity, IVoic
                     command.OriginalPrompt,
                     HistoryKind.Interrupted,
                     "Emergency belay acknowledged."));
+                await announcer.AnnounceAsync(state.StatusLine, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -197,25 +197,10 @@ public sealed class BridgeCommandProcessor(BridgeActivityTracker activity, IVoic
             HistoryKind.Executed,
             state.StatusLine));
 
-        if (ShouldAnnounce(command.Name))
-            BridgeVoice.Announce(voice, state.StatusLine);
+        await announcer.AnnounceAsync(state.StatusLine, cancellationToken).ConfigureAwait(false);
 
         return true;
     }
-
-    private static bool ShouldAnnounce(string commandName) =>
-        commandName is "comms.hail"
-            or "nav.set-course"
-            or "tactical.fire-weapons"
-            or "tactical.lock-target"
-            or "helm.all-ahead-full"
-            or "helm.full-stop"
-            or "helm.set-heading"
-            or "helm.come-about"
-            or "helm.set-speed"
-            or "engineering.divert-shields"
-            or "engineering.divert-weapons"
-            or "engineering.repair";
 
     private static async Task SimulateWork(TimeSpan duration, CancellationToken cancellationToken) =>
         await Task.Delay(duration, cancellationToken);

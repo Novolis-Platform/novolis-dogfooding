@@ -1,19 +1,34 @@
 # Bridge Commander
 
-Sci-fi bridge captain TUI dogfooding [Novolis.Commands](https://github.com/Novolis-Platform/novolis-commands).
+Sci-fi bridge captain console dogfooding [Novolis.Commands](https://github.com/Novolis-Platform/novolis-commands) and **Novolis.Audio.Voice.Atc** (Sherpa Piper + radio DSP).
+
+Built with **[Spectre.Console](https://spectreconsole.net)** — no Hex1b TUI.
 
 ## Run
+
+**Default — full voiced patrol exchange** (scripted game sequence):
 
 ```bash
 dotnet run --project apps/BridgeCommander
 ```
 
-Spoken bridge acknowledgments use **Novolis.Audio.Voice.Atc** (Sherpa Piper TTS from GPR). Disable with `--no-voice` (MCP/QA modes disable voice automatically).
+**Interactive manual orders** (Spectre panels + voice acknowledgments):
 
 ```bash
-dotnet run --project apps/audio/VoiceSmoke
-dotnet run --project apps/audio/VoiceSmoke -- --null
+dotnet run --project apps/BridgeCommander -- --interactive
 ```
+
+**Silent** (Spectre only, no TTS):
+
+```bash
+dotnet run --project apps/BridgeCommander -- --no-voice
+```
+
+Requires `Novolis.Audio.Voice.SherpaOnnx` **2026.1.3+** on GitHub Packages (bundled Piper model zip). Voice stack **2026.1.5+** adds ATC radio effects.
+
+## Exchange script
+
+`BridgeExchangeScript.PatrolEngagement` runs a full duty-shift sequence: computer/XO brief, captain orders (helm, tactical, engineering, comms, nav), station voice responses, and closing narration. Each beat is shown in Spectre markup and spoken in order (blocking playback).
 
 ## MCP (agent / QA automation)
 
@@ -24,15 +39,7 @@ dotnet build -c Release
 dotnet exec bin/Release/net10.0/BridgeCommander.dll --mcp
 ```
 
-**Cursor:** workspace `.cursor/mcp.json` registers `bridge-commander`. After build, open **Settings → MCP**, enable `bridge-commander`, and click refresh. Tool names are snake_case (`get_bridge_snapshot`, `transmit_order`, …).
-
-**Play via MCP client (stdio, full session):**
-
-```bash
-cd apps/BridgeCommander
-dotnet build -c Release
-dotnet run --file scripts/bridge-mcp-play.cs
-```
+**Cursor:** workspace `.cursor/mcp.json` registers `bridge-commander`. MCP/QA modes disable voice automatically.
 
 | Tool | Description |
 |------|-------------|

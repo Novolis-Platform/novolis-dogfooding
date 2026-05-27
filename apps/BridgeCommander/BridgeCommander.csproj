@@ -2,10 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>BridgeCommander</RootNamespace>
-    <Description>Dogfood Novolis.Commands — sci-fi bridge captain TUI.</Description>
+    <Description>Dogfood Novolis.Commands — Spectre bridge captain with voiced exchange.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Hex1b" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="Novolis.Commands.Abstractions" />
@@ -14,5 +13,6 @@
     <PackageReference Include="Novolis.Audio.Voice" />
     <PackageReference Include="Novolis.Audio.Voice.Atc" />
     <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" />
+    <PackageReference Include="Spectre.Console" />
   </ItemGroup>
 </Project>

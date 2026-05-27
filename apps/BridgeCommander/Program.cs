@@ -1,7 +1,6 @@
 using System.Text.Json;
 using BridgeCommander.Bridge;
 using BridgeCommander.Bridge.Mcp;
-using Hex1b;
 
 if (args.Contains("--mcp", StringComparer.OrdinalIgnoreCase))
 {
@@ -14,8 +13,6 @@ if (args.Contains("--qa-smoke", StringComparer.OrdinalIgnoreCase))
     Environment.Exit(await BridgeMcpHost.RunQaSmokeAsync());
     return;
 }
-
-var voiceEnabled = !args.Contains("--no-voice", StringComparer.OrdinalIgnoreCase);
 
 if (args.Contains("--mcp-test", StringComparer.OrdinalIgnoreCase))
 {
@@ -30,17 +27,28 @@ if (args.Contains("--mcp-play", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
+var noVoice = args.Contains("--no-voice", StringComparer.OrdinalIgnoreCase);
+var interactive = args.Contains("--interactive", StringComparer.OrdinalIgnoreCase);
+
 var transmitIndex = Array.FindIndex(args, a => string.Equals(a, "--transmit", StringComparison.OrdinalIgnoreCase));
 if (transmitIndex >= 0 && transmitIndex + 1 < args.Length)
 {
-    await using var cliSession = BridgeSession.Create(
-        voiceEnabled ? BridgeSessionOptions.Default : BridgeSessionOptions.WithoutVoice);
+    var sessionOptions = noVoice ? BridgeSessionOptions.WithoutVoice : BridgeSessionOptions.Default;
+    await using var cliSession = BridgeSession.Create(sessionOptions);
     var result = await cliSession.TransmitAsync(string.Join(' ', args[(transmitIndex + 1)..]));
     Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
     return;
 }
 
-await using var session = BridgeSession.Create(
-    voiceEnabled ? BridgeSessionOptions.Default : BridgeSessionOptions.WithoutVoice);
-var app = BridgeHexApp.Create(session);
-await app.RunAsync();
+var sessionOptionsMain = noVoice
+    ? BridgeSessionOptions.WithoutVoice
+    : interactive
+        ? BridgeSessionOptions.ForInteractive
+        : BridgeSessionOptions.ForExchange;
+
+await using var session = BridgeSession.Create(sessionOptionsMain);
+
+if (interactive)
+    await BridgeSpectreApp.RunInteractiveAsync(session);
+else
+    await BridgeExchangeRunner.RunAsync(session);
