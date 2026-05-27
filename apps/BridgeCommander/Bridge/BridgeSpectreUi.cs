@@ -5,24 +5,30 @@ namespace BridgeCommander.Bridge;
 /// <summary>Spectre.Console rendering for bridge state and exchange beats.</summary>
 public static class BridgeSpectreUi
 {
-    public static void ShowTitle()
+    public static void ShowTitle(bool starTrek = true)
     {
         AnsiConsole.Write(new FigletText("Bridge Commander").Color(Color.Cyan1));
-        AnsiConsole.MarkupLine("[grey]Voice exchange · Novolis.Commands dogfood · Ctrl+C to abort[/]");
+        if (starTrek)
+        {
+            AnsiConsole.MarkupLine("[grey]U.S.S. Novolis · Red alert patrol · per-station voice & color[/]");
+            AnsiConsole.MarkupLine("[grey]Novolis.Commands dogfood · Ctrl+C to abort[/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[grey]Voice exchange · Novolis.Commands dogfood · Ctrl+C to abort[/]");
+        }
+
         AnsiConsole.WriteLine();
     }
 
-    public static void ShowBeat(BridgeExchangeBeat beat)
-    {
-        var color = beat.Speaker switch
-        {
-            "Captain" => "yellow",
-            "Computer" => "aqua",
-            "Executive Officer" => "green",
-            _ => "white",
-        };
+    public static void ShowBeat(BridgeExchangeBeat beat) =>
+        ShowCharacterLine(beat.Character, beat.Display);
 
-        AnsiConsole.MarkupLine($"[{color} bold]{Markup.Escape(beat.Speaker)}[/]: {Markup.Escape(beat.Display)}");
+    public static void ShowCharacterLine(BridgeCharacter character, string line)
+    {
+        var style = character.MarkupStyle;
+        AnsiConsole.MarkupLine(
+            $"[{style}]{Markup.Escape(character.DisplayName)}[/]: [default]{Markup.Escape(line)}[/]");
     }
 
     public static void RenderBridge(BridgeState state)
@@ -55,8 +61,24 @@ public static class BridgeSpectreUi
         AnsiConsole.WriteLine();
     }
 
-    public static void ShowClosing()
+    public static void ShowCrewLegend()
     {
-        AnsiConsole.MarkupLine("[green]Exchange complete.[/] Run with [cyan]--interactive[/] for manual orders.");
+        AnsiConsole.MarkupLine("[bold]Bridge crew[/]");
+        foreach (var character in BridgeCharacterRegistry.All)
+        {
+            AnsiConsole.Markup(
+                $"  [{character.MarkupStyle}]{Markup.Escape(character.DisplayName)}[/]  ");
+        }
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.WriteLine();
+    }
+
+    public static void ShowClosing(bool starTrek = true)
+    {
+        if (starTrek)
+            AnsiConsole.MarkupLine("[green]End of shift. Live long and prosper.[/] [cyan]--interactive[/] for manual orders.");
+        else
+            AnsiConsole.MarkupLine("[green]Exchange complete.[/] Run with [cyan]--interactive[/] for manual orders.");
     }
 }

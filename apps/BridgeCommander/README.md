@@ -1,18 +1,24 @@
 # Bridge Commander
 
-Sci-fi bridge captain console dogfooding [Novolis.Commands](https://github.com/Novolis-Platform/novolis-commands) and **Novolis.Audio.Voice.Atc** (Sherpa Piper + radio DSP).
+Sci-fi bridge captain console dogfooding [Novolis.Commands](https://github.com/Novolis-Platform/novolis-commands) and **Novolis.Audio.Voice** (per-character archetypes + ATC comms delivery).
 
-Built with **[Spectre.Console](https://spectreconsole.net)** — no Hex1b TUI.
+Built with **[Spectre.Console](https://spectreconsole.net)** — each station has its own markup color and TTS voice.
 
 ## Run
 
-**Default — full voiced patrol exchange** (scripted game sequence):
+**Default — Star Trek red-alert exchange** (full crew, colored dialogue, per-character Piper voices):
 
 ```bash
 dotnet run --project apps/BridgeCommander
 ```
 
-**Interactive manual orders** (Spectre panels + voice acknowledgments):
+**Legacy shorter patrol script:**
+
+```bash
+dotnet run --project apps/BridgeCommander -- --patrol
+```
+
+**Interactive manual orders** (single voice, Spectre panels):
 
 ```bash
 dotnet run --project apps/BridgeCommander -- --interactive
@@ -24,11 +30,31 @@ dotnet run --project apps/BridgeCommander -- --interactive
 dotnet run --project apps/BridgeCommander -- --no-voice
 ```
 
-Requires `Novolis.Audio.Voice.SherpaOnnx` **2026.1.3+** on GitHub Packages (bundled Piper model zip). Voice stack **2026.1.5+** adds ATC radio effects.
+### Local monorepo (before `Novolis.Audio.Voice.Profiles` is on GPR)
 
-## Exchange script
+When `novolis-audio` is a sibling folder (`d:\novolis\novolis-audio`), BridgeCommander automatically uses **project references** instead of NuGet for voice packages.
 
-`BridgeExchangeScript.PatrolEngagement` runs a full duty-shift sequence: computer/XO brief, captain orders (helm, tactical, engineering, comms, nav), station voice responses, and closing narration. Each beat is shown in Spectre markup and spoken in order (blocking playback).
+Extract all three Piper models on first run (or build once with models present):
+
+```powershell
+# from novolis-audio
+pwsh -File scripts/pack-all-voice-model-archives.ps1
+dotnet build apps/BridgeCommander -c Release
+```
+
+## Crew (Spectre color + voice archetype)
+
+| Station | Color | Archetype |
+|---------|-------|-----------|
+| Captain | yellow | steady_male |
+| Executive Officer | green | calm_female |
+| Helm | cyan | procedural_male |
+| Tactical | red | steady_male |
+| Chief Engineer | orange | procedural_male |
+| Science Officer | blue | neutral_female |
+| Communications | magenta | excitable_female |
+| Navigator | purple | calm_female |
+| Computer | grey | neutral_female (dry, no radio) |
 
 ## MCP (agent / QA automation)
 

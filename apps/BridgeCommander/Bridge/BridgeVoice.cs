@@ -1,28 +1,41 @@
 using Novolis.Audio.Voice;
 using Novolis.Audio.Voice.Atc;
+using Novolis.Audio.Voice.Profiles;
+using Novolis.Audio.Voice.SherpaOnnx;
 
 namespace BridgeCommander.Bridge;
 
 /// <summary>ATC TTS for bridge lines (GPR <c>Novolis.Audio.Voice*</c> packages).</summary>
 public static class BridgeVoice
 {
-    /// <summary>Default urgent ATC profile for in-game bridge audio.</summary>
-    public static AtcVoiceOptions UrgentAtcProfile { get; } = new()
+    /// <summary>Default ATC delivery (radio DSP); base voice comes from <see cref="VoiceArchetypeCatalog.ExcitableFemale"/>.</summary>
+    public static AtcVoiceOptions UrgentAtcDelivery { get; } = new()
     {
-        SpeakingRate = 1.16f,
         Drive = 3f,
         OutputGainDb = 5.5f,
         HissLevel = 0.0045f,
     };
 
-    /// <summary>Creates an ATC-configured voice service, or null when disabled.</summary>
-    public static IVoiceService? CreateService(bool enabled, AtcVoiceOptions? profile = null)
+    /// <summary>Creates a voiced service (archetype + optional ATC delivery), or null when disabled.</summary>
+    public static IVoiceService? CreateService(
+        bool enabled,
+        VoiceArchetype? archetype = null,
+        AtcVoiceOptions? delivery = null,
+        bool applyAtcDelivery = true)
     {
         if (!enabled)
             return null;
 
-        BridgeVoiceBootstrap.EnsureBundledModelExtracted();
-        return AtcVoiceProfile.Apply(new VoiceServiceBuilder(), profile ?? UrgentAtcProfile).BuildService();
+        BundledVoiceModelExtractor.EnsureAllExtracted(AppContext.BaseDirectory);
+
+        var builder = VoiceArchetypeApplicator.Apply(
+            new VoiceServiceBuilder(),
+            archetype ?? VoiceArchetypeCatalog.ExcitableFemale);
+
+        if (applyAtcDelivery)
+            AtcVoiceProfile.ApplyDelivery(builder, delivery ?? UrgentAtcDelivery);
+
+        return builder.BuildService();
     }
 
     /// <summary>Speaks narrative or station text (not status-prefixed).</summary>

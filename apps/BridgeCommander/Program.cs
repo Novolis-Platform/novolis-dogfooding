@@ -29,6 +29,7 @@ if (args.Contains("--mcp-play", StringComparer.OrdinalIgnoreCase))
 
 var noVoice = args.Contains("--no-voice", StringComparer.OrdinalIgnoreCase);
 var interactive = args.Contains("--interactive", StringComparer.OrdinalIgnoreCase);
+var patrol = args.Contains("--patrol", StringComparer.OrdinalIgnoreCase);
 
 var transmitIndex = Array.FindIndex(args, a => string.Equals(a, "--transmit", StringComparison.OrdinalIgnoreCase));
 if (transmitIndex >= 0 && transmitIndex + 1 < args.Length)
@@ -51,4 +52,4 @@ await using var session = BridgeSession.Create(sessionOptionsMain);
 if (interactive)
     await BridgeSpectreApp.RunInteractiveAsync(session);
 else
-    await BridgeExchangeRunner.RunAsync(session);
+    await BridgeExchangeRunner.RunAsync(session, starTrek: !patrol);

@@ -1,17 +1,25 @@
 namespace BridgeCommander.Bridge;
 
-/// <summary>Runs the scripted bridge exchange with Spectre output and awaited voice.</summary>
+/// <summary>Runs the scripted bridge exchange with Spectre output and per-character voice.</summary>
 public static class BridgeExchangeRunner
 {
     public static async Task RunAsync(
         BridgeSession session,
         IReadOnlyList<BridgeExchangeBeat>? script = null,
+        bool starTrek = true,
         CancellationToken cancellationToken = default)
     {
-        script ??= BridgeExchangeScript.PatrolEngagement;
-        var voice = session.Voice;
+        script ??= starTrek
+            ? StarTrekBridgeScript.RedAlertPatrol
+            : BridgeExchangeScript.PatrolEngagement;
 
-        BridgeSpectreUi.ShowTitle();
+        var cast = session.VoiceCast;
+        if (session.VoiceEnabled && cast is null)
+            throw new InvalidOperationException("VoiceCast required for exchange (use BridgeSessionOptions.ForExchange).");
+
+        BridgeSpectreUi.ShowTitle(starTrek);
+        if (starTrek)
+            BridgeSpectreUi.ShowCrewLegend();
         BridgeSpectreUi.RenderBridge(session.State);
 
         foreach (var beat in script)
@@ -19,14 +27,12 @@ public static class BridgeExchangeRunner
             cancellationToken.ThrowIfCancellationRequested();
             BridgeSpectreUi.ShowBeat(beat);
 
-            if (beat.VoiceLine is not null)
-                await BridgeVoice.SpeakLineAsync(voice, beat.VoiceLine, cancellationToken).ConfigureAwait(false);
+            if (beat.VoiceLine is not null && cast is not null)
+                await cast.SpeakAsync(beat.Character, beat.VoiceLine, cancellationToken).ConfigureAwait(false);
 
             if (beat.Transmit is not null)
             {
                 await session.TransmitAsync(beat.Transmit, cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
-                await session.Announcer.AnnounceAsync(session.State.StatusLine, cancellationToken)
                     .ConfigureAwait(false);
                 BridgeSpectreUi.RenderBridge(session.State);
             }
@@ -35,6 +41,6 @@ public static class BridgeExchangeRunner
                 await Task.Delay(beat.PauseAfterMs, cancellationToken).ConfigureAwait(false);
         }
 
-        BridgeSpectreUi.ShowClosing();
+        BridgeSpectreUi.ShowClosing(starTrek);
     }
 }

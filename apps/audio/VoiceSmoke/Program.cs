@@ -1,41 +1,48 @@
-using System.IO.Compression;
 using Novolis.Audio.Voice;
 using Novolis.Audio.Voice.Atc;
+using Novolis.Audio.Voice.Profiles;
 using Novolis.Audio.Voice.SherpaOnnx;
 
 var useNull = args.Contains("--null", StringComparer.OrdinalIgnoreCase);
 if (!useNull)
-    EnsureBundledModelExtractedFromNuGet();
+    BundledVoiceModelExtractor.EnsureAllExtracted(AppContext.BaseDirectory);
 var writeWav = args.Contains("--wav", StringComparer.OrdinalIgnoreCase);
 var speakOnly = args.Contains("--speak-only", StringComparer.OrdinalIgnoreCase);
 var calm = args.Contains("--calm", StringComparer.OrdinalIgnoreCase);
 
-var atcOptions = calm
-    ? new AtcVoiceOptions
-    {
-        SpeakingRate = 1f,
-        ApplyRadioEffects = false,
-        EffectChainId = "none",
-    }
+VoiceArchetype archetype = calm
+    ? VoiceArchetypeCatalog.NeutralFemale
+    : VoiceArchetypeCatalog.ExcitableFemale;
+
+AtcVoiceOptions? delivery = calm
+    ? null
     : new AtcVoiceOptions
     {
-        SpeakingRate = 1.18f,
         Drive = 3.2f,
         OutputGainDb = 6f,
         HissLevel = 0.005f,
     };
 
-IVoiceService voice = useNull
-    ? new VoiceServiceBuilder().UseNullSynthesizer().UseNullPlayback().BuildService()
-    : AtcVoiceProfile.Apply(new VoiceServiceBuilder(), atcOptions).BuildService();
+IVoiceService voice;
+if (useNull)
+{
+    voice = new VoiceServiceBuilder().UseNullSynthesizer().UseNullPlayback().BuildService();
+}
+else
+{
+    var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder(), archetype);
+    if (delivery is not null)
+        AtcVoiceProfile.ApplyDelivery(builder, delivery);
+    voice = builder.BuildService();
+}
 
-var paths = SherpaVoiceModelPaths.TryResolve(modelDirectory: null, VoiceModelCatalog.EnUsPiperAmy);
+var paths = SherpaVoiceModelPaths.TryResolve(modelDirectory: null, archetype.Model);
 Console.WriteLine(paths is null
-    ? DescribeMissingModel(AppContext.BaseDirectory)
+    ? DescribeMissingModel(AppContext.BaseDirectory, archetype.Model.Id)
     : $"Voice: Sherpa model {paths.ProfileId} @ {paths.SampleRateHz} Hz ({paths.ModelDirectory})");
 Console.WriteLine(calm
-    ? "Profile: calm (dry, 1.0x rate)"
-    : $"Profile: ATC radio (rate {atcOptions.SpeakingRate:0.00}x, drive {atcOptions.Drive:0.0})");
+    ? $"Profile: {archetype.Profile.Id} (dry, rate {archetype.SpeakingRate:0.00}x)"
+    : $"Profile: {archetype.Profile.Id} + ATC radio (rate {archetype.SpeakingRate:0.00}x, drive {delivery!.Drive:0.0})");
 
 var samples = calm
     ? new[]
@@ -67,29 +74,9 @@ if (writeWav && !speakOnly)
 Console.WriteLine("VoiceSmoke OK");
 return 0;
 
-static void EnsureBundledModelExtractedFromNuGet()
+static string DescribeMissingModel(string baseDir, string profileId)
 {
-    var baseDir = AppContext.BaseDirectory;
-    var profileDir = Path.Combine(baseDir, "models", VoiceModelCatalog.EnUsPiperAmy.Id);
-    var zipPath = Path.Combine(baseDir, "models", $"{VoiceModelCatalog.EnUsPiperAmy.Id}.zip");
-    var phontab = Path.Combine(profileDir, "espeak-ng-data", "phontab");
-
-    if (File.Exists(Path.Combine(profileDir, "tokens.txt")) && File.Exists(phontab))
-        return;
-
-    if (!File.Exists(zipPath))
-        return;
-
-    if (Directory.Exists(profileDir))
-        Directory.Delete(profileDir, recursive: true);
-
-    Directory.CreateDirectory(profileDir);
-    ZipFile.ExtractToDirectory(zipPath, profileDir);
-}
-
-static string DescribeMissingModel(string baseDir)
-{
-    var profileDir = Path.Combine(baseDir, "models", VoiceModelCatalog.EnUsPiperAmy.Id);
+    var profileDir = Path.Combine(baseDir, "models", profileId);
     var flatDir = Path.Combine(baseDir, "models");
     if (!Directory.Exists(flatDir) && !Directory.Exists(profileDir))
         return "Voice: null/silent fallback (no models/ under output — rebuild VoiceSmoke after restore).";
@@ -104,5 +91,5 @@ static string DescribeMissingModel(string baseDir)
     if (Directory.Exists(phontab) || (File.Exists(phontab) is false && Directory.Exists(Path.Combine(profileDir, "espeak-ng-data"))))
         return "Voice: null/silent fallback (stale/broken model extract — dotnet clean and rebuild VoiceSmoke).";
 
-    return "Voice: null/silent fallback (need models/en-us-piper-amy from Novolis.Audio.Voice.SherpaOnnx on GitHub Packages — restore/build after package upgrade).";
+    return $"Voice: null/silent fallback (need models/{profileId} from Novolis.Audio.Voice.SherpaOnnx on GitHub Packages).";
 }

@@ -10,6 +10,8 @@ public sealed class BridgeSession : IAsyncDisposable
     public BridgeState State { get; }
     public BridgeCommandService Commands { get; }
     public BridgeActivityTracker Activity { get; }
+    public bool VoiceEnabled { get; }
+    public BridgeVoiceCast? VoiceCast { get; private set; }
     public IVoiceService? Voice { get; }
     public BridgeVoiceAnnouncer Announcer { get; }
 
@@ -17,12 +19,16 @@ public sealed class BridgeSession : IAsyncDisposable
         BridgeState state,
         BridgeCommandService commands,
         BridgeActivityTracker activity,
+        bool voiceEnabled,
+        BridgeVoiceCast? voiceCast,
         IVoiceService? voice,
         BridgeVoiceAnnouncer announcer)
     {
         State = state;
         Commands = commands;
         Activity = activity;
+        VoiceEnabled = voiceEnabled;
+        VoiceCast = voiceCast;
         Voice = voice;
         Announcer = announcer;
     }
@@ -32,10 +38,29 @@ public sealed class BridgeSession : IAsyncDisposable
         options ??= BridgeSessionOptions.Default;
         var state = new BridgeState();
         var activity = new BridgeActivityTracker();
-        var voice = BridgeVoice.CreateService(options.VoiceEnabled, options.VoiceProfile);
+
+        BridgeVoiceCast? cast = null;
+        IVoiceService? voice = null;
+        if (options.VoiceEnabled)
+        {
+            if (options.UseCharacterVoices)
+            {
+                cast = BridgeVoiceCast.Create(true);
+                voice = null;
+            }
+            else
+            {
+                voice = BridgeVoice.CreateService(
+                    true,
+                    options.VoiceArchetype,
+                    options.AtcDelivery,
+                    options.ApplyAtcDelivery);
+            }
+        }
+
         var announcer = new BridgeVoiceAnnouncer(voice, options.AwaitVoicePlayback);
         var commands = new BridgeCommandService(state, activity, announcer);
-        var session = new BridgeSession(state, commands, activity, voice, announcer);
+        var session = new BridgeSession(state, commands, activity, options.VoiceEnabled, cast, voice, announcer);
         session.Initialize();
         return session;
     }
@@ -85,7 +110,12 @@ public sealed class BridgeSession : IAsyncDisposable
         return TransmitResult.From(prompt, newEntries, GetSnapshot());
     }
 
-    public ValueTask DisposeAsync() => Commands.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await Commands.DisposeAsync().ConfigureAwait(false);
+        if (VoiceCast is not null)
+            await VoiceCast.DisposeAsync().ConfigureAwait(false);
+    }
 }
 
 public sealed record TransmitResult(
