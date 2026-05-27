@@ -69,6 +69,19 @@ public sealed class BridgeVoiceCast : IAsyncDisposable
     private IVoiceService CreateVoice(BridgeCharacter character)
     {
         var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder(), character.Archetype);
+        // Bridge comms: brisk delivery on top of archetype pacing.
+        var speakingRate = character.Archetype.SpeakingRate * 1.12f;
+        builder.Configure(options =>
+        {
+            var synthesis = options.Synthesis;
+            options.Synthesis = new VoiceSynthesisOptions
+            {
+                Profile = synthesis.Profile,
+                ModelProfile = synthesis.ModelProfile,
+                ModelDirectory = synthesis.ModelDirectory,
+                SpeakingRate = speakingRate,
+            };
+        });
         if (character.UseCommsDelivery)
             AtcVoiceProfile.ApplyDelivery(builder, character.Delivery ?? BridgeVoice.UrgentAtcDelivery);
         return builder.BuildService();

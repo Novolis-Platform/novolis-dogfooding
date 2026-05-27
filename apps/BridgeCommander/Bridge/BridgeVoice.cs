@@ -28,9 +28,20 @@ public static class BridgeVoice
 
         BundledVoiceModelExtractor.EnsureAllExtracted(AppContext.BaseDirectory);
 
-        var builder = VoiceArchetypeApplicator.Apply(
-            new VoiceServiceBuilder(),
-            archetype ?? VoiceArchetypeCatalog.ExcitableFemale);
+        var selected = archetype ?? VoiceArchetypeCatalog.ExcitableFemale;
+        var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder(), selected);
+        var speakingRate = selected.SpeakingRate * 1.12f;
+        builder.Configure(options =>
+        {
+            var synthesis = options.Synthesis;
+            options.Synthesis = new VoiceSynthesisOptions
+            {
+                Profile = synthesis.Profile,
+                ModelProfile = synthesis.ModelProfile,
+                ModelDirectory = synthesis.ModelDirectory,
+                SpeakingRate = speakingRate,
+            };
+        });
 
         if (applyAtcDelivery)
             AtcVoiceProfile.ApplyDelivery(builder, delivery ?? UrgentAtcDelivery);
