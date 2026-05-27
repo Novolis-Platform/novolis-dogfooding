@@ -56,49 +56,40 @@ internal sealed class WingmanChatter
         _currentLine = null;
     }
 
-    public bool Update(float dt, int activeEnemies, float shield, int killsThisFrame)
+    public string? Update(float dt, int activeEnemies, float shield, int killsThisFrame)
     {
         _lineTimer = Math.Max(0, _lineTimer - dt);
         if (_lineTimer <= 0)
             _currentLine = null;
 
-        var announced = false;
+        string? announcedLine = null;
         if (killsThisFrame > 0 && _rng.NextDouble() < 0.55)
-        {
-            Push(KillLines, "RED THREE");
-            announced = true;
-        }
+            announcedLine = Push(KillLines, "RED THREE");
         else if (shield < 0.25f && _rng.NextDouble() < 0.02)
-        {
-            Push(DangerLines, "RED TWO");
-            announced = true;
-        }
-        else if (activeEnemies >= 4 && _rng.NextDouble() < 0.008)
-        {
-            Push(DangerLines, "RED LEADER");
-            announced = true;
-        }
+            announcedLine = Push(DangerLines, "RED TWO");
+        else if (activeEnemies >= 3 && _rng.NextDouble() < 0.006)
+            announcedLine = Push(DangerLines, "RED LEADER");
 
         _idleTimer -= dt;
-        if (!announced && _idleTimer <= 0 && _lineTimer <= 0)
+        if (announcedLine is null && _idleTimer <= 0 && _lineTimer <= 0)
         {
-            Push(IdleLines, PickSpeaker());
-            _idleTimer = 12f + (float)_rng.NextDouble() * 14f;
-            announced = true;
+            announcedLine = Push(IdleLines, PickSpeaker());
+            _idleTimer = 14f + (float)_rng.NextDouble() * 16f;
         }
 
-        return announced;
+        return announcedLine;
     }
 
-    public void AnnounceWave() => Push(
+    public string AnnounceWave() => Push(
         ["Red squadron, all fighters launch.", "Red Leader, this is Red Five — beginning our attack run."],
         "RED LEADER");
 
-    private void Push(string[] pool, string speaker)
+    private string Push(string[] pool, string speaker)
     {
         _currentLine = pool[_rng.Next(pool.Length)];
         _speaker = speaker;
         _lineTimer = 5.5f;
+        return _currentLine;
     }
 
     private string PickSpeaker() =>

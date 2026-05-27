@@ -8,11 +8,11 @@ public sealed class WingmanChatterTests
     public async Task Update_sets_line_after_idle_timer()
     {
         var chatter = new WingmanChatter(new Random(1));
-        var announced = false;
-        for (var i = 0; i < 200 && !announced; i++)
-            announced = chatter.Update(0.1f, 2, 1f, 0);
+        string? line = null;
+        for (var i = 0; i < 200 && line is null; i++)
+            line = chatter.Update(0.1f, 2, 1f, 0);
 
-        await Assert.That(announced).IsTrue();
+        await Assert.That(line).IsNotNull();
         await Assert.That(chatter.CurrentLine).IsNotNull();
     }
 
@@ -20,7 +20,8 @@ public sealed class WingmanChatterTests
     public async Task AnnounceWave_sets_leader_line()
     {
         var chatter = new WingmanChatter(new Random(2));
-        chatter.AnnounceWave();
+        var line = chatter.AnnounceWave();
+        await Assert.That(line).IsNotNull();
         await Assert.That(chatter.CurrentLine).IsNotNull();
         await Assert.That(chatter.CurrentSpeaker).IsEqualTo("RED LEADER");
     }

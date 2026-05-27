@@ -1,18 +1,18 @@
 X-Fighter — Red Squadron (X-wing style dogfight demo)
 
 cockpit_overlay.png — optional 1920x1080 HUD frame (transparent center viewport).
-Add cockpit_overlay.png manually if desired.
 
-Audio (Novolis.Audio.* procedural PCM via Novolis.Audio.Playback):
-  Engine hum scales with throttle
-  Green laser pew, explosion boom, deflector hit, enemy bolt
-  Wingman comms with radio squelch (Novolis.Audio.Effects; toggle mute: M)
+Audio (Novolis.Audio.* on GitHub Packages):
+  Novolis.Audio.Voice + SherpaOnnx — wingman TTS (steady male + ATC radio)
+  Novolis.Audio.Effects — band-limit, dynamics, radio hiss on SFX
+  Novolis.Audio.Playback — engine, procedural sci-fi theme loop, combat SFX
+  First run extracts Piper models from Novolis.Audio.Voice.SherpaOnnx (needs network once)
 
 Controls:
   Mouse     — aim (pitch/yaw)
   W / S     — throttle
-  A / D     — roll (S-foil feel)
+  A / D     — roll
   Space/LMB — fire lasers
-  M         — mute / unmute audio
+  M         — mute / unmute SFX and music
   R         — reset wave
   Esc       — quit

@@ -9,6 +9,8 @@ namespace XFighter.Game;
 
 internal sealed class XFighterGame
 {
+    private const int MaxActiveEnemies = 4;
+
     private static readonly Color SpaceBlack = Color.FromArgb(255, 2, 4, 10);
     private static readonly Color LaserGreen = Color.FromArgb(255, 80, 255, 120);
     private static readonly Color LaserCore = Color.FromArgb(255, 200, 255, 220);
@@ -18,9 +20,11 @@ internal sealed class XFighterGame
     private readonly Random _rng = new(42);
     private readonly PlayerFlight _player = new();
     private readonly Starfield _starfield;
+    private readonly BattleSpace _battleSpace;
     private readonly CockpitHud _hud = new();
     private readonly WingmanChatter _chatter;
     private readonly XFighterSoundscape _audio = new();
+    private readonly XFighterVoice _voice = XFighterVoice.TryCreate();
     private readonly HFighter[] _enemies;
     private readonly LaserBolt[] _bolts;
     private readonly LaserBolt[] _enemyBolts;
@@ -32,11 +36,13 @@ internal sealed class XFighterGame
     private float _shield = 1f;
     private int _killsThisFrame;
     private float _prevShield = 1f;
+
     public XFighterGame()
     {
         _starfield = new Starfield(520, _rng);
+        _battleSpace = new BattleSpace(_rng);
         _chatter = new WingmanChatter(_rng);
-        _enemies = Enumerable.Range(0, 12).Select(_ => new HFighter()).ToArray();
+        _enemies = Enumerable.Range(0, 10).Select(_ => new HFighter()).ToArray();
         _bolts = Enumerable.Range(0, 48).Select(_ => new LaserBolt()).ToArray();
         _enemyBolts = Enumerable.Range(0, 32).Select(_ => new LaserBolt { FromPlayer = false }).ToArray();
         _explosions = Enumerable.Range(0, 16).Select(_ => new Explosion()).ToArray();
@@ -48,8 +54,7 @@ internal sealed class XFighterGame
         _audio.Start();
         ctx.DisableCursor();
         SpawnWave();
-        _chatter.AnnounceWave();
-        _audio.PlayRadio();
+        AnnounceComms(_chatter.AnnounceWave());
     }
 
     public void Update(RayGameContext ctx)
@@ -72,17 +77,26 @@ internal sealed class XFighterGame
         TrySpawn(ctx);
 
         var lockTarget = TargetingComputer.FindLockTarget(_enemies, _player.Position, _player.Forward);
-        if (_chatter.Update(ctx.DeltaSeconds, CountActiveEnemies(), _shield, _killsThisFrame))
-            _audio.PlayRadio();
+        var commsLine = _chatter.Update(ctx.DeltaSeconds, CountActiveEnemies(), _shield, _killsThisFrame);
+        if (commsLine is not null)
+            AnnounceComms(commsLine);
 
         ctx.Clear(SpaceBlack);
         var camera = _player.BuildCamera();
         ctx.BeginWorld(camera);
+        _battleSpace.Draw(ctx, _player.Position);
         _starfield.Draw(ctx, _player.Position, _player.Speed, _player.Forward);
         DrawWorld(ctx, lockTarget);
         ctx.EndWorld();
         _hud.Draw(ctx, _player, _score, CountActiveEnemies(), _shield, lockTarget, _chatter);
         _prevShield = _shield;
+    }
+
+    private void AnnounceComms(string line)
+    {
+        _audio.PlayRadio();
+        if (_voice.IsAvailable)
+            _voice.SpeakComms(line);
     }
 
     private void ResetMission()
@@ -101,8 +115,7 @@ internal sealed class XFighterGame
             b.Active = false;
         _chatter.Reset();
         SpawnWave();
-        _chatter.AnnounceWave();
-        _audio.PlayRadio();
+        AnnounceComms(_chatter.AnnounceWave());
     }
 
     private void DrawWorld(RayGameContext ctx, HFighter? lockTarget)
@@ -234,7 +247,7 @@ internal sealed class XFighterGame
                 continue;
 
             bolt.Active = false;
-            _shield -= 0.12f;
+            _shield -= 0.1f;
             if (_shield < 0)
                 _shield = 0;
         }
@@ -243,12 +256,14 @@ internal sealed class XFighterGame
     private void UpdateEnemies(RayGameContext ctx)
     {
         var dt = ctx.DeltaSeconds;
+        var active = CountActiveEnemies();
         foreach (var enemy in _enemies)
         {
-            enemy.Update(dt, _player.Position);
-            if (!enemy.TryFire(_player.Position, out var origin, out var velocity))
+            enemy.Update(dt, _player.Position, _enemies);
+            if (!enemy.TryFire(_player.Position, active))
                 continue;
 
+            enemy.GetBoltVelocity(_player.Position, out var origin, out var velocity);
             foreach (var bolt in _enemyBolts)
             {
                 if (bolt.Active)
@@ -266,10 +281,10 @@ internal sealed class XFighterGame
     private void TrySpawn(RayGameContext ctx)
     {
         _spawnTimer -= ctx.DeltaSeconds;
-        if (_spawnTimer > 0 || CountActiveEnemies() >= 6)
+        if (_spawnTimer > 0 || CountActiveEnemies() >= MaxActiveEnemies)
             return;
 
-        _spawnTimer = 2.5f;
+        _spawnTimer = 5f;
         foreach (var enemy in _enemies)
         {
             if (enemy.Active)
@@ -284,13 +299,13 @@ internal sealed class XFighterGame
         var spawned = 0;
         foreach (var enemy in _enemies)
         {
-            if (spawned >= 4)
+            if (spawned >= 2)
                 break;
             enemy.Spawn(_player.Position, _player.Forward, _rng);
             spawned++;
         }
 
-        _spawnTimer = 1.5f;
+        _spawnTimer = 3f;
     }
 
     private bool FireBolt()
