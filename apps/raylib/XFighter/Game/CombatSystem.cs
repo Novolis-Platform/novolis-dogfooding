@@ -24,6 +24,7 @@ internal sealed class LaserBolt
     public Vector3 Velocity;
     public float Life;
     public bool Active;
+    public bool FromPlayer = true;
 }
 
 internal sealed class Explosion

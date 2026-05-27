@@ -23,13 +23,21 @@ internal sealed class Starfield
         }
     }
 
-    public void Draw(RayGameContext ctx, Vector3 playerPos)
+    public void Draw(RayGameContext ctx, Vector3 playerPos, float speed, Vector3 forward)
     {
+        var streak = Math.Clamp((speed - 18f) / 30f, 0f, 1f);
         for (var i = 0; i < _stars.Length; i++)
         {
             var p = _stars[i] - playerPos * 0.02f;
             var b = (byte)(180 + _brightness[i] * 75);
             var c = Color.FromArgb(255, b, b, (byte)(b + 20));
+
+            if (streak > 0.05f)
+            {
+                var tail = p + forward * (2f + streak * 6f * _brightness[i]);
+                ctx.DrawBolt(p, tail, Color.FromArgb((int)(120 + streak * 100), b, b, (byte)(b + 40)));
+            }
+
             var s = 0.08f + _brightness[i] * 0.12f;
             ctx.DrawGlowSphere(p, s, c);
         }
