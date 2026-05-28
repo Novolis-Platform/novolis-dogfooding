@@ -18,7 +18,6 @@
     <Project Path="apps/rendering/SilkTraceHello/SilkTraceHello.csproj" />
     <Project Path="apps/rendering/SilkTraceStudio/SilkTraceStudio.csproj" />
     <Project Path="apps/rendering/SilkTwoDHello/SilkTwoDHello.csproj" />
-    <Project Path="apps/rendering/MeshBench/MeshBench.csproj" />
   </Folder>
   <Folder Name="/math/">
     <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
