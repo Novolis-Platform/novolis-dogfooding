@@ -24,16 +24,6 @@
     <PackageVersion Include="Novolis.Audio.Voice.SherpaOnnx" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Controls" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Audio.Host.NAudio" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Snapshots.Abstractions" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Timeline.Abstractions" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Timeline.FileSystem" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Timeline.Presentation" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Workspaces.Abstractions" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Workspaces.FileSystem" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Workspaces.Snapshots" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Workspaces.Timeline" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Engine" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Queueing" Version="2026.1.*" />
@@ -59,7 +49,6 @@
     <PackageVersion Include="Novolis.Rendering.PathTrace.Demos" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Presentation.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Presentation.Silk" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Rendering.Runtime" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Scene" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.TwoD" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Kinematics" Version="2026.1.*" />
