@@ -98,10 +98,25 @@ internal sealed class PathTraceViewport : IDisposable
         _orbit.Yaw = state.Yaw;
         _orbit.Pitch = state.Pitch;
         _orbit.Distance = state.Distance;
+        if (state.Target.Length >= 3)
+            _orbit.Target = new Vector3(state.Target[0], state.Target[1], state.Target[2]);
     }
 
     public Models.OrbitCameraState CaptureCameraState() =>
-        new() { Yaw = _orbit.Yaw, Pitch = _orbit.Pitch, Distance = _orbit.Distance };
+        new()
+        {
+            Yaw = _orbit.Yaw,
+            Pitch = _orbit.Pitch,
+            Distance = _orbit.Distance,
+            Target = [_orbit.Target.X, _orbit.Target.Y, _orbit.Target.Z],
+        };
+
+    public void FitToBounds(Vector3 center, float radius)
+    {
+        _orbit.Target = center;
+        _orbit.Distance = MathF.Max(2f, radius * 2.8f);
+        ResetAccumulation();
+    }
 
     public void Dispose()
     {

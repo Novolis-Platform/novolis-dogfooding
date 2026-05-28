@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Abstractions;
 using System.Numerics;
 using System.Text.Json;
@@ -13,6 +14,7 @@ namespace MeshBench.Services;
 internal sealed class MeshSceneStore
 {
     private readonly IFileSystem _fileSystem;
+    private readonly object _writeLock = new();
     private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
 
     public MeshSceneStore(IFileSystem fileSystem) => _fileSystem = fileSystem;
@@ -26,15 +28,18 @@ internal sealed class MeshSceneStore
         if (!_fileSystem.File.Exists(path))
             return CreateDefault();
 
-        var json = _fileSystem.File.ReadAllText(path);
+        var json = ReadAllTextShared(path);
         return JsonSerializer.Deserialize<MeshSceneDocument>(json, _json) ?? CreateDefault();
     }
 
     public void Save(IProject project, MeshSceneDocument document)
     {
         var path = ScenePath(project);
-        _fileSystem.Directory.CreateDirectory(_fileSystem.Path.GetDirectoryName(path)!);
-        _fileSystem.File.WriteAllText(path, JsonSerializer.Serialize(document, _json));
+        var json = JsonSerializer.Serialize(document, _json);
+        lock (_writeLock)
+        {
+            WriteAllTextAtomic(path, json);
+        }
     }
 
     public CompiledScene Compile(MeshSceneDocument document)
@@ -54,11 +59,73 @@ internal sealed class MeshSceneStore
         return SceneCompiler.Compile(builder.Build());
     }
 
+    private string ReadAllTextShared(string path)
+    {
+        using var stream = _fileSystem.FileStream.New(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
+    private void WriteAllTextAtomic(string path, string contents)
+    {
+        var directory = _fileSystem.Path.GetDirectoryName(path)!;
+        _fileSystem.Directory.CreateDirectory(directory);
+        var temp = path + ".tmp-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            WriteAllTextWithRetry(temp, contents);
+            if (_fileSystem.File.Exists(path))
+                _fileSystem.File.Delete(path);
+            _fileSystem.File.Move(temp, path);
+        }
+        finally
+        {
+            if (_fileSystem.File.Exists(temp))
+            {
+                try
+                {
+                    _fileSystem.File.Delete(temp);
+                }
+                catch (IOException)
+                {
+                    // Best effort cleanup.
+                }
+            }
+        }
+    }
+
+    private void WriteAllTextWithRetry(string path, string contents, int attempts = 6)
+    {
+        for (var attempt = 0; attempt < attempts; attempt++)
+        {
+            try
+            {
+                using var stream = _fileSystem.FileStream.New(
+                    path,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.Read);
+                using var writer = new StreamWriter(stream);
+                writer.Write(contents);
+                return;
+            }
+            catch (IOException) when (attempt < attempts - 1)
+            {
+                Thread.Sleep(20 * (attempt + 1));
+            }
+        }
+    }
+
     private static MeshSceneDocument CreateDefault()
     {
         var doc = new MeshSceneDocument();
         doc.Parts.Add(new MeshPartRecord
         {
+            Name = "Box 1",
             Kind = "box",
             Center = [0f, 0.5f, 0f],
             HalfExtents = [0.5f, 0.5f, 0.5f],
@@ -66,6 +133,7 @@ internal sealed class MeshSceneStore
         });
         doc.Parts.Add(new MeshPartRecord
         {
+            Name = "Sphere 1",
             Kind = "sphere",
             Center = [1.4f, 0.55f, 0.2f],
             Radius = 0.45f,

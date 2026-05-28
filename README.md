@@ -34,7 +34,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `RaytraceHello` | `rendering/` | Raylib.Game, Rendering (ILGPU + DI + Presentation.Raylib) |
 | `SilkTraceHello` | `rendering/` | Rendering (env backend + PathTrace.Demos + Presentation.Silk) |
 | `SilkTraceStudio` | `rendering/` | Studio showcase: mouse orbit, backend hotkeys, status strip, glass/emissive scene |
-| `MeshBench` | `rendering/` | Workspaces + Timeline + Snapshots + Rendering + Audio (Avalonia mini CAD, save points, path-traced viewport) |
+| `MeshBench` (Mesh Studio) | `rendering/` | Workspaces + Timeline + Snapshots + Rendering + Audio (inspector, move tool, fit view, path-traced viewport) |
 | `DoomLite3D` | `simulation/` | Raylib, Math, Simulation |
 | `BouncingBall` | `simulation/` | Raylib, Simulation, Physics.Collision |
 | `ArtillerySimulator` | `simulation/` | Raylib, Physics, Simulation |

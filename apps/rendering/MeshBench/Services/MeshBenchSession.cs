@@ -13,6 +13,7 @@ namespace MeshBench.Services;
 
 internal sealed class MeshBenchSession
 {
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
     private readonly WorkspaceFileSystemService _workspaces;
     private readonly MeshSceneStore _scenes;
     private readonly TimelineTreeProjector<ZipSnapshotRef> _projector = new();
@@ -44,6 +45,8 @@ internal sealed class MeshBenchSession
 
     public IReadOnlyList<TimelineTreeRow> TimelineRows { get; private set; } = [];
 
+    public bool IsDirty { get; private set; }
+
     public async ValueTask OpenOrCreateDefaultAsync(CancellationToken cancellationToken = default)
     {
         if (FileSystem.Directory.Exists(DefaultWorkspaceRoot))
@@ -54,21 +57,33 @@ internal sealed class MeshBenchSession
         await EnsureProjectAsync(cancellationToken).ConfigureAwait(false);
         WireTimeline();
         ReloadScene();
+        IsDirty = false;
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public void MarkDirty() => IsDirty = true;
 
     public async ValueTask<TimelineNode<ZipSnapshotRef>> SavePointAsync(string? label, CancellationToken cancellationToken = default)
     {
         if (Timeline is null || Workspace is null || Project is null)
             throw new InvalidOperationException("Workspace is not open.");
 
-        _scenes.Save(Project, Scene);
-        var node = await Timeline.SavePointAsync(
-            Workspace,
-            new SavePointRequest(label ?? "Manual save", SnapshotKinds.Manual),
-            cancellationToken).ConfigureAwait(false);
-        await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
-        return node;
+        await _saveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            _scenes.Save(Project, Scene);
+            var node = await Timeline.SavePointAsync(
+                Workspace,
+                new SavePointRequest(label ?? "Manual save", SnapshotKinds.Manual),
+                cancellationToken).ConfigureAwait(false);
+            await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
+            IsDirty = false;
+            return node;
+        }
+        finally
+        {
+            _saveGate.Release();
+        }
     }
 
     public async ValueTask RestoreAsync(TimelineNodeId nodeId, CancellationToken cancellationToken = default)
@@ -80,6 +95,7 @@ internal sealed class MeshBenchSession
         Workspace = await _workspaces.OpenAsync(Workspace.Root.FullName, cancellationToken).ConfigureAwait(false);
         Project = Workspace.Projects.FirstOrDefault();
         ReloadScene();
+        IsDirty = false;
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -92,18 +108,7 @@ internal sealed class MeshBenchSession
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public void ApplyScene(MeshSceneDocument document)
-    {
-        Scene = document;
-        if (Project is not null)
-            _scenes.Save(Project, Scene);
-    }
-
-    public void PersistWorkingCopy()
-    {
-        if (Project is not null)
-            _scenes.Save(Project, Scene);
-    }
+    public void ApplyScene(MeshSceneDocument document) => Scene = document;
 
     private async ValueTask EnsureProjectAsync(CancellationToken cancellationToken)
     {
