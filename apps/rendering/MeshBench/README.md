@@ -37,6 +37,12 @@ Default workspace: `%LocalAppData%\Novolis\MeshBench\default-workspace`
 3. Click **Quality** only when you want path tracing (editing always returns to **Preview**).
 4. **Shift+drag** a mesh — preview updates every frame.
 5. **Ctrl+S** — history panel shows a git-graph commit line.
-6. Left panel shows `git log --graph` style history (or a hint until first save).
+6. Left panel shows `git log --graph` style history (bootstrap **Initial workspace** commit on first open).
+7. Double-click a history row to restore that snapshot.
+8. Status bar in Preview shows `host on` and `frame Nms ago` when Raylib is healthy.
+
+## Packages
+
+MeshBench consumes `Novolis.Avalonia.Raylib` and `Novolis.Raylib.Runtime` from GitHub Packages (`2026.1.*`). After changing the Raylib host in `novolis-avalonia` / `novolis-raylib`, merge to `main` and publish packages (version bump in `build/version.json`) before dogfooding picks up on-demand rendering APIs.
 
 Optional: `NOVOLIS_RAY_BACKEND=cpu` forces CPU path tracing for comparison.

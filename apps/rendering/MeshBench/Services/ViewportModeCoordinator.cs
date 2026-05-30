@@ -49,6 +49,7 @@ internal sealed class ViewportModeCoordinator
         _raylibHost = raylibHost;
         _qualityScheduler.QualityRebuildDue += () => QualityRebuildDue?.Invoke();
         _raylibHost.FrameRendering += OnRaylibFrame;
+        EnsureRaylibParentTracked();
     }
 
     public void BindScene(Func<MeshSceneDocument> getScene)
@@ -79,12 +80,15 @@ internal sealed class ViewportModeCoordinator
         _interacting = false;
         if (_qualityPinned)
             EnterQuality();
+        else
+            RaylibHostBridge.RequestFrame(_raylibHost);
     }
 
     public void NotifySceneChanged(bool immediateQualityRebuild = false)
     {
         if (_mode == ViewportDisplayMode.FastPreview)
         {
+            RaylibHostBridge.RequestFrame(_raylibHost);
             if (immediateQualityRebuild && _qualityPinned)
                 _qualityScheduler.FlushNow();
             else if (_qualityPinned)
@@ -134,7 +138,9 @@ internal sealed class ViewportModeCoordinator
         _mode = ViewportDisplayMode.FastPreview;
         _pathTrace.StopTracing();
         AttachRaylibHost();
-        RaylibHostLifecycle.SetActive(_raylibHost, true);
+        RaylibHostBridge.SetActive(_raylibHost, true);
+        RaylibHostBridge.EnsureHostStarted(_raylibHost);
+        RaylibHostBridge.RequestFrame(_raylibHost);
         if (modeChanged)
             ModeChanged?.Invoke(_mode);
     }
@@ -142,7 +148,7 @@ internal sealed class ViewportModeCoordinator
     private void EnterQuality()
     {
         var modeChanged = _mode != ViewportDisplayMode.QualityRefine;
-        RaylibHostLifecycle.SetActive(_raylibHost, false);
+        RaylibHostBridge.SetActive(_raylibHost, false);
         _mode = ViewportDisplayMode.QualityRefine;
         DetachRaylibHost();
         _pathTrace.BeginTracing();
@@ -160,7 +166,9 @@ internal sealed class ViewportModeCoordinator
         _pathTrace.StopTracing();
         _mode = ViewportDisplayMode.FastPreview;
         AttachRaylibHost();
-        RaylibHostLifecycle.SetActive(_raylibHost, true);
+        RaylibHostBridge.SetActive(_raylibHost, true);
+        RaylibHostBridge.EnsureHostStarted(_raylibHost);
+        RaylibHostBridge.RequestFrame(_raylibHost);
         ModeChanged?.Invoke(_mode);
     }
 
@@ -169,6 +177,7 @@ internal sealed class ViewportModeCoordinator
         if (_raylibHost.Parent is not null)
             return;
 
+        EnsureRaylibParentTracked();
         if (_raylibHostParent is null)
             return;
 
@@ -186,5 +195,17 @@ internal sealed class ViewportModeCoordinator
         _raylibHostParent = parent;
         _raylibHostIndex = parent.Children.IndexOf(_raylibHost);
         parent.Children.Remove(_raylibHost);
+    }
+
+    private void EnsureRaylibParentTracked()
+    {
+        if (_raylibHostParent is not null)
+            return;
+
+        if (_raylibHost.Parent is Panel parent)
+        {
+            _raylibHostParent = parent;
+            _raylibHostIndex = parent.Children.IndexOf(_raylibHost);
+        }
     }
 }

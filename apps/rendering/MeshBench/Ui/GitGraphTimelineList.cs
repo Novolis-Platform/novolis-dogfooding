@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using MeshBench.Services;
@@ -17,7 +19,10 @@ internal sealed class GitGraphTimelineList : ListBox
         FontFamily = "Cascadia Mono,Consolas,monospace";
         FontSize = 12;
         ItemTemplate = new FuncDataTemplate<GitGraphTimelineRow>(BuildRow, supportsRecycling: true);
+        DoubleTapped += OnDoubleTapped;
     }
+
+    public event EventHandler<GitGraphTimelineRow>? RestoreRequested;
 
     public void SetRows(IReadOnlyList<GitGraphTimelineRow> rows)
     {
@@ -28,23 +33,36 @@ internal sealed class GitGraphTimelineList : ListBox
             return;
         }
 
-        if (ItemsSource is IList<GitGraphTimelineRow> existing && existing.Count == rows.Count)
-        {
-            var same = true;
-            for (var i = 0; i < rows.Count; i++)
-            {
-                if (existing[i].Id != rows[i].Id)
-                {
-                    same = false;
-                    break;
-                }
-            }
-
-            if (same)
-                return;
-        }
+        if (ItemsSource is IList<GitGraphTimelineRow> existing && existing.Count == rows.Count && RowsEquivalent(existing, rows))
+            return;
 
         ItemsSource = rows.ToList();
+    }
+
+    private static bool RowsEquivalent(IList<GitGraphTimelineRow> existing, IReadOnlyList<GitGraphTimelineRow> rows)
+    {
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var a = existing[i];
+            var b = rows[i];
+            if (a.Id != b.Id
+                || a.IsHere != b.IsHere
+                || a.Graph != b.Graph
+                || a.Subject != b.Subject
+                || a.BranchName != b.BranchName
+                || a.SnapshotKind != b.SnapshotKind)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void OnDoubleTapped(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedGitRow is { } row)
+            RestoreRequested?.Invoke(this, row);
     }
 
     public void SelectHeadRow(IReadOnlyList<GitGraphTimelineRow> rows)

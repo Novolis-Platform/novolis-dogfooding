@@ -4,11 +4,20 @@ using Novolis.Avalonia.Raylib;
 
 namespace MeshBench.Services;
 
-/// <summary>Starts/stops <see cref="RaylibHostControl"/> across GPR versions (with or without <c>SetHostActive</c>).</summary>
-internal static class RaylibHostLifecycle
+/// <summary>Raylib host helpers across GPR versions (with or without channel/on-demand APIs).</summary>
+internal static class RaylibHostBridge
 {
     private static readonly MethodInfo? SetHostActiveMethod =
         typeof(RaylibHostControl).GetMethod("SetHostActive", [typeof(bool)]);
+
+    private static readonly MethodInfo? EnsureHostStartedMethod =
+        typeof(RaylibHostControl).GetMethod("EnsureHostStarted", Type.EmptyTypes);
+
+    private static readonly MethodInfo? RequestFrameMethod =
+        typeof(RaylibHostControl).GetMethod("RequestFrame", Type.EmptyTypes);
+
+    private static readonly PropertyInfo? LastFrameAgeMsProperty =
+        typeof(RaylibHostControl).GetProperty("LastFrameAgeMs");
 
     private static readonly MethodInfo? StartHostMethod =
         typeof(RaylibHostControl).GetMethod("StartHost", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -29,6 +38,26 @@ internal static class RaylibHostLifecycle
         else
             StopLegacy(host);
     }
+
+    public static void EnsureHostStarted(RaylibHostControl host)
+    {
+        if (EnsureHostStartedMethod is not null)
+        {
+            EnsureHostStartedMethod.Invoke(host, null);
+            return;
+        }
+
+        SetActive(host, true);
+    }
+
+    public static void RequestFrame(RaylibHostControl host)
+    {
+        if (RequestFrameMethod is not null)
+            RequestFrameMethod.Invoke(host, null);
+    }
+
+    public static double LastFrameAgeMs(RaylibHostControl host) =>
+        LastFrameAgeMsProperty?.GetValue(host) is double age ? age : -1;
 
     private static void StartLegacy(RaylibHostControl host)
     {

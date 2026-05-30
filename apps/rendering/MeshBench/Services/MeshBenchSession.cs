@@ -71,6 +71,12 @@ internal sealed class MeshBenchSession
         IsDirty = false;
         SceneRevision = 0;
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_gitGraphRows.Count == 0 && Timeline is not null && Project is not null)
+        {
+            var label = _scenes.HasPersistedScene(Project) ? "Recovered scene" : "Initial workspace";
+            await SavePointAsync(label, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public void MarkDirty() => IsDirty = true;

@@ -159,6 +159,11 @@ internal sealed class MainWindow : Window
             if (_selectedGitRow is not null)
                 _feedback.Flash($"Snapshot: {_selectedGitRow.Subject}");
         };
+        _gitHistory.RestoreRequested += (_, row) =>
+        {
+            _selectedGitRow = row;
+            OnRestore(this, new RoutedEventArgs());
+        };
 
         _partsList.ItemTemplate = new FuncDataTemplate<MeshPartRecord>((part, _) =>
             new TextBlock { Text = part?.Summary ?? string.Empty },
@@ -226,6 +231,7 @@ internal sealed class MainWindow : Window
         _workspacePath.Margin = new Thickness(8);
         timelinePanel.Children.Add(timelineHeader);
         timelinePanel.Children.Add(_workspacePath);
+        _gitHistory.VerticalAlignment = VerticalAlignment.Stretch;
         timelinePanel.Children.Add(_gitHistory);
 
         var root = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*,320") };
@@ -263,7 +269,6 @@ internal sealed class MainWindow : Window
             SyncCameraFromScene();
             _coordinator.StartInFastMode();
             OnViewportModeChanged(_coordinator.Mode);
-            RefreshUi();
             StartRenderLoop();
             Dispatcher.UIThread.Post(EnsureViewportSized, DispatcherPriority.Loaded);
             _feedback.Flash($"Workspace ready — {_session.Scene.Parts.Count} meshes");
@@ -271,6 +276,10 @@ internal sealed class MainWindow : Window
         catch (Exception ex)
         {
             _feedback.FlashError($"Open failed: {ex.Message}");
+        }
+        finally
+        {
+            RefreshUi();
         }
     }
 
@@ -321,6 +330,12 @@ internal sealed class MainWindow : Window
         _lastViewportSize = size;
         _raylibHost.FrameWidth = (int)size.Width;
         _raylibHost.FrameHeight = (int)size.Height;
+        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+        {
+            RaylibHostBridge.EnsureHostStarted(_raylibHost);
+            RaylibHostBridge.RequestFrame(_raylibHost);
+        }
+
         if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
             _coordinator.TryResizePathTrace(size.Width, size.Height);
     }
@@ -387,9 +402,18 @@ internal sealed class MainWindow : Window
         var dirty = _session.IsDirty ? "  ● unsaved" : string.Empty;
         var partCount = _session.Scene.Parts.Count;
         var mode = _coordinator.Mode == ViewportDisplayMode.FastPreview ? "Preview" : "Quality";
-        var present = _coordinator.Mode == ViewportDisplayMode.FastPreview
-            ? "Raylib"
-            : _coordinator.IsInteracting ? "paused" : _viewport.LastFramePresented ? "shown" : "tracing";
+        string present;
+        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+        {
+            var host = _coordinator.RaylibHost.IsHostRunning ? "host on" : "host off";
+            var age = RaylibHostBridge.LastFrameAgeMs(_coordinator.RaylibHost);
+            var frame = age >= 0 ? $"frame {age:F0}ms ago" : "no frame yet";
+            present = $"Raylib {host} | {frame}";
+        }
+        else
+        {
+            present = _coordinator.IsInteracting ? "paused" : _viewport.LastFramePresented ? "shown" : "tracing";
+        }
         var hint = _movingPart
             ? "Shift+drag: move  |  drag: orbit  |  wheel: zoom"
             : "Shift+drag moves selection  |  Ctrl+S save";
@@ -760,7 +784,9 @@ internal sealed class MainWindow : Window
 
         _coordinator.Orbit.AddLookDelta((float)delta.X * 0.008f, (float)delta.Y * -0.008f);
         SyncPathTraceCamera();
-        if (_coordinator.QualityPinned && _coordinator.Mode == ViewportDisplayMode.QualityRefine)
+        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+            RaylibHostBridge.RequestFrame(_coordinator.RaylibHost);
+        else if (_coordinator.QualityPinned)
             _viewport.ResetAccumulation();
     }
 
@@ -768,7 +794,9 @@ internal sealed class MainWindow : Window
     {
         _coordinator.Orbit.AdjustDistance((float)-e.Delta.Y * 0.15f);
         SyncPathTraceCamera();
-        if (_coordinator.QualityPinned && _coordinator.Mode == ViewportDisplayMode.QualityRefine)
+        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+            RaylibHostBridge.RequestFrame(_coordinator.RaylibHost);
+        else if (_coordinator.QualityPinned)
             _viewport.ResetAccumulation();
     }
 

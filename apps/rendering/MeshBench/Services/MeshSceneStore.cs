@@ -25,6 +25,8 @@ internal sealed class MeshSceneStore
     public string ScenePath(IProject project) =>
         _fileSystem.Path.Combine(project.Root.FullName, WorkspaceLayout.DocumentsFolder, "scene.json");
 
+    public bool HasPersistedScene(IProject project) => _fileSystem.File.Exists(ScenePath(project));
+
     public MeshSceneDocument Load(IProject project)
     {
         var path = ScenePath(project);

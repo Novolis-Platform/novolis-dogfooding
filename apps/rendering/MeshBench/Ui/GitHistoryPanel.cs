@@ -14,10 +14,11 @@ internal sealed class GitHistoryPanel : Border
     private readonly ScrollViewer _scroll;
     private readonly TextBlock _empty = new()
     {
-        Text = "No snapshots yet.\nSave (Ctrl+S) to create your first commit.",
+        Text = "No snapshots yet.\n\nPress Ctrl+S to create your first commit.",
         TextWrapping = TextWrapping.Wrap,
         TextAlignment = TextAlignment.Center,
         Foreground = Brushes.LightGray,
+        FontSize = 13,
         HorizontalAlignment = HorizontalAlignment.Center,
         VerticalAlignment = VerticalAlignment.Center,
         Margin = new Thickness(16),
@@ -39,8 +40,14 @@ internal sealed class GitHistoryPanel : Border
         BorderBrush = new SolidColorBrush(Color.FromRgb(55, 55, 65));
         BorderThickness = new Thickness(0, 0, 1, 0);
         MinHeight = 120;
+        VerticalAlignment = VerticalAlignment.Stretch;
 
-        _scroll = new ScrollViewer { Content = _list };
+        _scroll = new ScrollViewer
+        {
+            Content = _list,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            MinHeight = 80,
+        };
 
         var root = new DockPanel();
         DockPanel.SetDock(_legend, Dock.Top);
@@ -48,6 +55,7 @@ internal sealed class GitHistoryPanel : Border
         root.Children.Add(_bodyHost);
         Child = root;
 
+        _list.RestoreRequested += (_, row) => RestoreRequested?.Invoke(this, row);
         ShowEmpty();
     }
 
@@ -81,9 +89,12 @@ internal sealed class GitHistoryPanel : Border
         remove => _list.SelectionChanged -= value;
     }
 
+    public event EventHandler<GitGraphTimelineRow>? RestoreRequested;
+
     private void ShowEmpty()
     {
         _legend.IsVisible = false;
+        _list.SetRows([]);
         _bodyHost.Children.Clear();
         _bodyHost.Children.Add(_empty);
     }
@@ -93,4 +104,5 @@ internal sealed class GitHistoryPanel : Border
         _bodyHost.Children.Clear();
         _bodyHost.Children.Add(_scroll);
     }
+
 }
