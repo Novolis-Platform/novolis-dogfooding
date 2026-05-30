@@ -109,13 +109,7 @@ internal sealed class ViewportModeCoordinator
 
     public void SyncRaylibHostSize()
     {
-        var w = (int)System.Math.Clamp(_raylibHost.Bounds.Width, 64, 4096);
-        var h = (int)System.Math.Clamp(_raylibHost.Bounds.Height, 64, 4096);
-        if (w > 0 && h > 0)
-        {
-            _raylibHost.FrameWidth = w;
-            _raylibHost.FrameHeight = h;
-        }
+        // FrameWidth/Height are set by MainWindow from the viewport host bounds.
     }
 
     public void ApplyCameraFromScene(OrbitCameraState state)

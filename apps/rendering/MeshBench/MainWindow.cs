@@ -24,8 +24,17 @@ internal sealed class MainWindow : Window
     private readonly SavePointSound _sound;
     private readonly ViewportModeCoordinator _coordinator;
 
-    private readonly RaylibHostControl _raylibHost = new();
-    private readonly ViewportSurface _frame = new();
+    private readonly RaylibHostControl _raylibHost = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        VerticalAlignment = VerticalAlignment.Stretch,
+    };
+    private readonly ViewportSurface _frame = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        VerticalAlignment = VerticalAlignment.Stretch,
+    };
+    private Grid _viewportHost = null!;
     private readonly TextBlock _viewportHint = new()
     {
         HorizontalAlignment = HorizontalAlignment.Center,
@@ -36,6 +45,14 @@ internal sealed class MainWindow : Window
         IsHitTestVisible = false,
     };
     private readonly GitGraphTimelineList _gitTimeline = new() { Width = 300 };
+    private readonly TextBlock _gitTimelineEmpty = new()
+    {
+        Text = "No snapshots yet.\nPress Save or Ctrl+S to create the first commit.",
+        TextWrapping = TextWrapping.Wrap,
+        Opacity = 0.7,
+        Margin = new Thickness(12),
+        IsHitTestVisible = false,
+    };
     private readonly ListBox _partsList = new();
     private readonly PartInspectorPanel _inspector = new();
     private readonly TextBlock _status = new() { Margin = new Thickness(8, 4) };
@@ -79,6 +96,7 @@ internal sealed class MainWindow : Window
     private CancellationTokenSource? _rebuildCts;
     private Size _lastViewportSize;
     private int _qualityTick;
+    private int _uiTick;
     private string _lastStatusText = string.Empty;
     private bool _qualityPinned;
 
@@ -131,17 +149,17 @@ internal sealed class MainWindow : Window
         toolbar.Children.Add(_previewModeButton);
         toolbar.Children.Add(_qualityModeButton);
 
-        var viewportHost = new Grid();
-        viewportHost.Children.Add(_raylibHost);
-        viewportHost.Children.Add(_frame);
-        viewportHost.Children.Add(_viewportHint);
-        viewportHost.Children.Add(_busyOverlay);
+        _viewportHost = new Grid();
+        _viewportHost.Children.Add(_raylibHost);
+        _viewportHost.Children.Add(_frame);
+        _viewportHost.Children.Add(_viewportHint);
+        _viewportHost.Children.Add(_busyOverlay);
 
-        viewportHost.PointerPressed += OnViewportPointerPressed;
-        viewportHost.PointerReleased += OnViewportPointerReleased;
-        viewportHost.PointerMoved += OnViewportPointerMoved;
-        viewportHost.PointerWheelChanged += OnViewportWheel;
-        viewportHost.LayoutUpdated += (_, _) => EnsureViewportSized();
+        _viewportHost.PointerPressed += OnViewportPointerPressed;
+        _viewportHost.PointerReleased += OnViewportPointerReleased;
+        _viewportHost.PointerMoved += OnViewportPointerMoved;
+        _viewportHost.PointerWheelChanged += OnViewportWheel;
+        _viewportHost.LayoutUpdated += (_, _) => EnsureViewportSized();
 
         _frame.IsVisible = false;
 
@@ -172,7 +190,7 @@ internal sealed class MainWindow : Window
         DockPanel.SetDock(_status, Dock.Bottom);
         viewportPanel.Children.Add(_flash);
         viewportPanel.Children.Add(_status);
-        viewportPanel.Children.Add(viewportHost);
+        viewportPanel.Children.Add(_viewportHost);
 
         var center = new Grid { RowDefinitions = new RowDefinitions("Auto,*") };
         center.Children.Add(toolbar);
@@ -218,7 +236,10 @@ internal sealed class MainWindow : Window
         _workspacePath.Margin = new Thickness(8);
         timelinePanel.Children.Add(timelineHeader);
         timelinePanel.Children.Add(_workspacePath);
-        timelinePanel.Children.Add(_gitTimeline);
+        var gitTimelineHost = new Grid();
+        gitTimelineHost.Children.Add(_gitTimeline);
+        gitTimelineHost.Children.Add(_gitTimelineEmpty);
+        timelinePanel.Children.Add(gitTimelineHost);
 
         var root = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*,320") };
         Grid.SetColumn(timelinePanel, 0);
@@ -256,8 +277,12 @@ internal sealed class MainWindow : Window
             _coordinator.StartInFastMode();
             OnViewportModeChanged(_coordinator.Mode);
             RefreshUi();
-            Dispatcher.UIThread.Post(EnsureViewportSized, DispatcherPriority.Loaded);
             StartRenderLoop();
+            Dispatcher.UIThread.Post(() =>
+            {
+                EnsureViewportSized();
+                _coordinator.NotifySceneChanged(immediateQualityRebuild: false);
+            }, DispatcherPriority.Loaded);
             _feedback.Flash($"Workspace ready — {_session.Scene.Parts.Count} meshes");
         }
         catch (Exception ex)
@@ -270,6 +295,8 @@ internal sealed class MainWindow : Window
     {
         _renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Background, (_, _) =>
         {
+            EnsureViewportSized();
+
             if (ShouldRunQualityPass())
             {
                 _qualityTick++;
@@ -281,9 +308,8 @@ internal sealed class MainWindow : Window
                 }
             }
 
-            if ((_qualityTick & 7) == 0)
+            if ((_uiTick++ & 7) == 0)
             {
-                EnsureViewportSized();
                 UpdateViewportHint();
                 UpdateStatus();
             }
@@ -300,8 +326,7 @@ internal sealed class MainWindow : Window
 
     private void EnsureViewportSized()
     {
-        var host = _coordinator.Mode == ViewportDisplayMode.FastPreview ? (Control)_raylibHost : _frame;
-        var size = host.Bounds.Size;
+        var size = _viewportHost.Bounds.Size;
         if (size.Width < 1 || size.Height < 1)
             return;
 
@@ -310,6 +335,8 @@ internal sealed class MainWindow : Window
             return;
 
         _lastViewportSize = size;
+        _raylibHost.FrameWidth = (int)size.Width;
+        _raylibHost.FrameHeight = (int)size.Height;
         if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
             _coordinator.SyncRaylibHostSize();
         else
@@ -322,7 +349,14 @@ internal sealed class MainWindow : Window
         _raylibHost.IsVisible = fast;
         _frame.IsVisible = !fast;
         _viewport.SetRenderScale(fast ? 1f : _orbiting || _movingPart ? 0.5f : 1f);
+        _lastViewportSize = default;
         UpdateModeButtons();
+        Dispatcher.UIThread.Post(() =>
+        {
+            EnsureViewportSized();
+            if (!fast && _viewport.IsReady)
+                _ = RebuildQualityViewportAsync();
+        }, DispatcherPriority.Loaded);
     }
 
     private void UpdateModeButtons()
@@ -398,6 +432,9 @@ internal sealed class MainWindow : Window
         }
 
         _gitTimeline.SetRows(_session.GitGraphRows);
+        var hasHistory = _session.GitGraphRows.Count > 0;
+        _gitTimeline.IsVisible = hasHistory;
+        _gitTimelineEmpty.IsVisible = !hasHistory;
 
         if (_selectedPart is not null && !_session.Scene.Parts.Contains(_selectedPart))
             _selectedPart = null;

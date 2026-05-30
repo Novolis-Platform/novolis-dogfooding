@@ -13,6 +13,7 @@ internal sealed class GitGraphTimelineList : ListBox
 {
     public GitGraphTimelineList()
     {
+        Background = Brushes.Transparent;
         FontFamily = "Cascadia Mono,Consolas,monospace";
         FontSize = 12;
         ItemTemplate = new FuncDataTemplate<GitGraphTimelineRow>(BuildRow, supportsRecycling: true);
@@ -20,6 +21,12 @@ internal sealed class GitGraphTimelineList : ListBox
 
     public void SetRows(IReadOnlyList<GitGraphTimelineRow> rows)
     {
+        if (rows.Count == 0)
+        {
+            ItemsSource = null;
+            return;
+        }
+
         if (ItemsSource is IList<GitGraphTimelineRow> existing && existing.Count == rows.Count)
         {
             var same = true;
@@ -59,6 +66,7 @@ internal sealed class GitGraphTimelineList : ListBox
         var subject = new TextBlock
         {
             Text = row.Subject,
+            Foreground = Brushes.WhiteSmoke,
             TextTrimming = TextTrimming.CharacterEllipsis,
             Margin = new Thickness(4, 2, 4, 2),
         };
@@ -70,7 +78,7 @@ internal sealed class GitGraphTimelineList : ListBox
             FontWeight = row.IsHead ? FontWeight.SemiBold : FontWeight.Normal,
             Foreground = row.IsHead
                 ? new SolidColorBrush(Color.FromRgb(120, 220, 140))
-                : Brushes.LightGray,
+                : new SolidColorBrush(Color.FromRgb(180, 180, 190)),
             HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(0, 2, 8, 2),
         };
