@@ -16,7 +16,7 @@ internal sealed class MainWindow : Window
 
         var chrome = StudioChrome.Create();
         var feedback = chrome.CreateFeedback();
-        var studio = new VoiceStudioPanel(feedback);
+        var studio = new VoiceStudioPanel(feedback, preview);
 
         var statusBar = new DockPanel();
         DockPanel.SetDock(chrome.FlashLine, Dock.Bottom);
@@ -31,7 +31,6 @@ internal sealed class MainWindow : Window
         root.Children.Add(statusBar);
 
         Content = root;
-        preview.StatusChanged += msg => feedback.SetStatus(msg);
         Opened += (_, _) => feedback.Flash("Edit presets, preview speech, copy C# into Voice.Profiles / Atc.");
     }
 }
