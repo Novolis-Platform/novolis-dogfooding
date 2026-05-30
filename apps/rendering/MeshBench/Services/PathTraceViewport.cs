@@ -10,6 +10,8 @@ namespace MeshBench.Services;
 
 internal sealed class PathTraceViewport : IDisposable
 {
+    public const int MaxAccumulatedSamples = 96;
+
     private readonly IRayTracingBackend _backend;
     private readonly PathTraceDisplayBuffer _display = new();
     private readonly PathTraceBackgroundWorker _worker;
@@ -21,14 +23,14 @@ internal sealed class PathTraceViewport : IDisposable
     private int _height;
     private int _fullWidth;
     private int _fullHeight;
-    private int _sample;
+    private int _queuedSamples;
     private CompiledScene? _scene;
-    private int _lastPresentedGeneration = -1;
+    private int _lastPresentedSampleCount = -1;
     private float _renderScale = 1f;
     private int _uploadGeneration;
     private int _resizeGeneration;
     private bool _paused = true;
-    private string _status = "Starting renderer…";
+    private string _status = "Preview mode";
 
     public PathTraceViewport()
     {
@@ -52,9 +54,24 @@ internal sealed class PathTraceViewport : IDisposable
 
     public bool IsPaused => _paused;
 
+    public bool IsWorkerBusy => _worker.IsBusy;
+
     public void Attach(IFramePresenter presenter) => _presenter = presenter;
 
-    public void SetPaused(bool paused) => _paused = paused;
+    public void BeginTracing()
+    {
+        _paused = false;
+        _queuedSamples = 0;
+        _lastPresentedSampleCount = -1;
+        _status = $"{BackendLabel} — starting…";
+    }
+
+    public void StopTracing()
+    {
+        _paused = true;
+        _queuedSamples = 0;
+        _status = "Preview mode";
+    }
 
     public void SetRenderScale(float scale) =>
         _renderScale = Math.Clamp(scale, 0.25f, 1f);
@@ -111,11 +128,11 @@ internal sealed class PathTraceViewport : IDisposable
             _width = w;
             _height = h;
             _display.Invalidate(w, h);
-            _sample = 0;
-            _lastPresentedGeneration = -1;
+            _queuedSamples = 0;
+            _lastPresentedSampleCount = -1;
         }
 
-        _status = $"{BackendLabel} {_width}×{_height} (scale {(int)(_renderScale * 100)}%) — tracing…";
+        _status = $"{BackendLabel} {_width}×{_height}";
     }
 
     public void SetScene(CompiledScene scene)
@@ -152,11 +169,11 @@ internal sealed class PathTraceViewport : IDisposable
         {
             if (_width > 0 && _height > 0)
                 _display.Invalidate(_width, _height);
-            _sample = 0;
-            _lastPresentedGeneration = -1;
+            _queuedSamples = 0;
+            _lastPresentedSampleCount = -1;
         }
 
-        _status = $"{BackendLabel} scene loaded — tracing at {_width}×{_height}";
+        _status = $"{BackendLabel} scene ready";
     }
 
     public void ResetAccumulation()
@@ -164,6 +181,8 @@ internal sealed class PathTraceViewport : IDisposable
         if (_paused || _width <= 0 || _height <= 0)
             return;
 
+        _queuedSamples = 0;
+        _lastPresentedSampleCount = -1;
         _ = Task.Run(async () =>
         {
             await _worker.WaitForIdleAsync().ConfigureAwait(false);
@@ -171,8 +190,6 @@ internal sealed class PathTraceViewport : IDisposable
             lock (_resizeGate)
             {
                 _display.Invalidate(_width, _height);
-                _sample = 0;
-                _lastPresentedGeneration = -1;
             }
         });
     }
@@ -188,38 +205,53 @@ internal sealed class PathTraceViewport : IDisposable
         if (_width <= 0 || _height <= 0)
         {
             LastFramePresented = false;
-            _status = "Viewport has no size yet";
+            _status = "Waiting for viewport layout…";
             return;
         }
 
         if (_scene is null)
         {
             LastFramePresented = false;
-            _status = "No scene — add a mesh";
+            _status = "Compiling scene…";
+            return;
+        }
+
+        TryPresentLatest();
+
+        if (_queuedSamples >= MaxAccumulatedSamples)
+        {
+            _status = $"{BackendLabel} — {DisplayedSamples} samples";
+            return;
+        }
+
+        if (_worker.IsBusy)
+        {
+            _status = $"{BackendLabel} tracing… ({DisplayedSamples} shown)";
             return;
         }
 
         var camera = BuildCamera();
-        _worker.TryEnqueueAccumulate(camera, ref _sample, batchSize);
+        var batch = Math.Min(batchSize, MaxAccumulatedSamples - _queuedSamples);
+        if (batch > 0 && _worker.TryEnqueueAccumulate(camera, ref _queuedSamples, batch))
+            _status = $"{BackendLabel} tracing… ({DisplayedSamples} shown)";
 
-        var samples = _display.DisplayedSampleCount;
-        if (samples == _lastPresentedGeneration)
-        {
-            LastFramePresented = false;
-        }
-        else if (_display.TryPresent(_presenter))
+        TryPresentLatest();
+    }
+
+    private void TryPresentLatest()
+    {
+        if (_presenter is null || _worker.IsBusy)
+            return;
+
+        var shown = DisplayedSamples;
+        if (shown <= 0 || shown == _lastPresentedSampleCount)
+            return;
+
+        if (_display.TryPresent(_presenter))
         {
             LastFramePresented = true;
-            _lastPresentedGeneration = samples;
+            _lastPresentedSampleCount = shown;
         }
-        else
-        {
-            LastFramePresented = false;
-        }
-
-        _status = LastFramePresented
-            ? $"{BackendLabel} {_width}×{_height} — samples {samples}"
-            : $"{BackendLabel} refining… ({_sample} samples)";
     }
 
     public CameraSnapshot BuildCamera()

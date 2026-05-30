@@ -4,7 +4,8 @@ Avalonia mesh studio dogfooding **Novolis.Workspaces**, **Timeline**, **Snapshot
 
 ## Features
 
-- **Dual viewport**: **Preview** (Raylib, ~60 FPS while editing) and **Quality** (ILGPU path trace after ~400 ms idle or when pinned)
+- **Dual viewport**: **Preview** (Raylib, instant while editing) and **Quality** (ILGPU path trace — opt-in via toolbar)
+- **History**: git-graph with branch colors, snapshot-kind badges, and a **●** dot on HEAD (you are here)
 - **Meshes**: Add box/sphere, duplicate, delete, named parts with stable selection
 - **Inspector**: Debounced edits for position, size, and RGB (no full scene compile per slider tick)
 - **Timeline**: Save points (fast `scene.json`, zip snapshot in background), restore, branch — **Ctrl+S**
@@ -33,9 +34,9 @@ Default workspace: `%LocalAppData%\Novolis\MeshBench\default-workspace`
 
 1. Open Mesh Studio — **Preview** mode should show meshes immediately.
 2. Drag an inspector color slider — preview stays smooth; quality rebuild debounces (~100 ms).
-3. Stop editing for ~0.5 s — switches to **Quality** and path trace refines (status shows ILGPU / sample count).
-4. **Shift+drag** a mesh — preview updates every frame; one quality rebuild on release.
-5. **Ctrl+S** — UI flashes quickly; timeline updates when zip finishes.
-6. Toolbar **Preview** / **Quality** pins the active mode.
+3. Click **Quality** only when you want path tracing (editing always returns to **Preview**).
+4. **Shift+drag** a mesh — preview updates every frame.
+5. **Ctrl+S** — history panel shows a git-graph commit line.
+6. Left panel shows `git log --graph` style history (or a hint until first save).
 
 Optional: `NOVOLIS_RAY_BACKEND=cpu` forces CPU path tracing for comparison.

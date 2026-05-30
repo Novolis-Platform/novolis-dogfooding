@@ -1,6 +1,7 @@
 using System.Text;
 using Novolis.Timeline;
 using Novolis.Timeline.Presentation;
+using Novolis.Snapshots;
 
 namespace MeshBench.Services;
 
@@ -9,24 +10,70 @@ public sealed record GitGraphTimelineRow(
     TimelineNodeId Id,
     string Graph,
     string Subject,
-    string Refs,
-    bool IsHead,
+    string BranchName,
+    string SnapshotKind,
+    GraphRgb BranchColor,
+    GraphRgb KindColor,
+    bool IsHere,
     bool IsBranchPoint,
+    string Marker,
     DateTimeOffset CreatedAt);
 
 /// <summary>Builds ASCII graph prefixes for timeline tree nodes.</summary>
 internal static class GitGraphTimelineBuilder
 {
-    public static IReadOnlyList<GitGraphTimelineRow> Build(TimelineTreeView? tree)
+    public static IReadOnlyList<GitGraphTimelineRow> Build(
+        TimelineTreeView? tree,
+        IReadOnlyList<TimelineNode<ZipSnapshotRef>>? flatNodes = null,
+        IReadOnlyList<Branch>? branches = null,
+        TimelineHead? head = null)
     {
-        if (tree is null || tree.Roots.Count == 0)
-            return [];
+        if (tree is not null && tree.Roots.Count > 0)
+        {
+            var rows = new List<GitGraphTimelineRow>();
+            for (var i = 0; i < tree.Roots.Count; i++)
+                Walk(tree.Roots[i], rows, [], i == tree.Roots.Count - 1);
 
-        var rows = new List<GitGraphTimelineRow>();
-        for (var i = 0; i < tree.Roots.Count; i++)
-            Walk(tree.Roots[i], rows, [], i == tree.Roots.Count - 1);
+            rows.Reverse();
+            return rows;
+        }
 
-        rows.Reverse();
+        if (flatNodes is { Count: > 0 })
+            return BuildFlat(flatNodes, branches, head);
+
+        return [];
+    }
+
+    private static IReadOnlyList<GitGraphTimelineRow> BuildFlat(
+        IReadOnlyList<TimelineNode<ZipSnapshotRef>> nodes,
+        IReadOnlyList<Branch>? branches,
+        TimelineHead? head)
+    {
+        var branchNames = branches?.ToDictionary(b => b.Id, b => b.Name.Value)
+            ?? new Dictionary<BranchId, string>();
+
+        var rows = nodes
+            .OrderByDescending(n => n.CreatedAt)
+            .Select(node =>
+            {
+                var branchName = branchNames.TryGetValue(node.BranchId, out var name)
+                    ? name
+                    : node.BranchId.ToString();
+                var isHere = head is not null
+                    && head.NodesByBranch.TryGetValue(node.BranchId, out var headId)
+                    && headId == node.Id;
+                return ToRow(
+                    node.Id,
+                    graph: "* ",
+                    node.Metadata.Label ?? node.Metadata.Kind,
+                    branchName,
+                    node.Metadata.Kind,
+                    isHere,
+                    isBranchPoint: false,
+                    node.CreatedAt);
+            })
+            .ToList();
+
         return rows;
     }
 
@@ -36,11 +83,12 @@ internal static class GitGraphTimelineBuilder
         List<bool> lanes,
         bool isLastSibling)
     {
-        rows.Add(new GitGraphTimelineRow(
+        rows.Add(ToRow(
             node.Id,
             FormatGraph(lanes, isLastSibling),
             node.Presentation.Label,
-            FormatRefs(node),
+            node.BranchName,
+            node.Presentation.Kind,
             node.IsHead,
             node.IsBranchPoint,
             node.CreatedAt));
@@ -58,6 +106,33 @@ internal static class GitGraphTimelineBuilder
         }
     }
 
+    private static GitGraphTimelineRow ToRow(
+        TimelineNodeId id,
+        string graph,
+        string subject,
+        string branchName,
+        string snapshotKind,
+        bool isHere,
+        bool isBranchPoint,
+        DateTimeOffset createdAt)
+    {
+        var branchColor = GitGraphPalette.BranchColor(branchName);
+        var kindColor = GitGraphPalette.KindColor(snapshotKind);
+        var marker = isHere ? "●" : isBranchPoint ? "◉" : "○";
+        return new GitGraphTimelineRow(
+            id,
+            graph,
+            subject,
+            branchName,
+            GitGraphPalette.KindLabel(snapshotKind),
+            branchColor,
+            kindColor,
+            isHere,
+            isBranchPoint,
+            marker,
+            createdAt);
+    }
+
     private static string FormatGraph(IReadOnlyList<bool> lanes, bool isLastSibling)
     {
         var sb = new StringBuilder();
@@ -67,17 +142,7 @@ internal static class GitGraphTimelineBuilder
         if (lanes.Count > 0)
             sb.Append(isLastSibling ? "└─" : "├─");
 
-        sb.Append('*');
+        sb.Append(' ');
         return sb.ToString();
-    }
-
-    private static string FormatRefs(TimelineTreeNode node)
-    {
-        var parts = new List<string> { node.BranchName };
-        if (node.IsHead)
-            parts.Add("HEAD");
-        if (node.IsBranchPoint)
-            parts.Add("branch-point");
-        return string.Join(", ", parts);
     }
 }

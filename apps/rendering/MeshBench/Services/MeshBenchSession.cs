@@ -197,7 +197,7 @@ internal sealed class MeshBenchSession
         var head = await _timeline.GetHeadAsync(cancellationToken).ConfigureAwait(false);
         var tree = _projector.ToTree(nodes, branches, head);
         _timelineRows = _projector.ToRows(nodes, branches, head);
-        _gitGraphRows = GitGraphTimelineBuilder.Build(tree);
+        _gitGraphRows = GitGraphTimelineBuilder.Build(tree, nodes, branches, head);
         SyncTimelineBinding();
     }
 

@@ -44,15 +44,7 @@ internal sealed class MainWindow : Window
         Opacity = 0.85,
         IsHitTestVisible = false,
     };
-    private readonly GitGraphTimelineList _gitTimeline = new() { Width = 300 };
-    private readonly TextBlock _gitTimelineEmpty = new()
-    {
-        Text = "No snapshots yet.\nPress Save or Ctrl+S to create the first commit.",
-        TextWrapping = TextWrapping.Wrap,
-        Opacity = 0.7,
-        Margin = new Thickness(12),
-        IsHitTestVisible = false,
-    };
+    private readonly GitHistoryPanel _gitHistory = new();
     private readonly ListBox _partsList = new();
     private readonly PartInspectorPanel _inspector = new();
     private readonly TextBlock _status = new() { Margin = new Thickness(8, 4) };
@@ -98,8 +90,6 @@ internal sealed class MainWindow : Window
     private int _qualityTick;
     private int _uiTick;
     private string _lastStatusText = string.Empty;
-    private bool _qualityPinned;
-
     public MainWindow(MeshBenchSession session, MeshSceneStore scenes, PathTraceViewport viewport, SavePointSound sound)
     {
         _session = session;
@@ -163,9 +153,9 @@ internal sealed class MainWindow : Window
 
         _frame.IsVisible = false;
 
-        _gitTimeline.SelectionChanged += (_, _) =>
+        _gitHistory.SelectionChanged += (_, _) =>
         {
-            _selectedGitRow = _gitTimeline.SelectedGitRow;
+            _selectedGitRow = _gitHistory.SelectedRow;
             if (_selectedGitRow is not null)
                 _feedback.Flash($"Snapshot: {_selectedGitRow.Subject}");
         };
@@ -236,10 +226,7 @@ internal sealed class MainWindow : Window
         _workspacePath.Margin = new Thickness(8);
         timelinePanel.Children.Add(timelineHeader);
         timelinePanel.Children.Add(_workspacePath);
-        var gitTimelineHost = new Grid();
-        gitTimelineHost.Children.Add(_gitTimeline);
-        gitTimelineHost.Children.Add(_gitTimelineEmpty);
-        timelinePanel.Children.Add(gitTimelineHost);
+        timelinePanel.Children.Add(_gitHistory);
 
         var root = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*,320") };
         Grid.SetColumn(timelinePanel, 0);
@@ -278,11 +265,7 @@ internal sealed class MainWindow : Window
             OnViewportModeChanged(_coordinator.Mode);
             RefreshUi();
             StartRenderLoop();
-            Dispatcher.UIThread.Post(() =>
-            {
-                EnsureViewportSized();
-                _coordinator.NotifySceneChanged(immediateQualityRebuild: false);
-            }, DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(EnsureViewportSized, DispatcherPriority.Loaded);
             _feedback.Flash($"Workspace ready — {_session.Scene.Parts.Count} meshes");
         }
         catch (Exception ex)
@@ -318,7 +301,8 @@ internal sealed class MainWindow : Window
     }
 
     private bool ShouldRunQualityPass() =>
-        _coordinator.Mode == ViewportDisplayMode.QualityRefine
+        _coordinator.QualityPinned
+        && _coordinator.Mode == ViewportDisplayMode.QualityRefine
         && !_coordinator.IsInteracting
         && !_movingPart
         && !_orbiting
@@ -337,9 +321,7 @@ internal sealed class MainWindow : Window
         _lastViewportSize = size;
         _raylibHost.FrameWidth = (int)size.Width;
         _raylibHost.FrameHeight = (int)size.Height;
-        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
-            _coordinator.SyncRaylibHostSize();
-        else
+        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
             _coordinator.TryResizePathTrace(size.Width, size.Height);
     }
 
@@ -354,29 +336,31 @@ internal sealed class MainWindow : Window
         Dispatcher.UIThread.Post(() =>
         {
             EnsureViewportSized();
-            if (!fast && _viewport.IsReady)
+            if (!fast)
                 _ = RebuildQualityViewportAsync();
         }, DispatcherPriority.Loaded);
     }
 
     private void UpdateModeButtons()
     {
-        var fast = _coordinator.Mode == ViewportDisplayMode.FastPreview;
-        _previewModeButton.IsEnabled = !fast || _qualityPinned;
-        _qualityModeButton.IsEnabled = fast || !_qualityPinned;
+        var preview = _coordinator.Mode == ViewportDisplayMode.FastPreview;
+        _previewModeButton.FontWeight = preview ? FontWeight.Bold : FontWeight.Normal;
+        _qualityModeButton.FontWeight = preview ? FontWeight.Normal : FontWeight.Bold;
+        _previewModeButton.Content = preview ? "● Preview" : "Preview";
+        _qualityModeButton.Content = preview ? "Quality" : "● Quality";
     }
 
     private void OnPreviewMode(object? sender, RoutedEventArgs e)
     {
-        _qualityPinned = false;
         _coordinator.SetQualityPinned(false);
+        _feedback.Flash("Preview — instant editing");
         UpdateModeButtons();
     }
 
     private void OnQualityMode(object? sender, RoutedEventArgs e)
     {
-        _qualityPinned = true;
         _coordinator.SetQualityPinned(true);
+        _feedback.Flash("Quality — path tracing (edits switch back to Preview)");
         UpdateModeButtons();
     }
 
@@ -431,10 +415,7 @@ internal sealed class MainWindow : Window
                 list[i] = _session.Scene.Parts[i];
         }
 
-        _gitTimeline.SetRows(_session.GitGraphRows);
-        var hasHistory = _session.GitGraphRows.Count > 0;
-        _gitTimeline.IsVisible = hasHistory;
-        _gitTimelineEmpty.IsVisible = !hasHistory;
+        _gitHistory.SetRows(_session.GitGraphRows);
 
         if (_selectedPart is not null && !_session.Scene.Parts.Contains(_selectedPart))
             _selectedPart = null;
@@ -447,7 +428,7 @@ internal sealed class MainWindow : Window
         _inspectorEditActive = true;
         _coordinator.NotifyInteractionStarted();
         OnSceneEdited(bumpGeometry: true);
-        _editIdleTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) =>
+        _editIdleTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) =>
         {
             _editIdleTimer?.Stop();
             _inspectorEditActive = false;
@@ -473,7 +454,7 @@ internal sealed class MainWindow : Window
 
     private async Task RebuildQualityViewportAsync()
     {
-        if (_coordinator.Mode != ViewportDisplayMode.QualityRefine || _coordinator.IsInteracting)
+        if (!_coordinator.QualityPinned || _coordinator.Mode != ViewportDisplayMode.QualityRefine || _coordinator.IsInteracting)
             return;
 
         _rebuildCts?.Cancel();
@@ -495,6 +476,7 @@ internal sealed class MainWindow : Window
                 return;
 
             _viewport.SetScene(compiled);
+            _viewport.BeginTracing();
         }
         catch (OperationCanceledException)
         {
@@ -738,8 +720,6 @@ internal sealed class MainWindow : Window
         _movingPart = e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _selectedPart is not null;
         _orbiting = !_movingPart;
         _coordinator.NotifyInteractionStarted();
-        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
-            _viewport.SetRenderScale(0.5f);
         if (_movingPart)
             _feedback.Flash($"Moving {_selectedPart!.Name}");
     }
@@ -755,8 +735,6 @@ internal sealed class MainWindow : Window
         _orbiting = false;
         _movingPart = false;
         _coordinator.NotifyInteractionEnded();
-        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
-            _viewport.SetRenderScale(1f);
     }
 
     private void OnViewportPointerMoved(object? sender, PointerEventArgs e)
@@ -782,7 +760,7 @@ internal sealed class MainWindow : Window
 
         _coordinator.Orbit.AddLookDelta((float)delta.X * 0.008f, (float)delta.Y * -0.008f);
         SyncPathTraceCamera();
-        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
+        if (_coordinator.QualityPinned && _coordinator.Mode == ViewportDisplayMode.QualityRefine)
             _viewport.ResetAccumulation();
     }
 
@@ -790,7 +768,7 @@ internal sealed class MainWindow : Window
     {
         _coordinator.Orbit.AdjustDistance((float)-e.Delta.Y * 0.15f);
         SyncPathTraceCamera();
-        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
+        if (_coordinator.QualityPinned && _coordinator.Mode == ViewportDisplayMode.QualityRefine)
             _viewport.ResetAccumulation();
     }
 

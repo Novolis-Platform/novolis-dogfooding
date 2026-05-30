@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Threading;
 using MeshBench.Models;
 using Novolis.Avalonia.Raylib;
 using Novolis.Rendering.Presentation.Silk;
@@ -21,7 +20,6 @@ internal sealed class ViewportModeCoordinator
     private int _raylibHostIndex = -1;
     private readonly RaylibSceneRenderer _raylibRenderer = new();
     private readonly SceneUpdateScheduler _qualityScheduler = new();
-    private readonly DispatcherTimer _idleTimer;
     private readonly SilkOrbitCamera _orbit = new() { Target = new System.Numerics.Vector3(0f, 0.45f, 0f), Distance = 4.5f };
 
     private Func<MeshSceneDocument> _getScene = () => new();
@@ -32,6 +30,8 @@ internal sealed class ViewportModeCoordinator
     public ViewportDisplayMode Mode => _mode;
 
     public bool IsInteracting => _interacting;
+
+    public bool QualityPinned => _qualityPinned;
 
     public SilkOrbitCamera Orbit => _orbit;
 
@@ -47,7 +47,6 @@ internal sealed class ViewportModeCoordinator
     {
         _pathTrace = pathTrace;
         _raylibHost = raylibHost;
-        _idleTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, OnIdleTick);
         _qualityScheduler.QualityRebuildDue += () => QualityRebuildDue?.Invoke();
         _raylibHost.FrameRendering += OnRaylibFrame;
     }
@@ -70,9 +69,8 @@ internal sealed class ViewportModeCoordinator
     public void NotifyInteractionStarted()
     {
         _interacting = true;
-        _idleTimer.Stop();
         _qualityScheduler.Cancel();
-        _pathTrace.SetPaused(true);
+        _pathTrace.StopTracing();
         EnterFast();
     }
 
@@ -80,23 +78,16 @@ internal sealed class ViewportModeCoordinator
     {
         _interacting = false;
         if (_qualityPinned)
-        {
             EnterQuality();
-            return;
-        }
-
-        _idleTimer.Stop();
-        _idleTimer.Start();
     }
 
     public void NotifySceneChanged(bool immediateQualityRebuild = false)
     {
         if (_mode == ViewportDisplayMode.FastPreview)
         {
-            SyncRaylibHostSize();
-            if (immediateQualityRebuild)
+            if (immediateQualityRebuild && _qualityPinned)
                 _qualityScheduler.FlushNow();
-            else
+            else if (_qualityPinned)
                 _qualityScheduler.ScheduleQualityRebuild();
             return;
         }
@@ -105,11 +96,6 @@ internal sealed class ViewportModeCoordinator
             QualityRebuildDue?.Invoke();
         else
             _qualityScheduler.ScheduleQualityRebuild();
-    }
-
-    public void SyncRaylibHostSize()
-    {
-        // FrameWidth/Height are set by MainWindow from the viewport host bounds.
     }
 
     public void ApplyCameraFromScene(OrbitCameraState state)
@@ -142,35 +128,26 @@ internal sealed class ViewportModeCoordinator
     public void TryResizePathTrace(double width, double height) =>
         _pathTrace.TryResizeFromBounds(width, height);
 
-    private void OnIdleTick(object? sender, EventArgs e)
-    {
-        _idleTimer.Stop();
-        if (!_interacting && !_qualityPinned)
-            EnterQuality();
-    }
-
     private void EnterFast()
     {
-        if (_mode == ViewportDisplayMode.FastPreview)
-            return;
-
+        var modeChanged = _mode != ViewportDisplayMode.FastPreview;
         _mode = ViewportDisplayMode.FastPreview;
-        _pathTrace.SetPaused(true);
+        _pathTrace.StopTracing();
         AttachRaylibHost();
-        SyncRaylibHostSize();
-        ModeChanged?.Invoke(_mode);
+        RaylibHostLifecycle.SetActive(_raylibHost, true);
+        if (modeChanged)
+            ModeChanged?.Invoke(_mode);
     }
 
     private void EnterQuality()
     {
-        if (_mode == ViewportDisplayMode.QualityRefine)
-            return;
-
+        var modeChanged = _mode != ViewportDisplayMode.QualityRefine;
+        RaylibHostLifecycle.SetActive(_raylibHost, false);
         _mode = ViewportDisplayMode.QualityRefine;
         DetachRaylibHost();
-        _pathTrace.SetPaused(false);
-        _pathTrace.ResetAccumulation();
-        ModeChanged?.Invoke(_mode);
+        _pathTrace.BeginTracing();
+        if (modeChanged)
+            ModeChanged?.Invoke(_mode);
         QualityRebuildDue?.Invoke();
     }
 
@@ -180,7 +157,11 @@ internal sealed class ViewportModeCoordinator
     public void StartInFastMode()
     {
         _qualityPinned = false;
-        EnterFast();
+        _pathTrace.StopTracing();
+        _mode = ViewportDisplayMode.FastPreview;
+        AttachRaylibHost();
+        RaylibHostLifecycle.SetActive(_raylibHost, true);
+        ModeChanged?.Invoke(_mode);
     }
 
     private void AttachRaylibHost()
