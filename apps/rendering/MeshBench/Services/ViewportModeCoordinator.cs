@@ -81,14 +81,14 @@ internal sealed class ViewportModeCoordinator
         if (_qualityPinned)
             EnterQuality();
         else
-            RaylibHostBridge.RequestFrame(_raylibHost);
+            _raylibHost.RequestFrame();
     }
 
     public void NotifySceneChanged(bool immediateQualityRebuild = false)
     {
         if (_mode == ViewportDisplayMode.FastPreview)
         {
-            RaylibHostBridge.RequestFrame(_raylibHost);
+            _raylibHost.RequestFrame();
             if (immediateQualityRebuild && _qualityPinned)
                 _qualityScheduler.FlushNow();
             else if (_qualityPinned)
@@ -138,9 +138,9 @@ internal sealed class ViewportModeCoordinator
         _mode = ViewportDisplayMode.FastPreview;
         _pathTrace.StopTracing();
         AttachRaylibHost();
-        RaylibHostBridge.SetActive(_raylibHost, true);
-        RaylibHostBridge.EnsureHostStarted(_raylibHost);
-        RaylibHostBridge.RequestFrame(_raylibHost);
+        _raylibHost.SetHostActive(true);
+        _raylibHost.EnsureHostStarted();
+        _raylibHost.RequestFrame();
         if (modeChanged)
             ModeChanged?.Invoke(_mode);
     }
@@ -148,7 +148,7 @@ internal sealed class ViewportModeCoordinator
     private void EnterQuality()
     {
         var modeChanged = _mode != ViewportDisplayMode.QualityRefine;
-        RaylibHostBridge.SetActive(_raylibHost, false);
+        _raylibHost.SetHostActive(false);
         _mode = ViewportDisplayMode.QualityRefine;
         DetachRaylibHost();
         _pathTrace.BeginTracing();
@@ -166,9 +166,9 @@ internal sealed class ViewportModeCoordinator
         _pathTrace.StopTracing();
         _mode = ViewportDisplayMode.FastPreview;
         AttachRaylibHost();
-        RaylibHostBridge.SetActive(_raylibHost, true);
-        RaylibHostBridge.EnsureHostStarted(_raylibHost);
-        RaylibHostBridge.RequestFrame(_raylibHost);
+        _raylibHost.SetHostActive(true);
+        _raylibHost.EnsureHostStarted();
+        _raylibHost.RequestFrame();
         ModeChanged?.Invoke(_mode);
     }
 

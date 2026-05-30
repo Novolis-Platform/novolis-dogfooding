@@ -5,6 +5,7 @@ using Novolis.Snapshots;
 using Novolis.Timeline;
 using Novolis.Timeline.FileSystem;
 using Novolis.Timeline.Presentation;
+using Novolis.Timeline.Presentation.GitGraph;
 using Novolis.Workspaces;
 using Novolis.Workspaces.FileSystem;
 using Novolis.Workspaces.Snapshots;

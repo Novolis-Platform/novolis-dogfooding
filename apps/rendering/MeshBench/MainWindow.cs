@@ -11,6 +11,10 @@ using MeshBench.Models;
 using MeshBench.Services;
 using MeshBench.Ui;
 using Novolis.Avalonia.Raylib;
+using Novolis.Avalonia.Rendering;
+using Novolis.Avalonia.Studio;
+using Novolis.Avalonia.Timeline;
+using Novolis.Timeline.Presentation.GitGraph;
 namespace MeshBench;
 
 internal sealed class MainWindow : Window
@@ -29,7 +33,7 @@ internal sealed class MainWindow : Window
         HorizontalAlignment = HorizontalAlignment.Stretch,
         VerticalAlignment = VerticalAlignment.Stretch,
     };
-    private readonly ViewportSurface _frame = new()
+    private readonly Rgba32FrameControl _frame = new()
     {
         HorizontalAlignment = HorizontalAlignment.Stretch,
         VerticalAlignment = VerticalAlignment.Stretch,
@@ -332,8 +336,8 @@ internal sealed class MainWindow : Window
         _raylibHost.FrameHeight = (int)size.Height;
         if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
         {
-            RaylibHostBridge.EnsureHostStarted(_raylibHost);
-            RaylibHostBridge.RequestFrame(_raylibHost);
+            _raylibHost.EnsureHostStarted();
+            _raylibHost.RequestFrame();
         }
 
         if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
@@ -406,7 +410,7 @@ internal sealed class MainWindow : Window
         if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
         {
             var host = _coordinator.RaylibHost.IsHostRunning ? "host on" : "host off";
-            var age = RaylibHostBridge.LastFrameAgeMs(_coordinator.RaylibHost);
+            var age = _coordinator.RaylibHost.LastFrameAgeMs;
             var frame = age >= 0 ? $"frame {age:F0}ms ago" : "no frame yet";
             present = $"Raylib {host} | {frame}";
         }
@@ -785,7 +789,7 @@ internal sealed class MainWindow : Window
         _coordinator.Orbit.AddLookDelta((float)delta.X * 0.008f, (float)delta.Y * -0.008f);
         SyncPathTraceCamera();
         if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
-            RaylibHostBridge.RequestFrame(_coordinator.RaylibHost);
+            _coordinator.RaylibHost.RequestFrame();
         else if (_coordinator.QualityPinned)
             _viewport.ResetAccumulation();
     }
@@ -795,7 +799,7 @@ internal sealed class MainWindow : Window
         _coordinator.Orbit.AdjustDistance((float)-e.Delta.Y * 0.15f);
         SyncPathTraceCamera();
         if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
-            RaylibHostBridge.RequestFrame(_coordinator.RaylibHost);
+            _coordinator.RaylibHost.RequestFrame();
         else if (_coordinator.QualityPinned)
             _viewport.ResetAccumulation();
     }

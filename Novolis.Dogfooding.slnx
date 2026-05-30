@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/shared/">
     <Project Path="apps/shared/Novolis.Dogfooding.TwoD/Novolis.Dogfooding.TwoD.csproj" />
+    <Project Path="apps/shared/Novolis.Dogfooding.Compose/Novolis.Dogfooding.Compose.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
@@ -47,6 +48,7 @@
   </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
+    <Project Path="apps/audio/NovolisVoiceStudio/NovolisVoiceStudio.csproj" />
   </Folder>
   <Folder Name="/gaming/">
     <Project Path="apps/gaming/GamingSmoke/GamingSmoke.csproj" />

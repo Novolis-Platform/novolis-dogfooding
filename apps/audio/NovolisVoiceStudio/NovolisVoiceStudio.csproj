@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>NovolisVoiceStudio</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Novolis.Audio.Host.NAudio" />
+    <PackageReference Include="Novolis.Audio.Voice" />
+    <PackageReference Include="Novolis.Audio.Voice.Atc" />
+    <PackageReference Include="Novolis.Audio.Voice.Design" />
+    <PackageReference Include="Novolis.Audio.Voice.Profiles" />
+    <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" />
+    <PackageReference Include="Novolis.Avalonia.Layout" />
+    <PackageReference Include="Novolis.Avalonia.Studio" />
+    <PackageReference Include="Novolis.Avalonia.Voice" />
+  </ItemGroup>
+</Project>

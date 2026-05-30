@@ -33,6 +33,10 @@ Authenticate with `GITHUB_TOKEN`, `dotnet restore` from `nuget.config`, then bui
 
 `Novolis.Rendering.TwoD` + `Novolis.Rendering.Backends.TwoD.Silk` are consumed from GitHub Packages. See [two-d-simulation-gaps.md](two-d-simulation-gaps.md) for Simulation integration and coordinate conventions.
 
+## Compose helpers
+
+`Novolis.Dogfooding.Compose` provides app-layer bridges (e.g. `ViewPose` → `CameraSnapshot`) without forbidden package references between Simulation and Rendering.
+
 ## Related
 
 - [two-d-simulation-gaps.md](two-d-simulation-gaps.md)
