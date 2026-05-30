@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.IO.Abstractions;
 using MeshBench.Models;
 using Novolis.Snapshots;
@@ -17,7 +18,9 @@ internal sealed class MeshBenchSession
     private readonly WorkspaceFileSystemService _workspaces;
     private readonly MeshSceneStore _scenes;
     private readonly TimelineTreeProjector<ZipSnapshotRef> _projector = new();
+    private readonly ObservableCollection<TimelineTreeRow> _timelineRowsBinding = [];
     private ITimeline<ZipSnapshotRef>? _timeline;
+    private IReadOnlyList<TimelineTreeRow> _timelineRows = [];
 
     public MeshBenchSession(IFileSystem fileSystem, MeshSceneStore scenes)
     {
@@ -27,6 +30,8 @@ internal sealed class MeshBenchSession
     }
 
     public IFileSystem FileSystem { get; }
+
+    public ObservableCollection<TimelineTreeRow> TimelineRowsBinding => _timelineRowsBinding;
 
     public string DefaultWorkspaceRoot =>
         FileSystem.Path.Combine(
@@ -43,7 +48,9 @@ internal sealed class MeshBenchSession
 
     public WorkspaceTimeline? Timeline { get; private set; }
 
-    public IReadOnlyList<TimelineTreeRow> TimelineRows { get; private set; } = [];
+    public IReadOnlyList<TimelineTreeRow> TimelineRows => _timelineRows;
+
+    public int SceneRevision { get; private set; }
 
     public bool IsDirty { get; private set; }
 
@@ -56,12 +63,20 @@ internal sealed class MeshBenchSession
 
         await EnsureProjectAsync(cancellationToken).ConfigureAwait(false);
         WireTimeline();
-        ReloadScene();
+
+        await Task.Run(() => ReloadScene(), cancellationToken).ConfigureAwait(false);
         IsDirty = false;
+        SceneRevision = 0;
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public void MarkDirty() => IsDirty = true;
+
+    public void BumpSceneGeometry()
+    {
+        SceneRevision++;
+        _scenes.InvalidateCompileCache();
+    }
 
     public async ValueTask<TimelineNode<ZipSnapshotRef>> SavePointAsync(string? label, CancellationToken cancellationToken = default)
     {
@@ -72,10 +87,14 @@ internal sealed class MeshBenchSession
         try
         {
             _scenes.Save(Project, Scene);
-            var node = await Timeline.SavePointAsync(
-                Workspace,
-                new SavePointRequest(label ?? "Manual save", SnapshotKinds.Manual),
+
+            var node = await Task.Run(
+                () => Timeline.SavePointAsync(
+                    Workspace,
+                    new SavePointRequest(label ?? "Manual save", SnapshotKinds.Manual),
+                    cancellationToken).AsTask(),
                 cancellationToken).ConfigureAwait(false);
+
             await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
             IsDirty = false;
             return node;
@@ -94,7 +113,9 @@ internal sealed class MeshBenchSession
         await Timeline.RestorePointAsync(Workspace, nodeId, moveHead: true, cancellationToken).ConfigureAwait(false);
         Workspace = await _workspaces.OpenAsync(Workspace.Root.FullName, cancellationToken).ConfigureAwait(false);
         Project = Workspace.Projects.FirstOrDefault();
-        ReloadScene();
+        await Task.Run(() => ReloadScene(), cancellationToken).ConfigureAwait(false);
+        SceneRevision++;
+        _scenes.InvalidateCompileCache();
         IsDirty = false;
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -108,7 +129,12 @@ internal sealed class MeshBenchSession
         await RefreshTimelineAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public void ApplyScene(MeshSceneDocument document) => Scene = document;
+    public void ApplyScene(MeshSceneDocument document)
+    {
+        Scene = document;
+        SceneRevision++;
+        _scenes.InvalidateCompileCache();
+    }
 
     private async ValueTask EnsureProjectAsync(CancellationToken cancellationToken)
     {
@@ -157,13 +183,38 @@ internal sealed class MeshBenchSession
     {
         if (_timeline is null)
         {
-            TimelineRows = [];
+            _timelineRows = [];
+            SyncTimelineBinding();
             return;
         }
 
         var nodes = await _timeline.GetNodesAsync(cancellationToken).ConfigureAwait(false);
         var branches = await _timeline.GetBranchesAsync(cancellationToken).ConfigureAwait(false);
         var head = await _timeline.GetHeadAsync(cancellationToken).ConfigureAwait(false);
-        TimelineRows = _projector.ToRows(nodes, branches, head);
+        _timelineRows = _projector.ToRows(nodes, branches, head);
+        SyncTimelineBinding();
+    }
+
+    private void SyncTimelineBinding()
+    {
+        if (_timelineRowsBinding.Count == _timelineRows.Count)
+        {
+            var unchanged = true;
+            for (var i = 0; i < _timelineRows.Count; i++)
+            {
+                if (_timelineRowsBinding[i].Id != _timelineRows[i].Id)
+                {
+                    unchanged = false;
+                    break;
+                }
+            }
+
+            if (unchanged)
+                return;
+        }
+
+        _timelineRowsBinding.Clear();
+        foreach (var row in _timelineRows)
+            _timelineRowsBinding.Add(row);
     }
 }

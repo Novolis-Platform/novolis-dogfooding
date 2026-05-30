@@ -11,11 +11,13 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Novolis.Avalonia.Raylib" />
     <PackageReference Include="Novolis.Avalonia.Rendering" />
+    <PackageReference Include="Novolis.Raylib" />
     <PackageReference Include="Novolis.Audio.Core" />
     <PackageReference Include="Novolis.Audio.Playback" />
     <PackageReference Include="Novolis.Audio.Host.NAudio" />
-    <PackageReference Include="Novolis.Rendering.Backends.Cpu" />
+    <PackageReference Include="Novolis.Rendering.Backends.Igpu" />
     <PackageReference Include="Novolis.Rendering.Compile" />
     <PackageReference Include="Novolis.Rendering.DependencyInjection" />
     <PackageReference Include="Novolis.Rendering.Materials" />

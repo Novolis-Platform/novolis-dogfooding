@@ -15,7 +15,10 @@ internal sealed class MeshSceneStore
 {
     private readonly IFileSystem _fileSystem;
     private readonly object _writeLock = new();
+    private readonly object _compileLock = new();
     private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private CompiledScene? _cachedScene;
+    private int _cachedRevision = -1;
 
     public MeshSceneStore(IFileSystem fileSystem) => _fileSystem = fileSystem;
 
@@ -42,7 +45,29 @@ internal sealed class MeshSceneStore
         }
     }
 
-    public CompiledScene Compile(MeshSceneDocument document)
+    public CompiledScene Compile(MeshSceneDocument document, int revision)
+    {
+        lock (_compileLock)
+        {
+            if (_cachedScene is not null && _cachedRevision == revision)
+                return _cachedScene;
+
+            _cachedScene = CompileCore(document);
+            _cachedRevision = revision;
+            return _cachedScene;
+        }
+    }
+
+    public void InvalidateCompileCache()
+    {
+        lock (_compileLock)
+        {
+            _cachedRevision = -1;
+            _cachedScene = null;
+        }
+    }
+
+    private static CompiledScene CompileCore(MeshSceneDocument document)
     {
         var builder = new SceneBuilder();
         MeshPrimitives.AddGroundAndLight(builder);
@@ -51,7 +76,7 @@ internal sealed class MeshSceneStore
             var center = ToVector3(part.Center);
             var color = ToVector3(part.Color);
             if (part.Kind.Equals("sphere", StringComparison.OrdinalIgnoreCase))
-                MeshPrimitives.AddSphere(builder, center, part.Radius, color);
+                MeshPrimitives.AddSphere(builder, center, part.Radius, color, segments: 16);
             else
                 MeshPrimitives.AddBox(builder, center, ToVector3(part.HalfExtents), color);
         }

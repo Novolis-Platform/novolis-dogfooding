@@ -10,13 +10,12 @@ using Novolis.Rendering.Presentation.Abstractions;
 
 namespace MeshBench.Ui;
 
-/// <summary>
-/// Panel-based CPU frame host (works before GPR picks up fixed <see cref="Rgba32FrameControl"/> layout).
-/// </summary>
+/// <summary>Panel-based CPU frame host for path-traced quality mode.</summary>
 internal sealed class ViewportSurface : Panel, IFramePresenter
 {
     private readonly Image _image;
     private WriteableBitmap? _bitmap;
+    private Rgba32[]? _staging;
 
     public ViewportSurface()
     {
@@ -35,14 +34,18 @@ internal sealed class ViewportSurface : Panel, IFramePresenter
         if (width <= 0 || height <= 0)
             return;
 
-        var copy = pixels.ToArray();
+        var count = width * height;
+        if (_staging is null || _staging.Length != count)
+            _staging = new Rgba32[count];
+
+        pixels.CopyTo(_staging);
         if (Dispatcher.UIThread.CheckAccess())
-            ApplyFrame(copy, width, height);
+            ApplyFrame(_staging, width, height);
         else
-            Dispatcher.UIThread.Post(() => ApplyFrame(copy, width, height), DispatcherPriority.Render);
+            Dispatcher.UIThread.Post(() => ApplyFrame(_staging!, width, height), DispatcherPriority.Render);
     }
 
-    private void ApplyFrame(ReadOnlySpan<Rgba32> pixels, int width, int height)
+    private void ApplyFrame(Rgba32[] pixels, int width, int height)
     {
         if (_bitmap is null || _bitmap.PixelSize.Width != width || _bitmap.PixelSize.Height != height)
         {

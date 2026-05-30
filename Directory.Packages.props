@@ -12,7 +12,7 @@
     <PackageVersion Include="Hex1b" Version="0.154.0" />
     <PackageVersion Include="Spectre.Console" Version="0.54.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
     <PackageVersion Include="Novolis.Audio.Core" Version="2026.1.*" />
@@ -24,6 +24,7 @@
     <PackageVersion Include="Novolis.Audio.Voice.SherpaOnnx" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Controls" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Host.NAudio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Snapshots.Abstractions" Version="2026.1.*" />

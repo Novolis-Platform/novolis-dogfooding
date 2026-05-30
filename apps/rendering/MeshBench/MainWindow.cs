@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -9,17 +10,23 @@ using Avalonia.Threading;
 using MeshBench.Models;
 using MeshBench.Services;
 using MeshBench.Ui;
+using Novolis.Avalonia.Raylib;
 using Novolis.Timeline.Presentation;
 
 namespace MeshBench;
 
 internal sealed class MainWindow : Window
 {
+    private const int QualitySampleTarget = 192;
+    private const int QualitySampleThrottle = 64;
+
     private readonly MeshBenchSession _session;
     private readonly MeshSceneStore _scenes;
     private readonly PathTraceViewport _viewport;
     private readonly SavePointSound _sound;
+    private readonly ViewportModeCoordinator _coordinator;
 
+    private readonly RaylibHostControl _raylibHost = new();
     private readonly ViewportSurface _frame = new();
     private readonly TextBlock _viewportHint = new()
     {
@@ -55,17 +62,21 @@ internal sealed class MainWindow : Window
         FontWeight = FontWeight.Bold,
     };
 
+    private readonly Button _previewModeButton;
+    private readonly Button _qualityModeButton;
+
     private StudioFeedback _feedback = null!;
     private MeshPartRecord? _selectedPart;
     private TimelineTreeRow? _selectedTimelineRow;
-    private IReadOnlyList<TimelineTreeRow> _timelineRows = [];
     private bool _orbiting;
     private bool _movingPart;
     private int _saveInFlight;
+    private int _qualityRebuildInFlight;
     private int _boxCounter;
     private int _sphereCounter;
     private Point _lastPointer;
     private DispatcherTimer? _renderTimer;
+    private bool _qualityPinned;
 
     public MainWindow(MeshBenchSession session, MeshSceneStore scenes, PathTraceViewport viewport, SavePointSound sound)
     {
@@ -73,12 +84,22 @@ internal sealed class MainWindow : Window
         _scenes = scenes;
         _viewport = viewport;
         _sound = sound;
+        _coordinator = new ViewportModeCoordinator(viewport, _raylibHost);
 
         Title = "Mesh Studio";
         Width = 1480;
         Height = 920;
+
+        _previewModeButton = Button("Preview", OnPreviewMode);
+        _qualityModeButton = Button("Quality", OnQualityMode);
+
         Content = BuildLayout();
         _feedback = new StudioFeedback(_status, _flash, _busyOverlay, _busyText);
+
+        _coordinator.BindScene(() => _session.Scene);
+        _coordinator.ModeChanged += OnViewportModeChanged;
+        _coordinator.QualityRebuildDue += OnQualityRebuildDue;
+
         Opened += OnOpened;
         KeyDown += OnKeyDown;
     }
@@ -102,12 +123,23 @@ internal sealed class MainWindow : Window
         toolbar.Children.Add(Button("Delete", OnDeletePart, "Del"));
         toolbar.Children.Add(Separator());
         toolbar.Children.Add(Button("Fit view", OnFitView, "F"));
+        toolbar.Children.Add(Separator());
+        toolbar.Children.Add(_previewModeButton);
+        toolbar.Children.Add(_qualityModeButton);
 
-        _frame.PointerPressed += OnViewportPointerPressed;
-        _frame.PointerReleased += OnViewportPointerReleased;
-        _frame.PointerMoved += OnViewportPointerMoved;
-        _frame.PointerWheelChanged += OnViewportWheel;
-        _frame.LayoutUpdated += (_, _) => EnsureViewportSized();
+        var viewportHost = new Grid();
+        viewportHost.Children.Add(_raylibHost);
+        viewportHost.Children.Add(_frame);
+        viewportHost.Children.Add(_viewportHint);
+        viewportHost.Children.Add(_busyOverlay);
+
+        viewportHost.PointerPressed += OnViewportPointerPressed;
+        viewportHost.PointerReleased += OnViewportPointerReleased;
+        viewportHost.PointerMoved += OnViewportPointerMoved;
+        viewportHost.PointerWheelChanged += OnViewportWheel;
+        viewportHost.LayoutUpdated += (_, _) => EnsureViewportSized();
+
+        _frame.IsVisible = false;
 
         _timelineList.ItemTemplate = new FuncDataTemplate<TimelineTreeRow>((row, _) =>
             new TextBlock
@@ -138,14 +170,9 @@ internal sealed class MainWindow : Window
             _feedback.Flash(_selectedPart is null ? "Selection cleared" : $"Selected {_selectedPart.Name}");
         };
 
-        _inspector.PartChanged += (_, _) => OnSceneEdited();
+        _inspector.PartChanged += (_, _) => OnSceneEdited(bumpGeometry: true);
 
         _busyOverlay.Child = _busyText;
-
-        var viewportHost = new Grid();
-        viewportHost.Children.Add(_frame);
-        viewportHost.Children.Add(_viewportHint);
-        viewportHost.Children.Add(_busyOverlay);
 
         var viewportPanel = new DockPanel();
         DockPanel.SetDock(_flash, Dock.Bottom);
@@ -233,7 +260,8 @@ internal sealed class MainWindow : Window
             _boxCounter = _session.Scene.Parts.Count(p => p.Kind.Equals("box", StringComparison.OrdinalIgnoreCase));
             _sphereCounter = _session.Scene.Parts.Count(p => p.Kind.Equals("sphere", StringComparison.OrdinalIgnoreCase));
             SyncCameraFromScene();
-            RebuildViewport();
+            _coordinator.StartInFastMode();
+            OnViewportModeChanged(_coordinator.Mode);
             RefreshUi();
             Dispatcher.UIThread.Post(EnsureViewportSized, DispatcherPriority.Loaded);
             StartRenderLoop();
@@ -250,7 +278,19 @@ internal sealed class MainWindow : Window
         _renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, (_, _) =>
         {
             EnsureViewportSized();
-            _viewport.Tick();
+
+            if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+            {
+                _coordinator.SyncRaylibHostSize();
+            }
+            else
+            {
+                SyncPathTraceCamera();
+                var samples = _viewport.DisplayedSamples;
+                var batch = samples >= QualitySampleTarget ? 2 : samples >= QualitySampleThrottle ? 4 : 12;
+                _coordinator.TickPathTrace(batch);
+            }
+
             UpdateViewportHint();
             UpdateStatus();
         });
@@ -259,12 +299,52 @@ internal sealed class MainWindow : Window
 
     private void EnsureViewportSized()
     {
-        var size = _frame.Bounds.Size;
-        _viewport.TryResizeFromBounds(size.Width, size.Height);
+        var host = _coordinator.Mode == ViewportDisplayMode.FastPreview ? (Control)_raylibHost : _frame;
+        var size = host.Bounds.Size;
+        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+            _coordinator.SyncRaylibHostSize();
+        else
+            _coordinator.TryResizePathTrace(size.Width, size.Height);
+    }
+
+    private void OnViewportModeChanged(ViewportDisplayMode mode)
+    {
+        var fast = mode == ViewportDisplayMode.FastPreview;
+        _raylibHost.IsVisible = fast;
+        _frame.IsVisible = !fast;
+        _viewport.SetRenderScale(fast ? 1f : _orbiting || _movingPart ? 0.5f : 1f);
+        UpdateModeButtons();
+    }
+
+    private void UpdateModeButtons()
+    {
+        var fast = _coordinator.Mode == ViewportDisplayMode.FastPreview;
+        _previewModeButton.IsEnabled = !fast || _qualityPinned;
+        _qualityModeButton.IsEnabled = fast || !_qualityPinned;
+    }
+
+    private void OnPreviewMode(object? sender, RoutedEventArgs e)
+    {
+        _qualityPinned = false;
+        _coordinator.SetQualityPinned(false);
+        UpdateModeButtons();
+    }
+
+    private void OnQualityMode(object? sender, RoutedEventArgs e)
+    {
+        _qualityPinned = true;
+        _coordinator.SetQualityPinned(true);
+        UpdateModeButtons();
     }
 
     private void UpdateViewportHint()
     {
+        if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+        {
+            _viewportHint.IsVisible = false;
+            return;
+        }
+
         if (_viewport.IsReady && _viewport.LastFramePresented)
         {
             _viewportHint.IsVisible = false;
@@ -279,56 +359,103 @@ internal sealed class MainWindow : Window
     {
         var dirty = _session.IsDirty ? "  ● unsaved" : string.Empty;
         var partCount = _session.Scene.Parts.Count;
-        var present = _viewport.LastFramePresented ? "shown" : "pending";
+        var mode = _coordinator.Mode == ViewportDisplayMode.FastPreview ? "Preview" : "Quality";
+        var present = _coordinator.Mode == ViewportDisplayMode.FastPreview
+            ? "Raylib"
+            : _viewport.LastFramePresented ? "shown" : "tracing";
         var hint = _movingPart
             ? "Shift+drag: move  |  drag: orbit  |  wheel: zoom"
             : "Shift+drag moves selection  |  Ctrl+S save";
         _feedback.SetStatus(
-            $"{partCount} mesh{(partCount == 1 ? string.Empty : "es")}{dirty}  |  {present}  |  {_viewport.Status}  |  {hint}");
+            $"{mode}  |  {partCount} mesh{(partCount == 1 ? string.Empty : "es")}{dirty}  |  {present}  |  {_viewport.Status}  |  {hint}");
     }
 
     private void RefreshUi()
     {
-        _partsList.ItemsSource = null;
-        _partsList.ItemsSource = _session.Scene.Parts.ToList();
-        _timelineRows = _session.TimelineRows;
-        _timelineList.ItemsSource = _timelineRows;
+        if (_partsList.ItemsSource is not IList<MeshPartRecord> list
+            || list.Count != _session.Scene.Parts.Count)
+        {
+            _partsList.ItemsSource = _session.Scene.Parts.ToList();
+        }
+        else
+        {
+            for (var i = 0; i < _session.Scene.Parts.Count; i++)
+                list[i] = _session.Scene.Parts[i];
+        }
+
+        if (_timelineList.ItemsSource != _session.TimelineRowsBinding)
+            _timelineList.ItemsSource = _session.TimelineRowsBinding;
+
         if (_selectedPart is not null && !_session.Scene.Parts.Contains(_selectedPart))
             _selectedPart = null;
         _inspector.Bind(_selectedPart);
         UpdateStatus();
     }
 
-    private void OnSceneEdited()
+    private void OnSceneEdited(bool bumpGeometry = true)
     {
         _session.MarkDirty();
-        RebuildViewport();
+        if (bumpGeometry)
+            _session.BumpSceneGeometry();
+        _coordinator.NotifySceneChanged(immediateQualityRebuild: false);
         if (_selectedPart is not null)
-            _partsList.ItemsSource = _session.Scene.Parts.ToList();
-        UpdateStatus();
+            RefreshUi();
+        else
+            UpdateStatus();
     }
 
-    private void RebuildViewport()
+    private void OnQualityRebuildDue() => _ = RebuildQualityViewportAsync();
+
+    private async Task RebuildQualityViewportAsync()
     {
-        _session.Scene.Camera = _viewport.CaptureCameraState();
-        _viewport.ApplyCameraState(_session.Scene.Camera);
-        _viewport.SetScene(_scenes.Compile(_session.Scene));
+        if (_coordinator.Mode != ViewportDisplayMode.QualityRefine)
+            return;
+
+        if (Interlocked.CompareExchange(ref _qualityRebuildInFlight, 1, 0) != 0)
+            return;
+
+        try
+        {
+            _feedback.SetBusy("Updating scene…");
+            _session.Scene.Camera = _coordinator.CaptureCameraState();
+            SyncPathTraceCamera();
+
+            var revision = _session.SceneRevision;
+            var document = _session.Scene;
+            var compiled = await Task.Run(() => _scenes.Compile(document, revision)).ConfigureAwait(true);
+            if (revision != _session.SceneRevision)
+                return;
+
+            _viewport.SetScene(compiled);
+        }
+        finally
+        {
+            _feedback.ClearBusy();
+            Interlocked.Exchange(ref _qualityRebuildInFlight, 0);
+        }
     }
 
     private void SyncCameraFromScene()
     {
-        _viewport.ApplyCameraState(_session.Scene.Camera);
+        _coordinator.ApplyCameraFromScene(_session.Scene.Camera);
+        SyncPathTraceCamera();
         EnsureViewportSized();
     }
+
+    private void SyncPathTraceCamera() =>
+        _viewport.ApplyCameraState(_coordinator.CaptureCameraState());
 
     private void OnFitView(object? sender, RoutedEventArgs e)
     {
         _feedback.RunSync("Fitting camera…", "Fit view", () =>
         {
             var (center, radius) = SceneBounds.Compute(_session.Scene);
-            _viewport.FitToBounds(center, radius);
-            _session.Scene.Camera = _viewport.CaptureCameraState();
-            OnSceneEdited();
+            _coordinator.Orbit.Target = center;
+            _coordinator.Orbit.Distance = MathF.Max(2f, radius * 2.8f);
+            _session.Scene.Camera = _coordinator.CaptureCameraState();
+            SyncPathTraceCamera();
+            _viewport.ResetAccumulation();
+            OnSceneEdited(bumpGeometry: false);
         });
     }
 
@@ -343,11 +470,11 @@ internal sealed class MainWindow : Window
         try
         {
             await _feedback.RunAsync(
-                "Saving workspace snapshot…",
+                "Saving scene…",
                 "Save point created",
                 async () =>
                 {
-                    _session.Scene.Camera = _viewport.CaptureCameraState();
+                    _session.Scene.Camera = _coordinator.CaptureCameraState();
                     await _session.SavePointAsync("Manual save");
                     _sound.Play();
                     RefreshUi();
@@ -380,7 +507,9 @@ internal sealed class MainWindow : Window
                 {
                     await _session.RestoreAsync(_selectedTimelineRow.Id);
                     SyncCameraFromScene();
-                    RebuildViewport();
+                    _coordinator.StartInFastMode();
+                    OnViewportModeChanged(_coordinator.Mode);
+                    _coordinator.NotifySceneChanged(immediateQualityRebuild: true);
                     RefreshUi();
                 });
         }
@@ -429,10 +558,12 @@ internal sealed class MainWindow : Window
         };
         _session.Scene.Parts.Add(part);
         _selectedPart = part;
+        _coordinator.NotifyInteractionStarted();
         OnSceneEdited();
         RefreshUi();
         _partsList.SelectedItem = part;
         _inspector.Bind(part);
+        _coordinator.NotifyInteractionEnded();
         _feedback.Flash($"Added {part.Name}");
     }
 
@@ -449,10 +580,12 @@ internal sealed class MainWindow : Window
         };
         _session.Scene.Parts.Add(part);
         _selectedPart = part;
+        _coordinator.NotifyInteractionStarted();
         OnSceneEdited();
         RefreshUi();
         _partsList.SelectedItem = part;
         _inspector.Bind(part);
+        _coordinator.NotifyInteractionEnded();
         _feedback.Flash($"Added {part.Name}");
     }
 
@@ -531,45 +664,61 @@ internal sealed class MainWindow : Window
 
     private void OnViewportPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        _lastPointer = e.GetPosition(_frame);
+        _lastPointer = e.GetPosition((Control)sender!);
         _movingPart = e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _selectedPart is not null;
         _orbiting = !_movingPart;
+        _coordinator.NotifyInteractionStarted();
+        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
+            _viewport.SetRenderScale(0.5f);
         if (_movingPart)
             _feedback.Flash($"Moving {_selectedPart!.Name}");
     }
 
     private void OnViewportPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (_movingPart)
+        {
+            _session.BumpSceneGeometry();
+            _coordinator.NotifySceneChanged(immediateQualityRebuild: true);
+        }
+
         _orbiting = false;
         _movingPart = false;
+        _coordinator.NotifyInteractionEnded();
+        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
+            _viewport.SetRenderScale(1f);
     }
 
     private void OnViewportPointerMoved(object? sender, PointerEventArgs e)
     {
-        var pos = e.GetPosition(_frame);
+        var pos = e.GetPosition((Control)sender!);
         var delta = pos - _lastPointer;
         _lastPointer = pos;
 
         if (_movingPart && _selectedPart is not null)
         {
-            var scale = _viewport.Orbit.Distance * 0.0025f;
+            var scale = _coordinator.Orbit.Distance * 0.0025f;
             _selectedPart.Center[0] += (float)delta.X * scale;
             _selectedPart.Center[2] -= (float)delta.Y * scale;
             _inspector.Bind(_selectedPart);
-            OnSceneEdited();
+            _session.MarkDirty();
+            _coordinator.NotifySceneChanged(immediateQualityRebuild: false);
+            RefreshUi();
             return;
         }
 
         if (!_orbiting)
             return;
 
-        _viewport.Orbit.AddLookDelta((float)delta.X * 0.008f, (float)delta.Y * -0.008f);
+        _coordinator.Orbit.AddLookDelta((float)delta.X * 0.008f, (float)delta.Y * -0.008f);
+        SyncPathTraceCamera();
         _viewport.ResetAccumulation();
     }
 
     private void OnViewportWheel(object? sender, PointerWheelEventArgs e)
     {
-        _viewport.Orbit.AdjustDistance((float)-e.Delta.Y * 0.15f);
+        _coordinator.Orbit.AdjustDistance((float)-e.Delta.Y * 0.15f);
+        SyncPathTraceCamera();
         _viewport.ResetAccumulation();
     }
 

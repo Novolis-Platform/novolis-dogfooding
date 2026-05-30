@@ -1,10 +1,10 @@
 using System.Numerics;
+using Microsoft.Extensions.DependencyInjection;
 using Novolis.Rendering.DependencyInjection;
 using Novolis.Rendering.PathTrace.Demos;
 using Novolis.Rendering.Presentation.Abstractions;
 using Novolis.Rendering.Presentation.Silk;
 using Novolis.Rendering.Runtime;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MeshBench.Services;
 
@@ -14,20 +14,28 @@ internal sealed class PathTraceViewport : IDisposable
     private readonly PathTraceDisplayBuffer _display = new();
     private readonly PathTraceBackgroundWorker _worker;
     private readonly SilkOrbitCamera _orbit = new() { Target = new Vector3(0f, 0.45f, 0f), Distance = 4.5f };
+
     private IFramePresenter? _presenter;
     private int _width;
     private int _height;
+    private int _fullWidth;
+    private int _fullHeight;
     private int _sample;
     private CompiledScene? _scene;
+    private int _lastPresentedGeneration = -1;
+    private float _renderScale = 1f;
+    private int _uploadGeneration;
     private string _status = "Starting renderer…";
 
     public PathTraceViewport()
     {
         var services = new ServiceCollection();
-        services.AddRayTracing().UseCpuBackend();
+        services.AddRayTracingFromEnvironment();
         _backend = services.BuildServiceProvider().GetRequiredService<IRayTracingBackend>();
         _worker = new PathTraceBackgroundWorker(_backend, _display);
     }
+
+    public string BackendLabel => _backend.BackendLabel;
 
     public SilkOrbitCamera Orbit => _orbit;
 
@@ -41,6 +49,9 @@ internal sealed class PathTraceViewport : IDisposable
 
     public void Attach(IFramePresenter presenter) => _presenter = presenter;
 
+    public void SetRenderScale(float scale) =>
+        _renderScale = Math.Clamp(scale, 0.25f, 1f);
+
     public void TryResizeFromBounds(double width, double height)
     {
         var w = (int)Math.Max(0, width);
@@ -51,41 +62,61 @@ internal sealed class PathTraceViewport : IDisposable
             return;
         }
 
-        Resize(w, h);
+        _fullWidth = Math.Min(w, 1920);
+        _fullHeight = Math.Min(h, 1080);
+        ApplyScaledSize();
     }
 
-    public void Resize(int width, int height)
+    private void ApplyScaledSize()
     {
-        if (width <= 0 || height <= 0 || (width == _width && height == _height))
+        var w = Math.Max(64, (int)(_fullWidth * _renderScale));
+        var h = Math.Max(64, (int)(_fullHeight * _renderScale));
+        if (w == _width && h == _height)
             return;
 
-        _width = width;
-        _height = height;
+        _width = w;
+        _height = h;
         _worker.WaitForIdle();
-        _backend.ResizeAsync(width, height).GetAwaiter().GetResult();
+        _backend.ResizeAsync(w, h).GetAwaiter().GetResult();
         if (_scene is not null)
             _backend.UploadSceneAsync(_scene).GetAwaiter().GetResult();
-        _display.Invalidate(width, height);
+        _display.Invalidate(w, h);
         _sample = 0;
-        _status = $"Viewport {_width}×{_height} — tracing…";
+        _lastPresentedGeneration = -1;
+        _status = $"{BackendLabel} {_width}×{_height} (scale {(int)(_renderScale * 100)}%) — tracing…";
     }
 
     public void SetScene(CompiledScene scene)
     {
         _scene = scene;
-        if (_width > 0 && _height > 0)
-        {
-            _worker.WaitForIdle();
-            _backend.UploadSceneAsync(scene).GetAwaiter().GetResult();
-            _backend.ResetAccumulation();
-            _display.Invalidate(_width, _height);
-            _sample = 0;
-            _status = $"Scene loaded — tracing at {_width}×{_height}";
-        }
-        else
+        _uploadGeneration++;
+        var gen = _uploadGeneration;
+        if (_width <= 0 || _height <= 0)
         {
             _status = "Scene ready — waiting for viewport layout…";
+            return;
         }
+
+        Task.Run(() => UploadSceneAsync(scene, gen));
+    }
+
+    private async Task UploadSceneAsync(CompiledScene scene, int generation)
+    {
+        await Task.Yield();
+        _worker.WaitForIdle();
+        if (generation != _uploadGeneration)
+            return;
+
+        await _backend.UploadSceneAsync(scene).ConfigureAwait(false);
+        if (generation != _uploadGeneration)
+            return;
+
+        _worker.WaitForIdle();
+        _backend.ResetAccumulation();
+        _display.Invalidate(_width, _height);
+        _sample = 0;
+        _lastPresentedGeneration = -1;
+        _status = $"{BackendLabel} scene loaded — tracing at {_width}×{_height}";
     }
 
     public void ResetAccumulation()
@@ -95,9 +126,10 @@ internal sealed class PathTraceViewport : IDisposable
         if (_width > 0 && _height > 0)
             _display.Invalidate(_width, _height);
         _sample = 0;
+        _lastPresentedGeneration = -1;
     }
 
-    public void Tick()
+    public void Tick(int batchSize = 8)
     {
         if (_presenter is null)
         {
@@ -109,7 +141,7 @@ internal sealed class PathTraceViewport : IDisposable
         if (_width <= 0 || _height <= 0)
         {
             LastFramePresented = false;
-            _status = "Viewport has no size yet — resize the window";
+            _status = "Viewport has no size yet";
             return;
         }
 
@@ -121,11 +153,21 @@ internal sealed class PathTraceViewport : IDisposable
         }
 
         var camera = BuildCamera();
-        _worker.TryEnqueueAccumulate(camera, ref _sample, batchSize: 8);
-        LastFramePresented = _display.TryPresent(_presenter);
+        _worker.TryEnqueueAccumulate(camera, ref _sample, batchSize);
+        var samples = _display.DisplayedSampleCount;
+        if (samples == _lastPresentedGeneration)
+        {
+            LastFramePresented = false;
+        }
+        else
+        {
+            LastFramePresented = _display.TryPresent(_presenter);
+            if (LastFramePresented)
+                _lastPresentedGeneration = samples;
+        }
         _status = LastFramePresented
-            ? $"Rendering {_width}×{_height} — samples {_display.DisplayedSampleCount}"
-            : $"Tracing… samples queued ({_sample})";
+            ? $"{BackendLabel} {_width}×{_height} — samples {_display.DisplayedSampleCount}"
+            : $"{BackendLabel} tracing… ({_sample} samples queued)";
     }
 
     public CameraSnapshot BuildCamera()

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using MeshBench.Models;
 
 namespace MeshBench.Ui;
@@ -33,6 +34,7 @@ internal sealed class PartInspectorPanel : Border
 
     private MeshPartRecord? _part;
     private bool _suppress;
+    private DispatcherTimer? _debounce;
 
     public event EventHandler? PartChanged;
 
@@ -116,7 +118,18 @@ internal sealed class PartInspectorPanel : Border
         _part.Color[0] = (float)_cr.Value;
         _part.Color[1] = (float)_cg.Value;
         _part.Color[2] = (float)_cb.Value;
-        PartChanged?.Invoke(this, EventArgs.Empty);
+        SchedulePartChanged();
+    }
+
+    private void SchedulePartChanged()
+    {
+        _debounce ??= new DispatcherTimer(TimeSpan.FromMilliseconds(90), DispatcherPriority.Background, (_, _) =>
+        {
+            _debounce?.Stop();
+            PartChanged?.Invoke(this, EventArgs.Empty);
+        });
+        _debounce.Stop();
+        _debounce.Start();
     }
 
     private void CommitFromFields()
@@ -138,7 +151,7 @@ internal sealed class PartInspectorPanel : Border
                 _part.HalfExtents[i] = Math.Clamp(_part.HalfExtents[i], 0.05f, 8f);
         }
 
-        PartChanged?.Invoke(this, EventArgs.Empty);
+        SchedulePartChanged();
     }
 
     private void ShowEmpty()
