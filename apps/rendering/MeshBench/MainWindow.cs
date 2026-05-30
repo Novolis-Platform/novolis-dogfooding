@@ -11,8 +11,6 @@ using MeshBench.Models;
 using MeshBench.Services;
 using MeshBench.Ui;
 using Novolis.Avalonia.Raylib;
-using Novolis.Timeline.Presentation;
-
 namespace MeshBench;
 
 internal sealed class MainWindow : Window
@@ -37,7 +35,7 @@ internal sealed class MainWindow : Window
         Opacity = 0.85,
         IsHitTestVisible = false,
     };
-    private readonly ListBox _timelineList = new() { Width = 260 };
+    private readonly GitGraphTimelineList _gitTimeline = new() { Width = 300 };
     private readonly ListBox _partsList = new();
     private readonly PartInspectorPanel _inspector = new();
     private readonly TextBlock _status = new() { Margin = new Thickness(8, 4) };
@@ -67,7 +65,7 @@ internal sealed class MainWindow : Window
 
     private StudioFeedback _feedback = null!;
     private MeshPartRecord? _selectedPart;
-    private TimelineTreeRow? _selectedTimelineRow;
+    private GitGraphTimelineRow? _selectedGitRow;
     private bool _orbiting;
     private bool _movingPart;
     private int _saveInFlight;
@@ -76,6 +74,12 @@ internal sealed class MainWindow : Window
     private int _sphereCounter;
     private Point _lastPointer;
     private DispatcherTimer? _renderTimer;
+    private DispatcherTimer? _editIdleTimer;
+    private bool _inspectorEditActive;
+    private CancellationTokenSource? _rebuildCts;
+    private Size _lastViewportSize;
+    private int _qualityTick;
+    private string _lastStatusText = string.Empty;
     private bool _qualityPinned;
 
     public MainWindow(MeshBenchSession session, MeshSceneStore scenes, PathTraceViewport viewport, SavePointSound sound)
@@ -141,22 +145,11 @@ internal sealed class MainWindow : Window
 
         _frame.IsVisible = false;
 
-        _timelineList.ItemTemplate = new FuncDataTemplate<TimelineTreeRow>((row, _) =>
-            new TextBlock
-            {
-                Text = row is null
-                    ? string.Empty
-                    : $"{new string(' ', row.Depth * 2)}{row.Label} [{row.Branch}]{(row.IsHead ? "  ●" : string.Empty)}",
-                FontFamily = "Consolas,Cascadia Mono,monospace",
-                FontSize = 12,
-            },
-            supportsRecycling: true);
-
-        _timelineList.SelectionChanged += (_, _) =>
+        _gitTimeline.SelectionChanged += (_, _) =>
         {
-            _selectedTimelineRow = _timelineList.SelectedItem as TimelineTreeRow;
-            if (_selectedTimelineRow is not null)
-                _feedback.Flash($"Timeline: {_selectedTimelineRow.Label}");
+            _selectedGitRow = _gitTimeline.SelectedGitRow;
+            if (_selectedGitRow is not null)
+                _feedback.Flash($"Snapshot: {_selectedGitRow.Subject}");
         };
 
         _partsList.ItemTemplate = new FuncDataTemplate<MeshPartRecord>((part, _) =>
@@ -170,7 +163,7 @@ internal sealed class MainWindow : Window
             _feedback.Flash(_selectedPart is null ? "Selection cleared" : $"Selected {_selectedPart.Name}");
         };
 
-        _inspector.PartChanged += (_, _) => OnSceneEdited(bumpGeometry: true);
+        _inspector.PartChanged += (_, _) => OnInspectorEdited();
 
         _busyOverlay.Child = _busyText;
 
@@ -216,7 +209,7 @@ internal sealed class MainWindow : Window
         var timelinePanel = new DockPanel();
         var timelineHeader = new TextBlock
         {
-            Text = "Timeline",
+            Text = "History (git graph)",
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(8, 8, 8, 4),
         };
@@ -225,9 +218,9 @@ internal sealed class MainWindow : Window
         _workspacePath.Margin = new Thickness(8);
         timelinePanel.Children.Add(timelineHeader);
         timelinePanel.Children.Add(_workspacePath);
-        timelinePanel.Children.Add(_timelineList);
+        timelinePanel.Children.Add(_gitTimeline);
 
-        var root = new Grid { ColumnDefinitions = new ColumnDefinitions("260,*,320") };
+        var root = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*,320") };
         Grid.SetColumn(timelinePanel, 0);
         root.Children.Add(timelinePanel);
         Grid.SetColumn(center, 1);
@@ -275,32 +268,48 @@ internal sealed class MainWindow : Window
 
     private void StartRenderLoop()
     {
-        _renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, (_, _) =>
+        _renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Background, (_, _) =>
         {
-            EnsureViewportSized();
-
-            if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
+            if (ShouldRunQualityPass())
             {
-                _coordinator.SyncRaylibHostSize();
-            }
-            else
-            {
-                SyncPathTraceCamera();
-                var samples = _viewport.DisplayedSamples;
-                var batch = samples >= QualitySampleTarget ? 2 : samples >= QualitySampleThrottle ? 4 : 12;
-                _coordinator.TickPathTrace(batch);
+                _qualityTick++;
+                if ((_qualityTick & 1) == 0)
+                {
+                    var samples = _viewport.DisplayedSamples;
+                    var batch = samples >= QualitySampleTarget ? 2 : samples >= QualitySampleThrottle ? 4 : 8;
+                    _coordinator.TickPathTrace(batch);
+                }
             }
 
-            UpdateViewportHint();
-            UpdateStatus();
+            if ((_qualityTick & 7) == 0)
+            {
+                EnsureViewportSized();
+                UpdateViewportHint();
+                UpdateStatus();
+            }
         });
         _renderTimer.Start();
     }
+
+    private bool ShouldRunQualityPass() =>
+        _coordinator.Mode == ViewportDisplayMode.QualityRefine
+        && !_coordinator.IsInteracting
+        && !_movingPart
+        && !_orbiting
+        && !_inspectorEditActive;
 
     private void EnsureViewportSized()
     {
         var host = _coordinator.Mode == ViewportDisplayMode.FastPreview ? (Control)_raylibHost : _frame;
         var size = host.Bounds.Size;
+        if (size.Width < 1 || size.Height < 1)
+            return;
+
+        if (Math.Abs(size.Width - _lastViewportSize.Width) < 1
+            && Math.Abs(size.Height - _lastViewportSize.Height) < 1)
+            return;
+
+        _lastViewportSize = size;
         if (_coordinator.Mode == ViewportDisplayMode.FastPreview)
             _coordinator.SyncRaylibHostSize();
         else
@@ -362,12 +371,17 @@ internal sealed class MainWindow : Window
         var mode = _coordinator.Mode == ViewportDisplayMode.FastPreview ? "Preview" : "Quality";
         var present = _coordinator.Mode == ViewportDisplayMode.FastPreview
             ? "Raylib"
-            : _viewport.LastFramePresented ? "shown" : "tracing";
+            : _coordinator.IsInteracting ? "paused" : _viewport.LastFramePresented ? "shown" : "tracing";
         var hint = _movingPart
             ? "Shift+drag: move  |  drag: orbit  |  wheel: zoom"
             : "Shift+drag moves selection  |  Ctrl+S save";
-        _feedback.SetStatus(
-            $"{mode}  |  {partCount} mesh{(partCount == 1 ? string.Empty : "es")}{dirty}  |  {present}  |  {_viewport.Status}  |  {hint}");
+        var text =
+            $"{mode}  |  {partCount} mesh{(partCount == 1 ? string.Empty : "es")}{dirty}  |  {present}  |  {_viewport.Status}  |  {hint}";
+        if (text == _lastStatusText)
+            return;
+
+        _lastStatusText = text;
+        _feedback.SetStatus(text);
     }
 
     private void RefreshUi()
@@ -383,13 +397,27 @@ internal sealed class MainWindow : Window
                 list[i] = _session.Scene.Parts[i];
         }
 
-        if (_timelineList.ItemsSource != _session.TimelineRowsBinding)
-            _timelineList.ItemsSource = _session.TimelineRowsBinding;
+        _gitTimeline.SetRows(_session.GitGraphRows);
 
         if (_selectedPart is not null && !_session.Scene.Parts.Contains(_selectedPart))
             _selectedPart = null;
         _inspector.Bind(_selectedPart);
         UpdateStatus();
+    }
+
+    private void OnInspectorEdited()
+    {
+        _inspectorEditActive = true;
+        _coordinator.NotifyInteractionStarted();
+        OnSceneEdited(bumpGeometry: true);
+        _editIdleTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) =>
+        {
+            _editIdleTimer?.Stop();
+            _inspectorEditActive = false;
+            _coordinator.NotifyInteractionEnded();
+        });
+        _editIdleTimer.Stop();
+        _editIdleTimer.Start();
     }
 
     private void OnSceneEdited(bool bumpGeometry = true)
@@ -408,29 +436,35 @@ internal sealed class MainWindow : Window
 
     private async Task RebuildQualityViewportAsync()
     {
-        if (_coordinator.Mode != ViewportDisplayMode.QualityRefine)
+        if (_coordinator.Mode != ViewportDisplayMode.QualityRefine || _coordinator.IsInteracting)
             return;
+
+        _rebuildCts?.Cancel();
+        _rebuildCts = new CancellationTokenSource();
+        var ct = _rebuildCts.Token;
 
         if (Interlocked.CompareExchange(ref _qualityRebuildInFlight, 1, 0) != 0)
             return;
 
         try
         {
-            _feedback.SetBusy("Updating scene…");
             _session.Scene.Camera = _coordinator.CaptureCameraState();
             SyncPathTraceCamera();
 
             var revision = _session.SceneRevision;
             var document = _session.Scene;
-            var compiled = await Task.Run(() => _scenes.Compile(document, revision)).ConfigureAwait(true);
-            if (revision != _session.SceneRevision)
+            var compiled = await Task.Run(() => _scenes.Compile(document, revision), ct).ConfigureAwait(true);
+            if (ct.IsCancellationRequested || revision != _session.SceneRevision)
                 return;
 
             _viewport.SetScene(compiled);
         }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer edit.
+        }
         finally
         {
-            _feedback.ClearBusy();
             Interlocked.Exchange(ref _qualityRebuildInFlight, 0);
         }
     }
@@ -447,16 +481,15 @@ internal sealed class MainWindow : Window
 
     private void OnFitView(object? sender, RoutedEventArgs e)
     {
-        _feedback.RunSync("Fitting camera…", "Fit view", () =>
-        {
-            var (center, radius) = SceneBounds.Compute(_session.Scene);
-            _coordinator.Orbit.Target = center;
-            _coordinator.Orbit.Distance = MathF.Max(2f, radius * 2.8f);
-            _session.Scene.Camera = _coordinator.CaptureCameraState();
-            SyncPathTraceCamera();
+        var (center, radius) = SceneBounds.Compute(_session.Scene);
+        _coordinator.Orbit.Target = center;
+        _coordinator.Orbit.Distance = MathF.Max(2f, radius * 2.8f);
+        _session.Scene.Camera = _coordinator.CaptureCameraState();
+        SyncPathTraceCamera();
+        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
             _viewport.ResetAccumulation();
-            OnSceneEdited(bumpGeometry: false);
-        });
+        OnSceneEdited(bumpGeometry: false);
+        _feedback.Flash("Fit view");
     }
 
     private async void OnSavePoint(object? sender, RoutedEventArgs e)
@@ -492,20 +525,20 @@ internal sealed class MainWindow : Window
 
     private async void OnRestore(object? sender, RoutedEventArgs e)
     {
-        if (_selectedTimelineRow is null)
+        if (_selectedGitRow is null)
         {
-            _feedback.FlashWarning("Select a timeline row to restore");
+            _feedback.FlashWarning("Select a snapshot in the history graph");
             return;
         }
 
         try
         {
             await _feedback.RunAsync(
-                $"Restoring {_selectedTimelineRow.Label}…",
+                $"Restoring {_selectedGitRow.Subject}…",
                 "Restore complete",
                 async () =>
                 {
-                    await _session.RestoreAsync(_selectedTimelineRow.Id);
+                    await _session.RestoreAsync(_selectedGitRow.Id);
                     SyncCameraFromScene();
                     _coordinator.StartInFastMode();
                     OnViewportModeChanged(_coordinator.Mode);
@@ -521,21 +554,21 @@ internal sealed class MainWindow : Window
 
     private async void OnBranch(object? sender, RoutedEventArgs e)
     {
-        if (_selectedTimelineRow is null)
+        if (_selectedGitRow is null)
         {
-            _feedback.FlashWarning("Select a timeline row to branch from");
+            _feedback.FlashWarning("Select a snapshot to branch from");
             return;
         }
 
         try
         {
-            var name = $"branch-{_session.TimelineRows.Count}";
+            var name = $"branch-{_session.GitGraphRows.Count}";
             await _feedback.RunAsync(
-                $"Branching from {_selectedTimelineRow.Label}…",
+                $"Branching from {_selectedGitRow.Subject}…",
                 $"Branch '{name}' created",
                 async () =>
                 {
-                    await _session.BranchAsync(_selectedTimelineRow.Id, name);
+                    await _session.BranchAsync(_selectedGitRow.Id, name);
                     RefreshUi();
                 });
         }
@@ -712,14 +745,16 @@ internal sealed class MainWindow : Window
 
         _coordinator.Orbit.AddLookDelta((float)delta.X * 0.008f, (float)delta.Y * -0.008f);
         SyncPathTraceCamera();
-        _viewport.ResetAccumulation();
+        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
+            _viewport.ResetAccumulation();
     }
 
     private void OnViewportWheel(object? sender, PointerWheelEventArgs e)
     {
         _coordinator.Orbit.AdjustDistance((float)-e.Delta.Y * 0.15f);
         SyncPathTraceCamera();
-        _viewport.ResetAccumulation();
+        if (_coordinator.Mode == ViewportDisplayMode.QualityRefine)
+            _viewport.ResetAccumulation();
     }
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)

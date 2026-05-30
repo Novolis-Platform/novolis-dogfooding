@@ -21,6 +21,7 @@ internal sealed class MeshBenchSession
     private readonly ObservableCollection<TimelineTreeRow> _timelineRowsBinding = [];
     private ITimeline<ZipSnapshotRef>? _timeline;
     private IReadOnlyList<TimelineTreeRow> _timelineRows = [];
+    private IReadOnlyList<GitGraphTimelineRow> _gitGraphRows = [];
 
     public MeshBenchSession(IFileSystem fileSystem, MeshSceneStore scenes)
     {
@@ -49,6 +50,8 @@ internal sealed class MeshBenchSession
     public WorkspaceTimeline? Timeline { get; private set; }
 
     public IReadOnlyList<TimelineTreeRow> TimelineRows => _timelineRows;
+
+    public IReadOnlyList<GitGraphTimelineRow> GitGraphRows => _gitGraphRows;
 
     public int SceneRevision { get; private set; }
 
@@ -184,6 +187,7 @@ internal sealed class MeshBenchSession
         if (_timeline is null)
         {
             _timelineRows = [];
+            _gitGraphRows = [];
             SyncTimelineBinding();
             return;
         }
@@ -191,7 +195,9 @@ internal sealed class MeshBenchSession
         var nodes = await _timeline.GetNodesAsync(cancellationToken).ConfigureAwait(false);
         var branches = await _timeline.GetBranchesAsync(cancellationToken).ConfigureAwait(false);
         var head = await _timeline.GetHeadAsync(cancellationToken).ConfigureAwait(false);
+        var tree = _projector.ToTree(nodes, branches, head);
         _timelineRows = _projector.ToRows(nodes, branches, head);
+        _gitGraphRows = GitGraphTimelineBuilder.Build(tree);
         SyncTimelineBinding();
     }
 

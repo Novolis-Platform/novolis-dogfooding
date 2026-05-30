@@ -31,6 +31,8 @@ internal sealed class ViewportModeCoordinator
 
     public ViewportDisplayMode Mode => _mode;
 
+    public bool IsInteracting => _interacting;
+
     public SilkOrbitCamera Orbit => _orbit;
 
     public PathTraceViewport PathTrace => _pathTrace;
@@ -69,18 +71,22 @@ internal sealed class ViewportModeCoordinator
     {
         _interacting = true;
         _idleTimer.Stop();
-        if (!_qualityPinned)
-            EnterFast();
+        _qualityScheduler.Cancel();
+        _pathTrace.SetPaused(true);
+        EnterFast();
     }
 
     public void NotifyInteractionEnded()
     {
         _interacting = false;
-        if (!_qualityPinned)
+        if (_qualityPinned)
         {
-            _idleTimer.Stop();
-            _idleTimer.Start();
+            EnterQuality();
+            return;
         }
+
+        _idleTimer.Stop();
+        _idleTimer.Start();
     }
 
     public void NotifySceneChanged(bool immediateQualityRebuild = false)
@@ -155,6 +161,7 @@ internal sealed class ViewportModeCoordinator
             return;
 
         _mode = ViewportDisplayMode.FastPreview;
+        _pathTrace.SetPaused(true);
         AttachRaylibHost();
         SyncRaylibHostSize();
         ModeChanged?.Invoke(_mode);
@@ -167,6 +174,7 @@ internal sealed class ViewportModeCoordinator
 
         _mode = ViewportDisplayMode.QualityRefine;
         DetachRaylibHost();
+        _pathTrace.SetPaused(false);
         _pathTrace.ResetAccumulation();
         ModeChanged?.Invoke(_mode);
         QualityRebuildDue?.Invoke();

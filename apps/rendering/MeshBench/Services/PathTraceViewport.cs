@@ -14,6 +14,7 @@ internal sealed class PathTraceViewport : IDisposable
     private readonly PathTraceDisplayBuffer _display = new();
     private readonly PathTraceBackgroundWorker _worker;
     private readonly SilkOrbitCamera _orbit = new() { Target = new Vector3(0f, 0.45f, 0f), Distance = 4.5f };
+    private readonly object _resizeGate = new();
 
     private IFramePresenter? _presenter;
     private int _width;
@@ -25,6 +26,8 @@ internal sealed class PathTraceViewport : IDisposable
     private int _lastPresentedGeneration = -1;
     private float _renderScale = 1f;
     private int _uploadGeneration;
+    private int _resizeGeneration;
+    private bool _paused = true;
     private string _status = "Starting renderer…";
 
     public PathTraceViewport()
@@ -47,7 +50,11 @@ internal sealed class PathTraceViewport : IDisposable
 
     public string Status => _status;
 
+    public bool IsPaused => _paused;
+
     public void Attach(IFramePresenter presenter) => _presenter = presenter;
+
+    public void SetPaused(bool paused) => _paused = paused;
 
     public void SetRenderScale(float scale) =>
         _renderScale = Math.Clamp(scale, 0.25f, 1f);
@@ -64,25 +71,50 @@ internal sealed class PathTraceViewport : IDisposable
 
         _fullWidth = Math.Min(w, 1920);
         _fullHeight = Math.Min(h, 1080);
-        ApplyScaledSize();
+        QueueResize();
     }
 
-    private void ApplyScaledSize()
+    private void QueueResize()
     {
         var w = Math.Max(64, (int)(_fullWidth * _renderScale));
         var h = Math.Max(64, (int)(_fullHeight * _renderScale));
         if (w == _width && h == _height)
             return;
 
-        _width = w;
-        _height = h;
-        _worker.WaitForIdle();
-        _backend.ResizeAsync(w, h).GetAwaiter().GetResult();
-        if (_scene is not null)
-            _backend.UploadSceneAsync(_scene).GetAwaiter().GetResult();
-        _display.Invalidate(w, h);
-        _sample = 0;
-        _lastPresentedGeneration = -1;
+        var generation = Interlocked.Increment(ref _resizeGeneration);
+        _ = Task.Run(() => ApplyScaledSizeAsync(w, h, generation));
+    }
+
+    private async Task ApplyScaledSizeAsync(int w, int h, int generation)
+    {
+        await Task.Yield();
+        if (generation != _resizeGeneration)
+            return;
+
+        await _worker.WaitForIdleAsync().ConfigureAwait(false);
+        if (generation != _resizeGeneration)
+            return;
+
+        await _backend.ResizeAsync(w, h).ConfigureAwait(false);
+        if (generation != _resizeGeneration)
+            return;
+
+        var scene = _scene;
+        if (scene is not null)
+            await _backend.UploadSceneAsync(scene).ConfigureAwait(false);
+
+        if (generation != _resizeGeneration)
+            return;
+
+        lock (_resizeGate)
+        {
+            _width = w;
+            _height = h;
+            _display.Invalidate(w, h);
+            _sample = 0;
+            _lastPresentedGeneration = -1;
+        }
+
         _status = $"{BackendLabel} {_width}×{_height} (scale {(int)(_renderScale * 100)}%) — tracing…";
     }
 
@@ -97,13 +129,13 @@ internal sealed class PathTraceViewport : IDisposable
             return;
         }
 
-        Task.Run(() => UploadSceneAsync(scene, gen));
+        _ = Task.Run(() => UploadSceneAsync(scene, gen));
     }
 
     private async Task UploadSceneAsync(CompiledScene scene, int generation)
     {
         await Task.Yield();
-        _worker.WaitForIdle();
+        await _worker.WaitForIdleAsync().ConfigureAwait(false);
         if (generation != _uploadGeneration)
             return;
 
@@ -111,30 +143,45 @@ internal sealed class PathTraceViewport : IDisposable
         if (generation != _uploadGeneration)
             return;
 
-        _worker.WaitForIdle();
+        await _worker.WaitForIdleAsync().ConfigureAwait(false);
+        if (generation != _uploadGeneration)
+            return;
+
         _backend.ResetAccumulation();
-        _display.Invalidate(_width, _height);
-        _sample = 0;
-        _lastPresentedGeneration = -1;
+        lock (_resizeGate)
+        {
+            if (_width > 0 && _height > 0)
+                _display.Invalidate(_width, _height);
+            _sample = 0;
+            _lastPresentedGeneration = -1;
+        }
+
         _status = $"{BackendLabel} scene loaded — tracing at {_width}×{_height}";
     }
 
     public void ResetAccumulation()
     {
-        _worker.WaitForIdle();
-        _backend.ResetAccumulation();
-        if (_width > 0 && _height > 0)
-            _display.Invalidate(_width, _height);
-        _sample = 0;
-        _lastPresentedGeneration = -1;
+        if (_paused || _width <= 0 || _height <= 0)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            await _worker.WaitForIdleAsync().ConfigureAwait(false);
+            _backend.ResetAccumulation();
+            lock (_resizeGate)
+            {
+                _display.Invalidate(_width, _height);
+                _sample = 0;
+                _lastPresentedGeneration = -1;
+            }
+        });
     }
 
     public void Tick(int batchSize = 8)
     {
-        if (_presenter is null)
+        if (_paused || _presenter is null)
         {
             LastFramePresented = false;
-            _status = "No viewport attached";
             return;
         }
 
@@ -154,20 +201,25 @@ internal sealed class PathTraceViewport : IDisposable
 
         var camera = BuildCamera();
         _worker.TryEnqueueAccumulate(camera, ref _sample, batchSize);
+
         var samples = _display.DisplayedSampleCount;
         if (samples == _lastPresentedGeneration)
         {
             LastFramePresented = false;
         }
+        else if (_display.TryPresent(_presenter))
+        {
+            LastFramePresented = true;
+            _lastPresentedGeneration = samples;
+        }
         else
         {
-            LastFramePresented = _display.TryPresent(_presenter);
-            if (LastFramePresented)
-                _lastPresentedGeneration = samples;
+            LastFramePresented = false;
         }
+
         _status = LastFramePresented
-            ? $"{BackendLabel} {_width}×{_height} — samples {_display.DisplayedSampleCount}"
-            : $"{BackendLabel} tracing… ({_sample} samples queued)";
+            ? $"{BackendLabel} {_width}×{_height} — samples {samples}"
+            : $"{BackendLabel} refining… ({_sample} samples)";
     }
 
     public CameraSnapshot BuildCamera()
@@ -212,4 +264,10 @@ internal sealed class PathTraceViewport : IDisposable
         if (_backend is IDisposable d)
             d.Dispose();
     }
+}
+
+internal static class PathTraceWorkerExtensions
+{
+    public static Task WaitForIdleAsync(this PathTraceBackgroundWorker worker) =>
+        Task.Run(worker.WaitForIdle);
 }
