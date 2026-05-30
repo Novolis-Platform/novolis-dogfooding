@@ -9,7 +9,6 @@ using Avalonia.Threading;
 using MeshBench.Models;
 using MeshBench.Services;
 using MeshBench.Ui;
-using Novolis.Avalonia.Rendering;
 using Novolis.Timeline.Presentation;
 
 namespace MeshBench;
@@ -21,13 +20,42 @@ internal sealed class MainWindow : Window
     private readonly PathTraceViewport _viewport;
     private readonly SavePointSound _sound;
 
-    private readonly Rgba32FrameControl _frame = new();
+    private readonly ViewportSurface _frame = new();
+    private readonly TextBlock _viewportHint = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Center,
+        VerticalAlignment = VerticalAlignment.Center,
+        TextAlignment = TextAlignment.Center,
+        FontSize = 14,
+        Opacity = 0.85,
+        IsHitTestVisible = false,
+    };
     private readonly ListBox _timelineList = new() { Width = 260 };
     private readonly ListBox _partsList = new();
     private readonly PartInspectorPanel _inspector = new();
     private readonly TextBlock _status = new() { Margin = new Thickness(8, 4) };
+    private readonly TextBlock _flash = new()
+    {
+        Margin = new Thickness(8, 0, 8, 4),
+        FontWeight = FontWeight.SemiBold,
+        Foreground = Brushes.LightGreen,
+    };
     private readonly TextBlock _workspacePath = new() { Opacity = 0.7, FontSize = 11 };
+    private readonly Border _busyOverlay = new()
+    {
+        Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)),
+        IsVisible = false,
+        IsHitTestVisible = true,
+    };
+    private readonly TextBlock _busyText = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Center,
+        VerticalAlignment = VerticalAlignment.Center,
+        FontSize = 16,
+        FontWeight = FontWeight.Bold,
+    };
 
+    private StudioFeedback _feedback = null!;
     private MeshPartRecord? _selectedPart;
     private TimelineTreeRow? _selectedTimelineRow;
     private IReadOnlyList<TimelineTreeRow> _timelineRows = [];
@@ -50,6 +78,7 @@ internal sealed class MainWindow : Window
         Width = 1480;
         Height = 920;
         Content = BuildLayout();
+        _feedback = new StudioFeedback(_status, _flash, _busyOverlay, _busyText);
         Opened += OnOpened;
         KeyDown += OnKeyDown;
     }
@@ -78,6 +107,7 @@ internal sealed class MainWindow : Window
         _frame.PointerReleased += OnViewportPointerReleased;
         _frame.PointerMoved += OnViewportPointerMoved;
         _frame.PointerWheelChanged += OnViewportWheel;
+        _frame.LayoutUpdated += (_, _) => EnsureViewportSized();
 
         _timelineList.ItemTemplate = new FuncDataTemplate<TimelineTreeRow>((row, _) =>
             new TextBlock
@@ -91,7 +121,11 @@ internal sealed class MainWindow : Window
             supportsRecycling: true);
 
         _timelineList.SelectionChanged += (_, _) =>
+        {
             _selectedTimelineRow = _timelineList.SelectedItem as TimelineTreeRow;
+            if (_selectedTimelineRow is not null)
+                _feedback.Flash($"Timeline: {_selectedTimelineRow.Label}");
+        };
 
         _partsList.ItemTemplate = new FuncDataTemplate<MeshPartRecord>((part, _) =>
             new TextBlock { Text = part?.Summary ?? string.Empty },
@@ -101,15 +135,24 @@ internal sealed class MainWindow : Window
         {
             _selectedPart = _partsList.SelectedItem as MeshPartRecord;
             _inspector.Bind(_selectedPart);
-            RebuildViewport();
+            _feedback.Flash(_selectedPart is null ? "Selection cleared" : $"Selected {_selectedPart.Name}");
         };
 
         _inspector.PartChanged += (_, _) => OnSceneEdited();
 
+        _busyOverlay.Child = _busyText;
+
+        var viewportHost = new Grid();
+        viewportHost.Children.Add(_frame);
+        viewportHost.Children.Add(_viewportHint);
+        viewportHost.Children.Add(_busyOverlay);
+
         var viewportPanel = new DockPanel();
+        DockPanel.SetDock(_flash, Dock.Bottom);
         DockPanel.SetDock(_status, Dock.Bottom);
+        viewportPanel.Children.Add(_flash);
         viewportPanel.Children.Add(_status);
-        viewportPanel.Children.Add(_frame);
+        viewportPanel.Children.Add(viewportHost);
 
         var center = new Grid { RowDefinitions = new RowDefinitions("Auto,*") };
         center.Children.Add(toolbar);
@@ -181,34 +224,67 @@ internal sealed class MainWindow : Window
 
     private async void OnOpened(object? sender, EventArgs e)
     {
-        _viewport.Attach(_frame);
-        await _session.OpenOrCreateDefaultAsync();
-        _workspacePath.Text = _session.Workspace?.Root.FullName ?? string.Empty;
-        _boxCounter = _session.Scene.Parts.Count(p => p.Kind.Equals("box", StringComparison.OrdinalIgnoreCase));
-        _sphereCounter = _session.Scene.Parts.Count(p => p.Kind.Equals("sphere", StringComparison.OrdinalIgnoreCase));
-        SyncCameraFromScene();
-        RefreshUi();
-        StartRenderLoop();
+        _feedback.Flash("Opening workspace…");
+        try
+        {
+            _viewport.Attach(_frame);
+            await _session.OpenOrCreateDefaultAsync();
+            _workspacePath.Text = _session.Workspace?.Root.FullName ?? string.Empty;
+            _boxCounter = _session.Scene.Parts.Count(p => p.Kind.Equals("box", StringComparison.OrdinalIgnoreCase));
+            _sphereCounter = _session.Scene.Parts.Count(p => p.Kind.Equals("sphere", StringComparison.OrdinalIgnoreCase));
+            SyncCameraFromScene();
+            RebuildViewport();
+            RefreshUi();
+            Dispatcher.UIThread.Post(EnsureViewportSized, DispatcherPriority.Loaded);
+            StartRenderLoop();
+            _feedback.Flash($"Workspace ready — {_session.Scene.Parts.Count} meshes");
+        }
+        catch (Exception ex)
+        {
+            _feedback.FlashError($"Open failed: {ex.Message}");
+        }
     }
 
     private void StartRenderLoop()
     {
         _renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, (_, _) =>
         {
+            EnsureViewportSized();
             _viewport.Tick();
+            UpdateViewportHint();
             UpdateStatus();
         });
         _renderTimer.Start();
+    }
+
+    private void EnsureViewportSized()
+    {
+        var size = _frame.Bounds.Size;
+        _viewport.TryResizeFromBounds(size.Width, size.Height);
+    }
+
+    private void UpdateViewportHint()
+    {
+        if (_viewport.IsReady && _viewport.LastFramePresented)
+        {
+            _viewportHint.IsVisible = false;
+            return;
+        }
+
+        _viewportHint.IsVisible = true;
+        _viewportHint.Text = _viewport.Status;
     }
 
     private void UpdateStatus()
     {
         var dirty = _session.IsDirty ? "  ● unsaved" : string.Empty;
         var partCount = _session.Scene.Parts.Count;
+        var present = _viewport.LastFramePresented ? "shown" : "pending";
         var hint = _movingPart
             ? "Shift+drag: move  |  drag: orbit  |  wheel: zoom"
             : "Shift+drag moves selection  |  Ctrl+S save";
-        _status.Text = $"{partCount} mesh{(partCount == 1 ? string.Empty : "es")}{dirty}  |  Samples {_viewport.DisplayedSamples}  |  {hint}";
+        _feedback.SetStatus(
+            $"{partCount} mesh{(partCount == 1 ? string.Empty : "es")}{dirty}  |  {present}  |  {_viewport.Status}  |  {hint}");
     }
 
     private void RefreshUi()
@@ -220,7 +296,6 @@ internal sealed class MainWindow : Window
         if (_selectedPart is not null && !_session.Scene.Parts.Contains(_selectedPart))
             _selectedPart = null;
         _inspector.Bind(_selectedPart);
-        RebuildViewport();
         UpdateStatus();
     }
 
@@ -243,31 +318,44 @@ internal sealed class MainWindow : Window
     private void SyncCameraFromScene()
     {
         _viewport.ApplyCameraState(_session.Scene.Camera);
-        var size = _frame.Bounds.Size;
-        if (size.Width > 0 && size.Height > 0)
-            _viewport.Resize((int)size.Width, (int)size.Height);
+        EnsureViewportSized();
     }
 
     private void OnFitView(object? sender, RoutedEventArgs e)
     {
-        var (center, radius) = SceneBounds.Compute(_session.Scene);
-        _viewport.FitToBounds(center, radius);
-        _session.Scene.Camera = _viewport.CaptureCameraState();
-        OnSceneEdited();
+        _feedback.RunSync("Fitting camera…", "Fit view", () =>
+        {
+            var (center, radius) = SceneBounds.Compute(_session.Scene);
+            _viewport.FitToBounds(center, radius);
+            _session.Scene.Camera = _viewport.CaptureCameraState();
+            OnSceneEdited();
+        });
     }
 
     private async void OnSavePoint(object? sender, RoutedEventArgs e)
     {
         if (Interlocked.CompareExchange(ref _saveInFlight, 1, 0) != 0)
+        {
+            _feedback.FlashWarning("Save already in progress…");
             return;
+        }
 
         try
         {
-            _inspector.Bind(_selectedPart);
-            _session.Scene.Camera = _viewport.CaptureCameraState();
-            await _session.SavePointAsync("Manual save");
-            _sound.Play();
-            RefreshUi();
+            await _feedback.RunAsync(
+                "Saving workspace snapshot…",
+                "Save point created",
+                async () =>
+                {
+                    _session.Scene.Camera = _viewport.CaptureCameraState();
+                    await _session.SavePointAsync("Manual save");
+                    _sound.Play();
+                    RefreshUi();
+                });
+        }
+        catch
+        {
+            // RunAsync already flashed error.
         }
         finally
         {
@@ -278,20 +366,54 @@ internal sealed class MainWindow : Window
     private async void OnRestore(object? sender, RoutedEventArgs e)
     {
         if (_selectedTimelineRow is null)
+        {
+            _feedback.FlashWarning("Select a timeline row to restore");
             return;
+        }
 
-        await _session.RestoreAsync(_selectedTimelineRow.Id);
-        SyncCameraFromScene();
-        RefreshUi();
+        try
+        {
+            await _feedback.RunAsync(
+                $"Restoring {_selectedTimelineRow.Label}…",
+                "Restore complete",
+                async () =>
+                {
+                    await _session.RestoreAsync(_selectedTimelineRow.Id);
+                    SyncCameraFromScene();
+                    RebuildViewport();
+                    RefreshUi();
+                });
+        }
+        catch
+        {
+            // Flashed in RunAsync.
+        }
     }
 
     private async void OnBranch(object? sender, RoutedEventArgs e)
     {
         if (_selectedTimelineRow is null)
+        {
+            _feedback.FlashWarning("Select a timeline row to branch from");
             return;
+        }
 
-        await _session.BranchAsync(_selectedTimelineRow.Id, $"branch-{_session.TimelineRows.Count}");
-        RefreshUi();
+        try
+        {
+            var name = $"branch-{_session.TimelineRows.Count}";
+            await _feedback.RunAsync(
+                $"Branching from {_selectedTimelineRow.Label}…",
+                $"Branch '{name}' created",
+                async () =>
+                {
+                    await _session.BranchAsync(_selectedTimelineRow.Id, name);
+                    RefreshUi();
+                });
+        }
+        catch
+        {
+            // Flashed in RunAsync.
+        }
     }
 
     private void OnAddBox(object? sender, RoutedEventArgs e)
@@ -311,6 +433,7 @@ internal sealed class MainWindow : Window
         RefreshUi();
         _partsList.SelectedItem = part;
         _inspector.Bind(part);
+        _feedback.Flash($"Added {part.Name}");
     }
 
     private void OnAddSphere(object? sender, RoutedEventArgs e)
@@ -330,33 +453,43 @@ internal sealed class MainWindow : Window
         RefreshUi();
         _partsList.SelectedItem = part;
         _inspector.Bind(part);
+        _feedback.Flash($"Added {part.Name}");
     }
 
     private void OnDuplicate(object? sender, RoutedEventArgs e)
     {
         if (_selectedPart is null)
+        {
+            _feedback.FlashWarning("Select a mesh to duplicate");
             return;
+        }
 
         var copy = _selectedPart.Clone();
         copy.Center[0] += 0.35f;
         _session.Scene.Parts.Add(copy);
         _selectedPart = copy;
-        _partsList.SelectedItem = copy;
-        _inspector.Bind(copy);
         OnSceneEdited();
         RefreshUi();
+        _partsList.SelectedItem = copy;
+        _inspector.Bind(copy);
+        _feedback.Flash($"Duplicated as {copy.Name}");
     }
 
     private void OnDeletePart(object? sender, RoutedEventArgs e)
     {
         if (_selectedPart is null)
+        {
+            _feedback.FlashWarning("Select a mesh to delete");
             return;
+        }
 
+        var name = _selectedPart.Name;
         _session.Scene.Parts.Remove(_selectedPart);
         _selectedPart = null;
         _inspector.Bind(null);
         OnSceneEdited();
         RefreshUi();
+        _feedback.Flash($"Deleted {name}");
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -401,6 +534,8 @@ internal sealed class MainWindow : Window
         _lastPointer = e.GetPosition(_frame);
         _movingPart = e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _selectedPart is not null;
         _orbiting = !_movingPart;
+        if (_movingPart)
+            _feedback.Flash($"Moving {_selectedPart!.Name}");
     }
 
     private void OnViewportPointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -441,8 +576,6 @@ internal sealed class MainWindow : Window
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
-        var size = _frame.Bounds.Size;
-        if (size.Width > 0 && size.Height > 0)
-            _viewport.Resize((int)size.Width, (int)size.Height);
+        EnsureViewportSized();
     }
 }

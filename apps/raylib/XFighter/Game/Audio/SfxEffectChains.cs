@@ -1,5 +1,6 @@
 using Novolis.Audio.Core;
 using Novolis.Audio.Effects;
+using Novolis.Audio.Filters;
 
 namespace XFighter.Game.Audio;
 

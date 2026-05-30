@@ -1,10 +1,10 @@
 using System.Numerics;
-using Novolis.Avalonia.Rendering;
-using Microsoft.Extensions.DependencyInjection;
 using Novolis.Rendering.DependencyInjection;
 using Novolis.Rendering.PathTrace.Demos;
+using Novolis.Rendering.Presentation.Abstractions;
 using Novolis.Rendering.Presentation.Silk;
 using Novolis.Rendering.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MeshBench.Services;
 
@@ -14,15 +14,16 @@ internal sealed class PathTraceViewport : IDisposable
     private readonly PathTraceDisplayBuffer _display = new();
     private readonly PathTraceBackgroundWorker _worker;
     private readonly SilkOrbitCamera _orbit = new() { Target = new Vector3(0f, 0.45f, 0f), Distance = 4.5f };
-    private Rgba32FrameControl? _control;
+    private IFramePresenter? _presenter;
     private int _width;
     private int _height;
     private int _sample;
     private CompiledScene? _scene;
+    private string _status = "Starting renderer…";
 
     public PathTraceViewport()
     {
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var services = new ServiceCollection();
         services.AddRayTracing().UseCpuBackend();
         _backend = services.BuildServiceProvider().GetRequiredService<IRayTracingBackend>();
         _worker = new PathTraceBackgroundWorker(_backend, _display);
@@ -32,7 +33,26 @@ internal sealed class PathTraceViewport : IDisposable
 
     public int DisplayedSamples => _display.DisplayedSampleCount;
 
-    public void Attach(Rgba32FrameControl control) => _control = control;
+    public bool IsReady => _width > 0 && _height > 0 && _scene is not null;
+
+    public bool LastFramePresented { get; private set; }
+
+    public string Status => _status;
+
+    public void Attach(IFramePresenter presenter) => _presenter = presenter;
+
+    public void TryResizeFromBounds(double width, double height)
+    {
+        var w = (int)Math.Max(0, width);
+        var h = (int)Math.Max(0, height);
+        if (w <= 0 || h <= 0)
+        {
+            _status = $"Waiting for viewport size ({w}×{h})…";
+            return;
+        }
+
+        Resize(w, h);
+    }
 
     public void Resize(int width, int height)
     {
@@ -47,6 +67,7 @@ internal sealed class PathTraceViewport : IDisposable
             _backend.UploadSceneAsync(_scene).GetAwaiter().GetResult();
         _display.Invalidate(width, height);
         _sample = 0;
+        _status = $"Viewport {_width}×{_height} — tracing…";
     }
 
     public void SetScene(CompiledScene scene)
@@ -59,6 +80,11 @@ internal sealed class PathTraceViewport : IDisposable
             _backend.ResetAccumulation();
             _display.Invalidate(_width, _height);
             _sample = 0;
+            _status = $"Scene loaded — tracing at {_width}×{_height}";
+        }
+        else
+        {
+            _status = "Scene ready — waiting for viewport layout…";
         }
     }
 
@@ -73,13 +99,33 @@ internal sealed class PathTraceViewport : IDisposable
 
     public void Tick()
     {
-        if (_control is null || _width <= 0 || _height <= 0 || _scene is null)
+        if (_presenter is null)
+        {
+            LastFramePresented = false;
+            _status = "No viewport attached";
             return;
+        }
+
+        if (_width <= 0 || _height <= 0)
+        {
+            LastFramePresented = false;
+            _status = "Viewport has no size yet — resize the window";
+            return;
+        }
+
+        if (_scene is null)
+        {
+            LastFramePresented = false;
+            _status = "No scene — add a mesh";
+            return;
+        }
 
         var camera = BuildCamera();
-        _worker.TryEnqueueAccumulate(camera, ref _sample, batchSize: 2);
-        if (_control is not null)
-            _display.TryPresent(_control);
+        _worker.TryEnqueueAccumulate(camera, ref _sample, batchSize: 8);
+        LastFramePresented = _display.TryPresent(_presenter);
+        _status = LastFramePresented
+            ? $"Rendering {_width}×{_height} — samples {_display.DisplayedSampleCount}"
+            : $"Tracing… samples queued ({_sample})";
     }
 
     public CameraSnapshot BuildCamera()
