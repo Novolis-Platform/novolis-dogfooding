@@ -1,4 +1,4 @@
-using Novolis.Audio.Voice.Atc;
+using Novolis.Dogfooding.Voice;
 using Novolis.Audio.Voice.Profiles;
 
 namespace BridgeCommander.Bridge;

@@ -16,7 +16,7 @@ internal sealed class MainWindow : Window
 
         var chrome = StudioChrome.Create();
         var feedback = chrome.CreateFeedback();
-        var studio = new VoiceStudioPanel(feedback, preview);
+        var studio = new VoiceStudioPanel(feedback, preview, new DogfoodingVoiceCodeExportPanel());
 
         var statusBar = new DockPanel();
         DockPanel.SetDock(chrome.FlashLine, Dock.Bottom);

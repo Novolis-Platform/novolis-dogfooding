@@ -2,7 +2,6 @@ using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Novolis.Avalonia.Voice;
-
 namespace NovolisVoiceStudio;
 
 internal static class Program
@@ -15,7 +14,10 @@ internal static class Program
         ApplicationHost = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
-                services.AddSingleton<VoicePreviewController>();
+                services.AddSingleton(_ => new VoicePreviewController
+                {
+                    PlatformPreviewFactory = VoicePreviewPlatformFactory.Create,
+                });
                 services.AddTransient<MainWindow>();
             })
             .Build();

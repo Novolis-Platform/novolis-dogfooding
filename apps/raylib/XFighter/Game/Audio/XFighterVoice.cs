@@ -1,5 +1,5 @@
 using Novolis.Audio.Voice;
-using Novolis.Audio.Voice.Atc;
+using Novolis.Dogfooding.Voice;
 using Novolis.Audio.Voice.Profiles;
 using Novolis.Audio.Voice.SherpaOnnx;
 
@@ -29,7 +29,7 @@ internal sealed class XFighterVoice : IDisposable
         {
             BundledVoiceModelExtractor.EnsureAllExtracted(AppContext.BaseDirectory);
             var builder = VoiceArchetypeApplicator.Apply(
-                new VoiceServiceBuilder(),
+                new VoiceServiceBuilder().UseSherpaOnnx(),
                 VoiceArchetypeCatalog.SteadyMale);
             builder.Configure(options =>
             {

@@ -1,5 +1,5 @@
 using Novolis.Audio.Voice;
-using Novolis.Audio.Voice.Atc;
+using Novolis.Dogfooding.Voice;
 using Novolis.Audio.Voice.Profiles;
 using Novolis.Audio.Voice.SherpaOnnx;
 
@@ -68,7 +68,7 @@ public sealed class BridgeVoiceCast : IAsyncDisposable
 
     private IVoiceService CreateVoice(BridgeCharacter character)
     {
-        var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder(), character.Archetype);
+        var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder().UseSherpaOnnx(), character.Archetype);
         // Bridge comms: brisk delivery on top of archetype pacing.
         var speakingRate = character.Archetype.SpeakingRate * 1.12f;
         builder.Configure(options =>

@@ -2,6 +2,10 @@
   <Folder Name="/shared/">
     <Project Path="apps/shared/Novolis.Dogfooding.TwoD/Novolis.Dogfooding.TwoD.csproj" />
     <Project Path="apps/shared/Novolis.Dogfooding.Compose/Novolis.Dogfooding.Compose.csproj" />
+    <Project Path="apps/shared/Novolis.Dogfooding.Voice/Novolis.Dogfooding.Voice.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Novolis.Dogfooding.Voice.Unit/Novolis.Dogfooding.Voice.Unit.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />

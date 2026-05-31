@@ -1,5 +1,5 @@
 using Novolis.Audio.Voice;
-using Novolis.Audio.Voice.Atc;
+using Novolis.Dogfooding.Voice;
 using Novolis.Audio.Voice.Profiles;
 using Novolis.Audio.Voice.SherpaOnnx;
 
@@ -30,7 +30,7 @@ if (useNull)
 }
 else
 {
-    var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder(), archetype);
+    var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder().UseSherpaOnnx(), archetype);
     if (delivery is not null)
         AtcVoiceProfile.ApplyDelivery(builder, delivery);
     voice = builder.BuildService();

@@ -12,16 +12,21 @@
     <PackageVersion Include="Hex1b" Version="0.154.0" />
     <PackageVersion Include="Spectre.Console" Version="0.54.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
     <PackageVersion Include="Novolis.Audio.Core" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Effects" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Filters" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Voice.Phraseology" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Playback" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Profiles" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Audio.Voice.Atc" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.SherpaOnnx" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Voice.Kokoro" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Voice.Platform.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Voice.Platform.Windows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Design" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Studio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Voice" Version="2026.1.*" />

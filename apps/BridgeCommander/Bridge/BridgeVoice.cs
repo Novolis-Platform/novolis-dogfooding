@@ -1,5 +1,5 @@
 using Novolis.Audio.Voice;
-using Novolis.Audio.Voice.Atc;
+using Novolis.Dogfooding.Voice;
 using Novolis.Audio.Voice.Profiles;
 using Novolis.Audio.Voice.SherpaOnnx;
 
@@ -29,7 +29,7 @@ public static class BridgeVoice
         BundledVoiceModelExtractor.EnsureAllExtracted(AppContext.BaseDirectory);
 
         var selected = archetype ?? VoiceArchetypeCatalog.ExcitableFemale;
-        var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder(), selected);
+        var builder = VoiceArchetypeApplicator.Apply(new VoiceServiceBuilder().UseSherpaOnnx(), selected);
         var speakingRate = selected.SpeakingRate * 1.12f;
         builder.Configure(options =>
         {

@@ -13,7 +13,7 @@
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Novolis.Audio.Voice" />
     <PackageReference Include="Novolis.Audio.Voice.Profiles" />
-    <PackageReference Include="Novolis.Audio.Voice.Atc" />
+    <ProjectReference Include="..\shared\Novolis.Dogfooding.Voice\Novolis.Dogfooding.Voice.csproj" />
     <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" />
   </ItemGroup>
 </Project>
