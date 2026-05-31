@@ -13,6 +13,7 @@
     <PackageReference Include="Novolis.Audio.Filters" />
     <PackageReference Include="Novolis.Audio.Voice" />
     <PackageReference Include="Novolis.Audio.Voice.Design" />
+    <PackageReference Include="Novolis.Audio.Voice.Platform.Abstractions" />
     <PackageReference Include="Novolis.Audio.Voice.Phraseology" />
     <PackageReference Include="Novolis.Audio.Voice.Profiles" />
     <PackageReference Include="Novolis.Audio.Voice.SherpaOnnx" />
