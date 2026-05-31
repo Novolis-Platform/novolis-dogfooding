@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Novolis.Audio.Voice.Design;
@@ -29,7 +30,12 @@ internal sealed class DogfoodingVoiceCodeExportPanel : DockPanel, IVoicePresetCo
             ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"),
             Margin = new Thickness(8, 8, 8, 4),
         };
-        header.Children.Add(InspectorFields.Header("Generated C#"));
+        header.Children.Add(new TextBlock
+        {
+            Text = "Generated C#",
+            FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(0, 8, 0, 4),
+        });
         foreach (VoicePresetCodeTemplate t in Enum.GetValues<VoicePresetCodeTemplate>())
             _template.Items.Add(t);
         foreach (DogfoodingVoiceCodeTemplate t in Enum.GetValues<DogfoodingVoiceCodeTemplate>())
