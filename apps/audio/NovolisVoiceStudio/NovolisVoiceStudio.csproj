@@ -11,7 +11,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
-    <PackageReference Include="Novolis.Audio.Host.NAudio" />
+    <PackageReference Include="Novolis.Audio.Output.NAudio" />
     <PackageReference Include="Novolis.Audio.Voice" />
     <ProjectReference Include="..\..\shared\Novolis.Dogfooding.Voice\Novolis.Dogfooding.Voice.csproj" />
     <PackageReference Include="Novolis.Audio.Voice.Design" />

@@ -49,7 +49,7 @@
     <PackageVersion Include="Novolis.IO.Recovery" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Watching" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Markup.Manuscript" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Audio.Host.NAudio" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Output.NAudio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Snapshots.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Timeline.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Timeline.FileSystem" Version="2026.1.*" />

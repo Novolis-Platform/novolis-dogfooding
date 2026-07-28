@@ -18,7 +18,7 @@
     <PackageReference Include="Novolis.Raylib" />
     <PackageReference Include="Novolis.Audio.Core" />
     <PackageReference Include="Novolis.Audio.Playback" />
-    <PackageReference Include="Novolis.Audio.Host.NAudio" />
+    <PackageReference Include="Novolis.Audio.Output.NAudio" />
     <PackageReference Include="Novolis.Rendering.Backends.Igpu" />
     <PackageReference Include="Novolis.Rendering.Compile" />
     <PackageReference Include="Novolis.Rendering.DependencyInjection" />
