@@ -71,19 +71,21 @@ internal static class PolityWorld
   internal static (EconomySimulation Sim, Ids Ids) Create(ulong seed = 1001)
   {
     var catalog = NearSolCatalog.Load();
+    var polity = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a1"));
+    var tramp = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
     var builder = new EconomyWorldBuilder(new EconomyPolicy
     {
       WageRatePerHour = Money.From(3m),
       LaborHoursPerOutputUnit = 0.05m,
-      // Never hit period-close ResetBudget — that would mint free household credits.
-      PeriodHours = 1_000_000_000,
+      PeriodHours = 24,
+      HouseholdCreditFromWages = true,
+      CohortBudgetResetMode = CohortBudgetResetMode.CarryForward,
+      TollBeneficiaryFirmId = polity,
     });
 
     var bridge = AstroEconomyBridge.Build(catalog, builder);
     var roleSummary = RoleAssigner.Summarize(bridge.Roles);
 
-    var polity = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a1"));
-    var tramp = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
     var oreCat = ProductCategoryId.From(builder.NextGuid());
     var partsCat = ProductCategoryId.From(builder.NextGuid());
     var goodsCat = ProductCategoryId.From(builder.NextGuid());

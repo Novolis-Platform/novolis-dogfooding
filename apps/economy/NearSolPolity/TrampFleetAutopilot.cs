@@ -1,5 +1,4 @@
 using Novolis.Economy;
-using Novolis.Economy.Accounting;
 using Novolis.Economy.Logistics;
 using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
@@ -209,32 +208,13 @@ internal sealed class TrampFleetAutopilot
       return true;
     }
 
-    var keyTramp = new InventoryKey(_ids.Tramp, site.Hub.LocationId, product);
-    var keyPolity = new InventoryKey(_ids.Polity, site.Hub.LocationId, product);
-    if (!world.Inventory.TryTake(keyTramp, Quantity.From(have), out _, out var cogs))
-    {
-      return false;
-    }
-
-    world.Inventory.Add(
-      keyPolity,
-      new ProductBatch(
-        product,
-        Quantity.From(have),
-        new ProductQuality(100m),
-        Money.From(unitPrice),
-        _sim.State.Clock.Date,
-        null));
-
-    if (world.Ledgers.TryGetValue(_ids.Tramp, out var trampLedger))
-    {
-      LedgerEngine.PostCashSale(trampLedger, revenue, cogs, _sim.State.Clock.Date);
-    }
-
-    if (world.Ledgers.TryGetValue(_ids.Polity, out var polityLedger))
-    {
-      LedgerEngine.PostCashPurchase(polityLedger, revenue, _sim.State.Clock.Date);
-    }
+    _sim.Enqueue(new TransferGoodsForCash(
+      _ids.Tramp,
+      _ids.Polity,
+      site.Hub.LocationId,
+      product,
+      Quantity.From(have),
+      Money.From(unitPrice)));
 
     _currentHub = site.Hub.HubId;
     LastDecision = $"settle {ProductLabel(product)} ×{have:0} → polity @ {site.Hub.Name}";
@@ -446,33 +426,13 @@ internal sealed class TrampFleetAutopilot
       return false;
     }
 
-    var keyPolity = new InventoryKey(_ids.Polity, loc, product);
-    var keyTramp = new InventoryKey(_ids.Tramp, loc, product);
-    if (!world.Inventory.TryTake(keyPolity, Quantity.From(need), out _, out var cogs))
-    {
-      return false;
-    }
-
-    world.Inventory.Add(
-      keyTramp,
-      new ProductBatch(
-        product,
-        Quantity.From(need),
-        new ProductQuality(100m),
-        Money.From(unitPrice),
-        _sim.State.Clock.Date,
-        null));
-
-    if (world.Ledgers.TryGetValue(_ids.Polity, out var polityLedger))
-    {
-      LedgerEngine.PostCashSale(polityLedger, cost, cogs, _sim.State.Clock.Date);
-    }
-
-    if (world.Ledgers.TryGetValue(_ids.Tramp, out var trampLedger))
-    {
-      LedgerEngine.PostCashPurchase(trampLedger, cost, _sim.State.Clock.Date);
-    }
-
+    _sim.Enqueue(new TransferGoodsForCash(
+      _ids.Polity,
+      _ids.Tramp,
+      loc,
+      product,
+      Quantity.From(need),
+      Money.From(unitPrice)));
     return true;
   }
 

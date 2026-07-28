@@ -13,7 +13,7 @@ AnsiConsole.MarkupLine(
 var (sim, ids) = PolityWorld.Create();
 var polity = new PolityController(sim, ids);
 var tramp = new TrampFleetAutopilot(sim, ids);
-var credits = new CreditCirculation(sim, ids);
+var credits = new CreditCirculation(sim);
 var log = new Queue<string>();
 var eventCursor = sim.State.Events.Count;
 var running = true;
@@ -133,10 +133,13 @@ void Capture(int before)
       ShipmentPlanFailed e => $"plan failed: {e.Reason}",
       FuelBunkered e => $"bunkered {e.Quantity.Value:0.##}",
       TransportTollPaid e => $"toll {e.Amount.Amount:0.##}",
+      WagesPaid e when e.Amount.Amount >= 0.5m => $"wages paid {e.Amount.Amount:0}",
+      HouseholdCreditsIssued e when e.Amount.Amount >= 0.5m => $"hh credits {e.Amount.Amount:0}",
       GoodsSold e => $"sold ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
+      GoodsSoldInterFirm e => $"B2B ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
+      TransferGoodsFailed e => $"B2B failed: {e.Reason}",
       ProcurementFilled e => $"import ×{e.Quantity.Value:0}",
       BatchProduced e => $"produced {ProductHint(e.ProductId)} ×{e.Quantity.Value:0}",
-      WagesPaid e => $"wages paid {e.Amount.Amount:0}",
       _ => null,
     };
     if (line is not null)
