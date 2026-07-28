@@ -21,7 +21,7 @@ internal static class AstroEconomyBridge
 
   public const double MaxRangeLy = 12.0;
   public const decimal TollPerLy = 0.5m;
-  public const decimal CorridorMaxCargo = 80m;
+  public const decimal CorridorMaxCargo = 48m;
 
   /// <summary>Campaign seed for <see cref="SystemProfileGenerator"/> (matches <see cref="PolityWorld.Create"/> default).</summary>
   public const ulong CampaignSeed = 1001;
@@ -140,7 +140,8 @@ internal static class AstroEconomyBridge
 
   private static (long Dwell, int Berths) HubOps(SystemRole role) => role switch
   {
-    SystemRole.Capital => (2, 6),
+    // Time capacity: Capital dwell/berths bind unload rate.
+    SystemRole.Capital => (3, 5),
     SystemRole.Industrial => (2, 4),
     SystemRole.Inhabited => (2, 3),
     SystemRole.Mining => (3, 2),

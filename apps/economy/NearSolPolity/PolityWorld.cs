@@ -15,6 +15,17 @@ internal static class PolityWorld
   public const decimal OreSell = 10m;
   /// <summary>Industry delivered Raw bid — above mine gate + haul, below Final gate.</summary>
   public const decimal OreDelivered = 9m;
+  /// <summary>Sol export hub bid / exogenous Raw floor — only used when warehouse is in surplus.</summary>
+  public const decimal OreExport = 12m;
+    // Soft surplus threshold for Sol Raw — ExportBids only above this.
+    public const decimal SolRawSoftCap = 40m;
+    /// <summary>Hard store-limit for Sol Raw — inbound waits when full (no destroy).</summary>
+    public const decimal SolRawHardCap = 96m;
+  public const decimal ExportMinLot = 4m;
+  /// <summary>Tramp hull cargo volume (scarcer than legacy open corridor 80).</summary>
+  public const decimal HullCargoCapacity = 36m;
+  /// <summary>Corridor max cargo (volume).</summary>
+  public const decimal CorridorMaxCargo = 48m;
   public const decimal FreightPremiumPerUnit = 1.25m;
   public const decimal PartsPerOre = 0.15m;
   public const decimal OrePerFuel = 0.5m;
@@ -165,7 +176,7 @@ internal static class PolityWorld
 
     var hull = new VehicleClass(
       hullId,
-      Quantity.From(40m),
+      Quantity.From(HullCargoCapacity),
       FuelBurnPerDifficultyHour,
       CrewLaborPerUnderwayHour: 0.02m,
       // Large enough for typical multi-leg burns when origin tops off the tank.
@@ -397,8 +408,23 @@ internal static class PolityWorld
 
     var sim = new EconomySimulation(seed, builder.Build());
     SeedInventory(sim, ids);
+    ApplyStoreLimits(sim, ids);
     SeedInvariants.Assert(ids, sim);
     return (sim, ids);
+  }
+
+  /// <summary>Hard warehouse caps + soft surplus thresholds (export policy reads soft).</summary>
+  private static void ApplyStoreLimits(EconomySimulation sim, Ids ids)
+  {
+    var limits = sim.State.World.Inventory.Limits;
+    if (ids.Sites.TryGetValue("sol", out var sol))
+    {
+      var loc = sol.Hub.LocationId;
+      limits.Set(loc, ids.Ore, SolRawSoftCap, SolRawHardCap);
+      limits.Set(loc, ids.Parts, softCap: 48m, hardCap: 96m);
+      limits.Set(loc, ids.Goods, softCap: 56m, hardCap: 100m);
+      limits.Set(loc, ids.Fuel, softCap: 64m, hardCap: 140m);
+    }
   }
 
   private static void SeedInventory(EconomySimulation sim, Ids ids)
@@ -415,7 +441,8 @@ internal static class PolityWorld
 
       inv.Add(
         new InventoryKey(firm, loc, product),
-        new ProductBatch(product, Quantity.From(qty), new ProductQuality(100m), Money.From(unitCost), epoch, null));
+        new ProductBatch(product, Quantity.From(qty), new ProductQuality(100m), Money.From(unitCost), epoch, null),
+        bypassLimits: true);
     }
 
     foreach (var site in ids.Sites.Values)
@@ -427,10 +454,10 @@ internal static class PolityWorld
           Add(ids.Mining, hub.LocationId, ids.Ore, 45m, OreBuy);
           Add(ids.Mining, hub.LocationId, ids.Parts, 40m, PartsBuy);
           Add(ids.Station, hub.LocationId, ids.Goods, 18m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 48m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 28m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
           }
 
           break;
@@ -438,46 +465,48 @@ internal static class PolityWorld
           Add(ids.Industry, hub.LocationId, ids.Ore, 55m, OreBuy);
           Add(ids.Industry, hub.LocationId, ids.Parts, 40m, PartsBuy);
           Add(ids.Industry, hub.LocationId, ids.Goods, 20m, GoodsSell * 0.4m);
-          Add(ids.Industry, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 56m, FuelUnitCost);
+          Add(ids.Industry, hub.LocationId, ids.Fuel, 24m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 32m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Capital:
           Add(ids.Station, hub.LocationId, ids.Parts, 20m, PartsBuy);
           Add(ids.Station, hub.LocationId, ids.Goods, 25m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 64m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
+          // Modest Raw buffer under soft cap — export only after inbound surplus piles up.
+          Add(ids.Station, hub.LocationId, ids.Ore, 28m, OreBuy);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Inhabited:
           Add(ids.Station, hub.LocationId, ids.Goods, 10m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 36m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 22m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 16m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Transit:
-          Add(ids.Station, hub.LocationId, ids.Fuel, 56m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 32m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 18m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 9m, FuelUnitCost);
           }
 
           break;
         default:
-          Add(ids.Station, hub.LocationId, ids.Fuel, 24m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 14m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 6m, FuelUnitCost);
           }
 
           break;

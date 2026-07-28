@@ -21,6 +21,7 @@ var (sim, ids) = PolityWorld.Create();
 var agents = NearSolAgents.Create(sim, ids);
 var credits = new CreditCirculation(sim);
 credits.SetFirmNames(ids.Firms);
+credits.SetSkuIds(ids.Ore, ids.Parts, ids.Goods, ids.Fuel);
 var log = new Queue<string>();
 var eventCursor = sim.State.Events.Count;
 var running = true;
@@ -175,7 +176,9 @@ async Task PulseAsync(bool captureLog)
   for (var h = 0; h < hoursPerPulse; h++)
   {
     var ctx = new AgentContext(sim, new DeterministicRandom(sim.State.Seed ^ (ulong)sim.State.Clock.HourIndex));
-    AgentScheduler.TickAll(agents.PulseOrder, ctx);
+    // Snapshot — venture agent may append carriers mid-tick for the *next* hour.
+    AgentScheduler.TickAll(agents.PulseOrder.ToArray(), ctx);
+    agents.RebuildPulse();
     await sim.AdvanceAsync(SimulationDuration.FromHours(1));
   }
 
@@ -206,7 +209,10 @@ void Capture(int before)
       GoodsSoldInterFirm e => $"B2B ×{e.Quantity.Value:0}",
       HouseholdCreditsIssued e when e.Amount.Amount >= 0.5m => $"hh credits {e.Amount.Amount:0}",
       ProcurementFilled e => $"import ×{e.Quantity.Value:0}",
+      ExportFilled e => $"export Raw ×{e.Quantity.Value:0} ${e.Revenue.Amount:0}",
       BatchProduced e => $"produced {PolityWorld.SkuLabel(e.ProductId, ids)} ×{e.Quantity.Value:0}",
+      LoanOriginated e => $"loan {e.Principal.Amount:0}",
+      OwnershipChanged e => $"own {e.Fraction:0.##}",
       _ => null,
     };
     if (line is not null)

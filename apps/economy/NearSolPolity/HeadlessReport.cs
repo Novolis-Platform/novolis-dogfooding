@@ -1,5 +1,6 @@
 using Novolis.Economy;
 using Novolis.Economy.Accounting;
+using Novolis.Economy.Core.Extensions;
 using Novolis.Economy.Finance;
 using Novolis.Economy.Markets;
 using Novolis.Economy.Population;
@@ -73,12 +74,14 @@ internal static class HeadlessReport
       "",
       "— Money stock —",
       $"Liquid:       {credits.LiquidStock:0}  (open {openingLiquid:0}, Δ {liquidDelta:0})",
-      $"  vs imports: Δ+imports = {liquidDelta + credits.ImportSpend:0} (want ~0)",
+      $"  vs trade:   Δ − exports + imports = {liquidDelta - credits.ExportRevenue + credits.ImportSpend:0} (want ~0)",
       $"  Households: {hh:0}",
       $"Inv book $:   {credits.InventoryBookValue:0}",
       $"Wages→hh:     {credits.WagesDistributed:0}",
       $"Imports:      {credits.ImportSpend:0}",
+      $"Exports:      {credits.ExportRevenue:0}  (Raw qty {credits.ExportQty:0} · fills {credits.ExportFills})",
       $"Tolls→Civics: {credits.TollsToTreasury:0.##}",
+      $"Ventures:     {agents.Ventures.Count} HH tramp hulls launched",
       "",
       "— Finance —",
       $"Loans:        active {credits.ActiveLoans}  originated {credits.LoansOriginated}  defaults {credits.LoansDefaulted}",
@@ -157,6 +160,9 @@ internal static class HeadlessReport
       $"Throughput:  retail/produced {Ratio(credits.RetailSold, credits.Produced)}  " +
       $"delivered/departed {Ratio(delivered, credits.Departed)}  " +
       $"fill qty/fill {Ratio(credits.BookFillQty, credits.BookFills)}");
+    lines.Add(
+      $"Sink health: retail/hh-budget {Ratio(credits.RetailSold * PolityWorld.GoodsSell, hh)}  " +
+      $"(shelf $ {PolityWorld.GoodsSell:0})  wages→retail {Ratio(credits.RetailSold * PolityWorld.GoodsSell, credits.WagesDistributed)}");
     lines.Add("Firm cash % of firm pool:");
     if (firmCash > 0m)
     {
@@ -167,26 +173,53 @@ internal static class HeadlessReport
       }
     }
 
+    var skuNow = credits.InventoryBySku();
+    lines.Add("");
+    lines.Add("— Ops inventory (SKU qty) —");
+    lines.Add(
+      $"  Raw {skuNow.Raw:0}  Capital {skuNow.Capital:0}  Final {skuNow.Final:0}  Energy {skuNow.Energy:0}");
+    lines.Add(
+      $"  Final is the household consumption sink; Energy fuels tramp legs.");
+
+    var coreSnap = world.CoreState.Snapshot();
+    lines.Add("");
+    lines.Add("— Core authority (period settle) —");
+    lines.Add(
+      $"  Period {coreSnap.Period}  entities {coreSnap.EntityCount}  regions {coreSnap.RegionCount}  " +
+      $"cohorts {coreSnap.CohortCount}");
+    lines.Add(
+      $"  Cash {coreSnap.TotalCash.Amount:0}  deposits {coreSnap.TotalDeposits.Amount:0}  " +
+      $"broad {coreSnap.BroadMoney.Amount:0}  net-mint/period {coreSnap.NetMoneyCreatedThisPeriod.Amount:0}");
+    lines.Add(
+      $"  Holdings slots {coreSnap.HoldingSlots}  qty {world.CoreState.Holdings.Values.Sum(h => h.Quantity):0}  " +
+      $"in-flight xfers {coreSnap.InFlightTransfers}  " +
+      $"loans perf/delinq/def {coreSnap.PerformingLoans}/{coreSnap.DelinquentLoans}/{coreSnap.DefaultedLoans}");
+    lines.Add(
+      "  Note: ops FirmLedger + cohort budgets still drive NearSol agents; Core accrues " +
+      "via delivery credits + daily Advance (dual books until Phase 2 drain completes).");
+
     if (credits.Milestones.Count > 0)
     {
       lines.Add("");
       lines.Add("— Milestones (cumulative) —");
       lines.Add(
-        "  day   liquid    hh   inv$  prod  retail fills  deliv  defs  div$  abs  upg");
+        "  day   liquid  firm$    hh   Final  Raw  Cap  Eng  retail  fills  deliv  coreP  coreHold");
       MacroSnapshot? prev = null;
       foreach (var m in credits.Milestones)
       {
         lines.Add(
-          $"  {m.DayIndex,4}  {m.Liquid,7:0}  {m.Households,5:0}  {m.InventoryBook,5:0}  " +
-          $"{m.Produced,5:0}  {m.RetailSold,5:0}  {m.BookFills,5}  {m.Delivered,5:0}  " +
-          $"{m.LoansDefaulted,4}  {m.DividendsPaid,4:0}  {m.FacilitiesAbsorbed,3}  {m.Upgrades,3}");
+          $"  {m.DayIndex,4}  {m.Liquid,7:0}  {m.FirmCash,6:0}  {m.Households,5:0}  " +
+          $"{m.SkuFinal,5:0}  {m.SkuRaw,4:0}  {m.SkuCapital,4:0}  {m.SkuEnergy,4:0}  " +
+          $"{m.RetailSold,6:0}  {m.BookFills,5}  {m.Delivered,5:0}  {m.CorePeriod,5}  {m.CoreHoldingQty,7:0}");
         if (prev is { } p)
         {
           var dDays = Math.Max(1, m.DayIndex - p.DayIndex);
           lines.Add(
-            $"       Δ/day fills {(m.BookFills - p.BookFills) / (decimal)dDays:0.##}  " +
+            $"       Δ/day retail {(m.RetailSold - p.RetailSold) / dDays:0.##}  " +
+            $"fills {(m.BookFills - p.BookFills) / (decimal)dDays:0.##}  " +
             $"deliv {(m.Delivered - p.Delivered) / dDays:0.##}  " +
-            $"hh Δ {m.Households - p.Households:0}");
+            $"hh Δ {m.Households - p.Households:0}  firm$ Δ {m.FirmCash - p.FirmCash:0}  " +
+            $"Final Δ {m.SkuFinal - p.SkuFinal:0}  coreHold Δ {m.CoreHoldingQty - p.CoreHoldingQty:0}");
         }
 
         prev = m;
@@ -279,15 +312,28 @@ internal static class HeadlessReport
     lines.AddRange(
     [
       $"Treasury:     {agents.Treasury.LastDecision}",
+      $"Sol export:   {agents.SolExport.LastDecision}",
+      $"Ventures:     {agents.VenturesAgent.LastDecision}  started {agents.VenturesAgent.VenturesStarted}",
       "",
       "— Travel —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
-      $"Fleet:        {agents.Carriers.Count} tramps  MinMargin {PolityWorld.MinMargin:0.##}",
+      $"Fleet:        {agents.Carriers.Count} tramps (seed {PolityWorld.TrampFleetSize} + ventures)  MinMargin {PolityWorld.MinMargin:0.##}",
       $"Roles:        {ids.RoleSummary}",
       "Agents:       Novolis.Economy.Agents heuristics + DeterministicRandom",
       "Civics:       Station entity (tolls / treasury / ownership) — product copy",
       "Geography:    SystemProfile potentials (Astro.Assessment) gate settlement/mining",
+      $"Chaos:        Sol Raw export @ {PolityWorld.OreExport:0} · HH tramp ventures (borrow vs hull)",
     ]);
+
+    if (agents.Ventures.Count > 0)
+    {
+      lines.Add("— HH tramp ventures —");
+      foreach (var (tramp, ownerHh, name) in agents.Ventures)
+      {
+        var cash = world.Ledgers.TryGetValue(tramp, out var led) ? led.Cash.Amount : 0m;
+        lines.Add($"  {name}  cash {cash:0}  owner {ownerHh.Value.ToString("N")[..8]}…");
+      }
+    }
 
     var failReasons = credits.PlanFailReasons
       .OrderByDescending(kv => kv.Value)

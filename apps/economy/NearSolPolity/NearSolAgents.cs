@@ -10,14 +10,57 @@ internal static class NearSolAgents
 {
   public sealed class Bundle
   {
+    private readonly List<IEconomicAgent> _pulse = [];
+    private readonly List<(FirmId Tramp, FirmId Household, string Name)> _ventures = [];
+
     public required ExtractiveFirmAgent Mining { get; init; }
     public required ManufacturingFirmAgent Industry { get; init; }
     public required RetailFirmAgent Station { get; init; }
     public required CarrierFirmAgent Carrier { get; init; }
-    public required IReadOnlyList<CarrierFirmAgent> Carriers { get; init; }
+    public required List<CarrierFirmAgent> Carriers { get; init; }
     public required TreasuryFirmAgent Treasury { get; init; }
     public required IReadOnlyList<HouseholdFirmAgent> Households { get; init; }
-    public required IReadOnlyList<IEconomicAgent> PulseOrder { get; init; }
+    public required SolExportHubAgent SolExport { get; init; }
+    public HouseholdTrampVentureAgent VenturesAgent { get; set; } = null!;
+
+    public IReadOnlyList<IEconomicAgent> PulseOrder => _pulse;
+
+    public IReadOnlyList<(FirmId Tramp, FirmId Household, string Name)> Ventures => _ventures;
+
+    public void RebuildPulse()
+    {
+      _pulse.Clear();
+      _pulse.Add(Mining);
+      _pulse.Add(Industry);
+      _pulse.Add(Station);
+      _pulse.AddRange(Carriers);
+      _pulse.Add(Treasury);
+      _pulse.AddRange(Households);
+      // SolExport + VenturesAgent appended when enabled (see Create).
+      if (SolExportEnabled)
+      {
+        _pulse.Add(SolExport);
+      }
+
+      if (VenturesEnabled)
+      {
+        _pulse.Add(VenturesAgent);
+      }
+    }
+
+    public bool SolExportEnabled { get; set; } = true;
+    public bool VenturesEnabled { get; set; } = true;
+
+    public void RegisterVenture(
+      FirmId tramp,
+      FirmId household,
+      string name,
+      CarrierFirmAgent agent)
+    {
+      Carriers.Add(agent);
+      _ventures.Add((tramp, household, name));
+      // Pulse rebuild happens after TickAll snapshot (Program.PulseAsync).
+    }
   }
 
   public static Bundle Create(EconomySimulation sim, PolityWorld.Ids ids)
@@ -153,13 +196,8 @@ internal static class NearSolAgents
           MaxActiveLoans: 1)))
       .ToList();
 
-    IEconomicAgent[] pulse =
-    [
-      mining, industry, station, .. trampAgents.Cast<IEconomicAgent>(), treasury,
-      .. households.Cast<IEconomicAgent>(),
-    ];
-
-    return new Bundle
+    var solExport = new SolExportHubAgent(ids);
+    var bundle = new Bundle
     {
       Mining = mining,
       Industry = industry,
@@ -168,7 +206,14 @@ internal static class NearSolAgents
       Carriers = trampAgents,
       Treasury = treasury,
       Households = households,
-      PulseOrder = pulse,
+      SolExport = solExport,
+      VenturesAgent = null!,
     };
+    bundle.VenturesAgent = new HouseholdTrampVentureAgent(ids, bundle, allSites, pool, Gate);
+    bundle.SolExportEnabled = true;
+    // Ventures still starve haul after entry — keep agent wired, gate off until berth/fuel entry is fixed.
+    bundle.VenturesEnabled = false;
+    bundle.RebuildPulse();
+    return bundle;
   }
 }

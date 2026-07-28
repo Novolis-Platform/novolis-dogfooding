@@ -1,5 +1,7 @@
 using Novolis.Economy;
 using Novolis.Economy.Accounting;
+using Novolis.Economy.Core;
+using Novolis.Economy.Core.Extensions;
 using Novolis.Economy.Finance;
 using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
@@ -12,6 +14,7 @@ internal readonly record struct MacroSnapshot(
   int DayIndex,
   decimal Liquid,
   decimal Households,
+  decimal FirmCash,
   decimal InventoryBook,
   decimal Produced,
   decimal RetailSold,
@@ -21,7 +24,16 @@ internal readonly record struct MacroSnapshot(
   int LoansDefaulted,
   decimal DividendsPaid,
   int FacilitiesAbsorbed,
-  int Upgrades);
+  int Upgrades,
+  decimal SkuRaw,
+  decimal SkuCapital,
+  decimal SkuFinal,
+  decimal SkuEnergy,
+  int CorePeriod,
+  decimal CoreCash,
+  decimal CoreHoldingQty,
+  int CoreHoldingSlots,
+  int CoreInFlight);
 
 /// <summary>Dashboard metrics for liquid stock, imports, finance, macro events, and activity.</summary>
 internal sealed class CreditCirculation
@@ -30,6 +42,10 @@ internal sealed class CreditCirculation
   private int _eventCursor;
   private decimal _wagesDistributed;
   private decimal _importSpend;
+  private decimal _exportRevenue;
+  private decimal _exportQty;
+  private int _exportFills;
+  private int _trampVentures;
   private decimal _tollsToTreasury;
   private decimal _produced;
   private decimal _retailSold;
@@ -56,6 +72,10 @@ internal sealed class CreditCirculation
   private readonly List<MacroSnapshot> _milestones = [];
   private int _lastMilestoneDay = -1;
   private Dictionary<FirmId, string> _firmNames = new();
+  private ProductId? _ore;
+  private ProductId? _parts;
+  private ProductId? _goods;
+  private ProductId? _fuel;
 
   public CreditCirculation(EconomySimulation sim)
   {
@@ -69,8 +89,21 @@ internal sealed class CreditCirculation
     _firmNames = firms.ToDictionary(f => f.Id, f => f.Name);
   }
 
+  /// <summary>SKU ids for inventory-by-product milestones.</summary>
+  public void SetSkuIds(ProductId ore, ProductId parts, ProductId goods, ProductId fuel)
+  {
+    _ore = ore;
+    _parts = parts;
+    _goods = goods;
+    _fuel = fuel;
+  }
+
   public decimal WagesDistributed => _wagesDistributed;
   public decimal ImportSpend => _importSpend;
+  public decimal ExportRevenue => _exportRevenue;
+  public decimal ExportQty => _exportQty;
+  public int ExportFills => _exportFills;
+  public int TrampVentures => _trampVentures;
   public decimal TollsToTreasury => _tollsToTreasury;
   public decimal Produced => _produced;
   public decimal RetailSold => _retailSold;
@@ -99,10 +132,12 @@ internal sealed class CreditCirculation
   public decimal LiquidStock => MoneyStock.Liquid(_sim.State.World);
 
   public int ActiveLoans =>
-    _sim.State.World.Loans.Count(l => l.Status == LoanStatus.Active);
+    _sim.State.World.Loans.Count(l => l.Status == Novolis.Economy.Finance.LoanStatus.Active);
 
   public decimal PrincipalOutstanding =>
-    _sim.State.World.Loans.Where(l => l.Status is LoanStatus.Active or LoanStatus.Defaulted)
+    _sim.State.World.Loans
+      .Where(l => l.Status is Novolis.Economy.Finance.LoanStatus.Active
+        or Novolis.Economy.Finance.LoanStatus.Defaulted)
       .Sum(l => l.PrincipalRemaining.Amount);
 
   public int CreditFrozenFirms =>
@@ -139,6 +174,11 @@ internal sealed class CreditCirculation
           break;
         case ProcurementFilled e:
           _importSpend += e.UnitPrice.Amount * e.Quantity.Value;
+          break;
+        case ExportFilled e:
+          _exportFills++;
+          _exportQty += e.Quantity.Value;
+          _exportRevenue += e.Revenue.Amount;
           break;
         case TransportTollPaid e:
           _tollsToTreasury += e.Amount.Amount;
@@ -183,6 +223,13 @@ internal sealed class CreditCirculation
         case LoanOriginated e:
           _loansOriginated++;
           Note(clock, $"loan {e.Principal.Amount:0} {Short(e.LenderFirmId)}→{Short(e.BorrowerFirmId)}");
+          // Hull loans to venture tramp ids (…00c0+)
+          if (e.BorrowerFirmId.Value.ToString("N").Contains("00000000c0", StringComparison.Ordinal))
+          {
+            _trampVentures++;
+            Note(clock, $"VENTURE hull loan {e.Principal.Amount:0}");
+          }
+
           break;
         case LoanDefaulted e:
           _loansDefaulted++;
@@ -248,11 +295,14 @@ internal sealed class CreditCirculation
 
     _lastMilestoneDay = day;
     var world = _sim.State.World;
+    var sku = InventoryBySku();
+    var core = world.CoreState.Snapshot();
     _milestones.Add(new MacroSnapshot(
       _sim.State.Clock.HourIndex,
       day,
       LiquidStock,
       world.Cohorts.Sum(c => c.BudgetRemaining.Amount),
+      world.Ledgers.Values.Sum(l => l.Cash.Amount),
       InventoryBookValue,
       _produced,
       _retailSold,
@@ -262,7 +312,45 @@ internal sealed class CreditCirculation
       _loansDefaulted,
       _dividendCash,
       _facilitiesAbsorbed,
-      _facilityUpgrades));
+      _facilityUpgrades,
+      sku.Raw,
+      sku.Capital,
+      sku.Final,
+      sku.Energy,
+      core.Period,
+      core.TotalCash.Amount,
+      world.CoreState.Holdings.Values.Sum(h => h.Quantity),
+      core.HoldingSlots,
+      core.InFlightTransfers));
+  }
+
+  /// <summary>Physical lots by NearSol SKU (ops inventory; Core holdings are a parallel credit path).</summary>
+  public (decimal Raw, decimal Capital, decimal Final, decimal Energy) InventoryBySku()
+  {
+    var world = _sim.State.World;
+    decimal raw = 0, capital = 0, final = 0, energy = 0;
+    foreach (var key in world.Inventory.Keys)
+    {
+      var qty = world.Inventory.GetLots(key).Sum(l => l.Quantity.Value);
+      if (_ore is { } o && key.ProductId.Equals(o))
+      {
+        raw += qty;
+      }
+      else if (_parts is { } p && key.ProductId.Equals(p))
+      {
+        capital += qty;
+      }
+      else if (_goods is { } g && key.ProductId.Equals(g))
+      {
+        final += qty;
+      }
+      else if (_fuel is { } f && key.ProductId.Equals(f))
+      {
+        energy += qty;
+      }
+    }
+
+    return (raw, capital, final, energy);
   }
 
   private void Note(SimulationHour clock, string text)
