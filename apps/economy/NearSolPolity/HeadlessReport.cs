@@ -77,15 +77,45 @@ internal static class HeadlessReport
       $"Inv book $:   {credits.InventoryBookValue:0}",
       $"Wages→hh:     {credits.WagesDistributed:0}",
       $"Imports:      {credits.ImportSpend:0}",
-      $"Tolls→Station:{credits.TollsToTreasury:0.##}",
+      $"Tolls→Civics: {credits.TollsToTreasury:0.##}",
       "",
       "— Finance —",
       $"Loans:        active {credits.ActiveLoans}  originated {credits.LoansOriginated}  defaults {credits.LoansDefaulted}",
       $"Principal:    {credits.PrincipalOutstanding:0}",
       $"Interest:     accrued {credits.InterestAccrued:0.##}  repaid-cash {credits.InterestPaid:0.##}",
       "",
-      "— Firms (cash / rev / COGS / wages / interest / notes) —",
+      "— Entities (kind / registry / frozen) —",
     };
+
+    foreach (var (name, firmId) in ids.Firms)
+    {
+      var entity = world.Entities.GetValueOrDefault(firmId);
+      var kind = entity?.Kind.ToString() ?? "?";
+      var reg = entity?.RegistryId ?? "—";
+      var frozen = entity?.CreditFrozen == true ? "frozen" : "ok";
+      lines.Add($"  {name,-9} {kind,-5}  registry {reg}  credit {frozen}");
+    }
+
+    lines.Add("");
+    lines.Add("— Ownership —");
+    if (world.OwnershipClaims.Count == 0)
+    {
+      lines.Add("  (none)");
+    }
+    else
+    {
+      foreach (var claim in world.OwnershipClaims
+                 .OrderBy(c => c.IssuerFirmId.Value)
+                 .ThenBy(c => c.OwnerFirmId.Value))
+      {
+        var issuer = FirmName(ids, claim.IssuerFirmId);
+        var owner = FirmName(ids, claim.OwnerFirmId);
+        lines.Add($"  {owner} owns {claim.Fraction:0.##} of {issuer}");
+      }
+    }
+
+    lines.Add("");
+    lines.Add("— Firms (cash / rev / COGS / wages / interest / notes) —");
 
     foreach (var (name, firmId) in ids.Firms)
     {
@@ -95,6 +125,13 @@ internal static class HeadlessReport
         $"cogs {Abs(ledger, AccountRole.CostOfGoodsSold),6:0}  wage {Abs(ledger, AccountRole.WageExpense),6:0}  " +
         $"intE {Abs(ledger, AccountRole.InterestExpense),5:0}  intI {Abs(ledger, AccountRole.InterestIncome),5:0}  " +
         $"NP {Abs(ledger, AccountRole.NotesPayable),5:0}  NR {Abs(ledger, AccountRole.NotesReceivable),5:0}");
+    }
+
+    lines.Add("");
+    lines.Add("— Facility owners —");
+    foreach (var fac in world.Facilities.Values.OrderBy(f => f.Id.Value).Take(8))
+    {
+      lines.Add($"  {fac.Id.Value.ToString("N")[..8]}… → {FirmName(ids, fac.FirmId)}");
     }
 
     var depth = world.HubOrders.Where(o => !o.IsFilled)
@@ -131,6 +168,7 @@ internal static class HeadlessReport
       "— Travel —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
       "Agents:       Novolis.Economy.Agents heuristics + DeterministicRandom",
+      "Civics:       Station entity (tolls / treasury / ownership) — product copy",
     ]);
 
     var failReasons = credits.PlanFailReasons
@@ -148,6 +186,19 @@ internal static class HeadlessReport
     {
       AnsiConsole.WriteLine(line);
     }
+  }
+
+  private static string FirmName(PolityWorld.Ids ids, FirmId id)
+  {
+    foreach (var (name, firmId) in ids.Firms)
+    {
+      if (firmId.Equals(id))
+      {
+        return name;
+      }
+    }
+
+    return id.Value.ToString("N")[..8];
   }
 
   private static decimal Abs(FirmLedger ledger, AccountRole role) =>

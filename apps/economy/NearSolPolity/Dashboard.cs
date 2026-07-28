@@ -47,6 +47,11 @@ internal static class Dashboard
     left.AddRow("Wages→hh", $"{credits.WagesDistributed:0}");
     left.AddRow("Imports", $"{credits.ImportSpend:0}");
     left.AddRow("Loans", $"{credits.ActiveLoans} active  Δ{credits.InterestPaid:0.#}");
+    left.AddRow("Civics", world.Entities.TryGetValue(ids.Station, out var civic)
+      ? $"{civic.Kind} · {Markup.Escape(civic.RegistryId ?? "—")}"
+      : "—");
+    var own = world.OwnershipClaims.Count(c => c.OwnerFirmId.Equals(ids.Station));
+    left.AddRow("Owns", $"{own} claim(s)  frozen {world.Entities.Values.Count(e => e.CreditFrozen)}");
     left.AddRow("Book", $"open {openOrders}  fills {fills}");
     foreach (var (name, firmId) in ids.Firms)
     {
