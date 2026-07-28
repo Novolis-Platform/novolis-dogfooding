@@ -61,7 +61,7 @@
     <PackageVersion Include="Novolis.Commands.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Engine" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Queueing" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Economy" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Core" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Accounting" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Logistics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Markets" Version="2026.1.*" />

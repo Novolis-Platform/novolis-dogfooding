@@ -10,7 +10,7 @@
     <PackageReference Include="Novolis.Astro.Assessment" />
     <PackageReference Include="Novolis.Astro.Catalog" />
     <PackageReference Include="Novolis.Astro.Routing" />
-    <PackageReference Include="Novolis.Economy" />
+    <PackageReference Include="Novolis.Economy.Core" />
     <PackageReference Include="Novolis.Economy.Production" />
     <PackageReference Include="Novolis.Economy.Markets" />
     <PackageReference Include="Novolis.Economy.Accounting" />

@@ -11,7 +11,7 @@
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
-    <PackageReference Include="Novolis.Economy" />
+    <PackageReference Include="Novolis.Economy.Core" />
     <PackageReference Include="Novolis.Economy.Production" />
     <PackageReference Include="Novolis.Economy.Markets" />
     <PackageReference Include="Novolis.Economy.Accounting" />

@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Spectre.Console" />
-    <PackageReference Include="Novolis.Economy" />
+    <PackageReference Include="Novolis.Economy.Core" />
     <PackageReference Include="Novolis.Economy.Production" />
     <PackageReference Include="Novolis.Economy.Markets" />
     <PackageReference Include="Novolis.Economy.Accounting" />
