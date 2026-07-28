@@ -2,7 +2,7 @@
 
 Interactive dogfood for economic transport — independent tramp on a starport hub network (space skin, **no** Astro packages).
 
-Consumes published `Novolis.Economy.*` from GitHub Packages (`2026.1.*`). Requires the transport kernel (hubs/corridors/`PlanShipment`) on the feed.
+Consumes published `Novolis.Economy.Core` + ops packages from GitHub Packages (`2026.1.*`). PackageId `Novolis.Economy` is retired. Requires hubs/corridors/`PlanShipment` on the feed.
 
 ```powershell
 dotnet run --project apps/economy/TrampFreighterPlay

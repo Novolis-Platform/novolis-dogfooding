@@ -2,7 +2,7 @@
 
 Observational tramp freighter circuit — **job evaluation + variable speed**.
 
-Self-contained. Consumes `Novolis.Economy.*` from GitHub Packages.
+Self-contained. Consumes `Novolis.Economy.Core` + ops packages from GitHub Packages (`2026.1.*`). PackageId `Novolis.Economy` is retired.
 
 ```powershell
 dotnet run --project novolis-dogfooding/apps/economy/TrampFreighterSim
