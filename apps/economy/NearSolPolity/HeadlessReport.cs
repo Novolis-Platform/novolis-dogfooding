@@ -1,6 +1,8 @@
 using Novolis.Economy;
 using Novolis.Economy.Accounting;
+using Novolis.Economy.Finance;
 using Novolis.Economy.Markets;
+using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
 using Spectre.Console;
 
@@ -51,14 +53,15 @@ internal static class HeadlessReport
     decimal openingLiquid,
     long requestedHours,
     TimeSpan wall,
-    CarrierHeuristic? carrier = null)
+    NearSolAgents.Bundle agents)
   {
     var world = sim.State.World;
     var hh = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
     var delivered = world.TransportStats.CargoDelivered.Value;
     var day = sim.State.Clock.Date.DayIndex;
     var liquidDelta = credits.LiquidStock - openingLiquid;
-    var openOrders = world.HubOrders.Count(o => !o.IsFilled);
+    var openBuy = world.HubOrders.Count(o => !o.IsFilled && o.Side == HubOrderSide.Buy);
+    var openSell = world.HubOrders.Count(o => !o.IsFilled && o.Side == HubOrderSide.Sell);
 
     var lines = new List<string>
     {
@@ -71,19 +74,39 @@ internal static class HeadlessReport
       $"Liquid:       {credits.LiquidStock:0}  (open {openingLiquid:0}, Δ {liquidDelta:0})",
       $"  vs imports: Δ+imports = {liquidDelta + credits.ImportSpend:0} (want ~0)",
       $"  Households: {hh:0}",
+      $"Inv book $:   {credits.InventoryBookValue:0}",
       $"Wages→hh:     {credits.WagesDistributed:0}",
       $"Imports:      {credits.ImportSpend:0}",
       $"Tolls→Station:{credits.TollsToTreasury:0.##}",
       "",
-      "— Firms (cash / revenue) —",
+      "— Finance —",
+      $"Loans:        active {credits.ActiveLoans}  originated {credits.LoansOriginated}  defaults {credits.LoansDefaulted}",
+      $"Principal:    {credits.PrincipalOutstanding:0}",
+      $"Interest:     accrued {credits.InterestAccrued:0.##}  repaid-cash {credits.InterestPaid:0.##}",
+      "",
+      "— Firms (cash / rev / COGS / wages / interest / notes) —",
     };
 
     foreach (var (name, firmId) in ids.Firms)
     {
       var ledger = world.Ledgers[firmId];
       lines.Add(
-        $"  {name,-9} cash {ledger.Cash.Amount,8:0}  rev {Math.Abs(ledger.Balance(AccountRole.Revenue).Amount),8:0}");
+        $"  {name,-9} cash {ledger.Cash.Amount,7:0}  rev {Abs(ledger, AccountRole.Revenue),7:0}  " +
+        $"cogs {Abs(ledger, AccountRole.CostOfGoodsSold),6:0}  wage {Abs(ledger, AccountRole.WageExpense),6:0}  " +
+        $"intE {Abs(ledger, AccountRole.InterestExpense),5:0}  intI {Abs(ledger, AccountRole.InterestIncome),5:0}  " +
+        $"NP {Abs(ledger, AccountRole.NotesPayable),5:0}  NR {Abs(ledger, AccountRole.NotesReceivable),5:0}");
     }
+
+    var depth = world.HubOrders.Where(o => !o.IsFilled)
+      .GroupBy(o => PolityWorld.SkuLabel(o.ProductId, ids))
+      .OrderByDescending(g => g.Count())
+      .Take(4)
+      .Select(g =>
+      {
+        var buy = g.Where(o => o.Side == HubOrderSide.Buy).Sum(o => o.Remaining.Value);
+        var sell = g.Where(o => o.Side == HubOrderSide.Sell).Sum(o => o.Remaining.Value);
+        return $"{g.Key} b{buy:0}/s{sell:0}";
+      });
 
     lines.AddRange(
     [
@@ -91,20 +114,24 @@ internal static class HeadlessReport
       "— Activity —",
       $"Produced:     {credits.Produced:0}",
       $"Retail sold:  {credits.RetailSold:0}",
-      $"Book fills:   {credits.BookFills}  (qty {credits.BookFillQty:0})  open {openOrders}",
+      $"Book fills:   {credits.BookFills}  (qty {credits.BookFillQty:0})  open buy {openBuy} / sell {openSell}",
+      $"Book depth:   {string.Join(" · ", depth)}",
       $"Delivered:    {delivered:0}",
       $"Departed:     {credits.Departed}",
       $"Fuel burned:  {world.TransportStats.FuelBurned.Value:0.#}",
       $"Plan fails:   {world.TransportStats.FailedPlans}",
       "",
-      "— Travel / freight —",
+      "— Agents —",
+      $"Mining:       {agents.Mining.LastDecision}",
+      $"Industry:     {agents.Industry.LastDecision}",
+      $"Station:      {agents.Station.LastDecision}",
+      $"Carrier:      {agents.Carrier.LastDecision} | {agents.Carrier.LastEval}",
+      $"Treasury:     {agents.Treasury.LastDecision}",
+      "",
+      "— Travel —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
-      "Agents:       heuristics + DeterministicRandom jitter only",
+      "Agents:       Novolis.Economy.Agents heuristics + DeterministicRandom",
     ]);
-    if (carrier is not null)
-    {
-      lines.Add($"Carrier last: {carrier.LastDecision} | {carrier.LastEval}");
-    }
 
     var failReasons = credits.PlanFailReasons
       .OrderByDescending(kv => kv.Value)
@@ -122,4 +149,7 @@ internal static class HeadlessReport
       AnsiConsole.WriteLine(line);
     }
   }
+
+  private static decimal Abs(FirmLedger ledger, AccountRole role) =>
+    Math.Abs(ledger.Balance(role).Amount);
 }

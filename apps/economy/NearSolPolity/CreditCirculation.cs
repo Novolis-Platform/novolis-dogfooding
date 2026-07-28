@@ -1,9 +1,11 @@
 using Novolis.Economy;
+using Novolis.Economy.Finance;
+using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
 
 namespace NearSolPolity;
 
-/// <summary>Dashboard metrics for liquid stock, imports, and activity (incremental event scan).</summary>
+/// <summary>Dashboard metrics for liquid stock, imports, finance, and activity (incremental event scan).</summary>
 internal sealed class CreditCirculation
 {
   private readonly EconomySimulation _sim;
@@ -16,6 +18,10 @@ internal sealed class CreditCirculation
   private int _bookFills;
   private decimal _bookFillQty;
   private int _departed;
+  private decimal _interestAccrued;
+  private decimal _interestPaid;
+  private int _loansOriginated;
+  private int _loansDefaulted;
   private readonly Dictionary<string, int> _planFailReasons = new(StringComparer.Ordinal);
 
   public CreditCirculation(EconomySimulation sim)
@@ -32,9 +38,38 @@ internal sealed class CreditCirculation
   public int BookFills => _bookFills;
   public decimal BookFillQty => _bookFillQty;
   public int Departed => _departed;
+  public decimal InterestAccrued => _interestAccrued;
+  public decimal InterestPaid => _interestPaid;
+  public int LoansOriginated => _loansOriginated;
+  public int LoansDefaulted => _loansDefaulted;
   public IReadOnlyDictionary<string, int> PlanFailReasons => _planFailReasons;
 
   public decimal LiquidStock => MoneyStock.Liquid(_sim.State.World);
+
+  public int ActiveLoans =>
+    _sim.State.World.Loans.Count(l => l.Status == LoanStatus.Active);
+
+  public decimal PrincipalOutstanding =>
+    _sim.State.World.Loans.Where(l => l.Status is LoanStatus.Active or LoanStatus.Defaulted)
+      .Sum(l => l.PrincipalRemaining.Amount);
+
+  public decimal InventoryBookValue
+  {
+    get
+    {
+      var inv = _sim.State.World.Inventory;
+      var sum = 0m;
+      foreach (var key in inv.Keys)
+      {
+        foreach (var lot in inv.GetLots(key))
+        {
+          sum += lot.Quantity.Value * lot.UnitCost.Amount;
+        }
+      }
+
+      return sum;
+    }
+  }
 
   public void ObserveAfterPulse(int eventsBeforePulse)
   {
@@ -67,6 +102,18 @@ internal sealed class CreditCirculation
           break;
         case ShipmentPlanFailed e:
           _planFailReasons[e.Reason] = _planFailReasons.GetValueOrDefault(e.Reason) + 1;
+          break;
+        case InterestAccrued e:
+          _interestAccrued += e.Amount.Amount;
+          break;
+        case LoanRepaid e:
+          _interestPaid += e.Amount.Amount;
+          break;
+        case LoanOriginated:
+          _loansOriginated++;
+          break;
+        case LoanDefaulted:
+          _loansDefaulted++;
           break;
       }
     }

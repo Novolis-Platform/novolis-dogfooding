@@ -68,6 +68,8 @@
     <PackageVersion Include="Novolis.Economy.Population" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Production" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Simulation" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Finance" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Agents" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Identity" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.MenuFlows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Multiplayer.Abstractions" Version="2026.1.*" />

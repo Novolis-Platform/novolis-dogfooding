@@ -13,10 +13,7 @@ internal static class Dashboard
   public static Table Build(
     EconomySimulation sim,
     PolityWorld.Ids ids,
-    MiningHeuristic mining,
-    IndustryHeuristic industry,
-    StationHeuristic station,
-    CarrierHeuristic carrier,
+    NearSolAgents.Bundle agents,
     CreditCirculation credits,
     IReadOnlyCollection<string> log,
     bool running,
@@ -30,6 +27,7 @@ internal static class Dashboard
       !s.IsLegacy && s.FirmId.Equals(ids.Carrier) && s.Status == ShipmentStatus.InTransit);
     var openOrders = world.HubOrders.Count(o => !o.IsFilled);
     var fills = credits.BookFills;
+    var carrier = agents.Carrier;
 
     var root = new Table().Border(TableBorder.Rounded).Expand();
     root.AddColumn(new TableColumn("[steelblue1]Near-Sol Tycoon[/]").Width(48));
@@ -48,6 +46,7 @@ internal static class Dashboard
     left.AddRow("Households", $"{households:0}");
     left.AddRow("Wages→hh", $"{credits.WagesDistributed:0}");
     left.AddRow("Imports", $"{credits.ImportSpend:0}");
+    left.AddRow("Loans", $"{credits.ActiveLoans} active  Δ{credits.InterestPaid:0.#}");
     left.AddRow("Book", $"open {openOrders}  fills {fills}");
     foreach (var (name, firmId) in ids.Firms)
     {
@@ -57,10 +56,11 @@ internal static class Dashboard
 
     left.AddRow("Delivered", $"{stats.CargoDelivered.Value:0}  burn {stats.FuelBurned.Value:0.#}");
     left.AddRow("Fails", $"{stats.FailedPlans}");
-    left.AddRow("Mining", $"[grey]{Markup.Escape(mining.LastAction)}[/]");
-    left.AddRow("Industry", $"[grey]{Markup.Escape(industry.LastAction)}[/]");
-    left.AddRow("Station", $"[grey]{Markup.Escape(station.LastAction)}[/]");
+    left.AddRow("Mining", $"[grey]{Markup.Escape(agents.Mining.LastDecision)}[/]");
+    left.AddRow("Industry", $"[grey]{Markup.Escape(agents.Industry.LastDecision)}[/]");
+    left.AddRow("Station", $"[grey]{Markup.Escape(agents.Station.LastDecision)}[/]");
     left.AddRow("Carrier", $"[yellow]{Markup.Escape(carrier.LastDecision)}[/]");
+    left.AddRow("Treasury", $"[grey]{Markup.Escape(agents.Treasury.LastDecision)}[/]");
     left.AddRow("Eval", $"[grey]{Markup.Escape(Truncate(carrier.LastEval, 70))}[/]");
     left.AddRow("Highlights", Markup.Escape(StockHighlights(sim, ids)));
 
@@ -122,54 +122,16 @@ internal static class Dashboard
     TransportHubId current)
   {
     var focus = ship?.CurrentHubId ?? current;
-    var hub = ids.Bridge.Hubs.FirstOrDefault(h => h.HubId.Equals(focus))
-              ?? ids.Sites["sol"].Hub;
-
-    var neighbors = ids.Bridge.Graph.Adjacency.TryGetValue(hub.SystemId, out var edges)
-      ? edges.OrderBy(e => e.DistanceLy).Take(5).ToList()
-      : [];
-
-    var lines = new List<string>
-    {
-      $"[bold]{Markup.Escape(hub.Name)}[/] ({hub.Role})  {Markup.Escape(hub.SystemId)}",
-      $"[grey]neighbors (≤{AstroEconomyBridge.MaxRangeLy:0} ly bands)[/]",
-    };
-
-    foreach (var e in neighbors)
-    {
-      var name = ids.Bridge.BySystemId.TryGetValue(e.To.Value, out var b) ? b.Name : e.To.Value;
-      var role = ids.Bridge.BySystemId.TryGetValue(e.To.Value, out var b2) ? b2.Role.ToString() : "?";
-      var hrs = AstroEconomyBridge.TransitHours(e.DistanceLy);
-      var days = AstroEconomyBridge.TransitDays(e.DistanceLy);
-      lines.Add(
-        $"  {e.DistanceLy:0.0} ly / {days:0.#}d ({hrs}h, {e.BandTag}) → {Markup.Escape(Short(name))} ({Markup.Escape(role)})");
-    }
-
-    if (ship is not null && ship.Itinerary.LegCount > 0)
-    {
-      lines.Add("[yellow]active itinerary[/]");
-      for (var i = 0; i < ship.Itinerary.LegCount; i++)
-      {
-        var c = ids.Bridge.Corridors.FirstOrDefault(x => x.Id.Equals(ship.Itinerary.CorridorIds[i]));
-        if (c is null)
-        {
-          continue;
-        }
-
-        var from = ids.Bridge.Hubs.FirstOrDefault(h => h.HubId.Equals(c.From))?.Name ?? "?";
-        var to = ids.Bridge.Hubs.FirstOrDefault(h => h.HubId.Equals(c.To))?.Name ?? "?";
-        var mark = i == ship.LegIndex ? "◆" : "·";
-        var d = c.TransitHours / 24.0;
-        lines.Add($"  {mark} {Markup.Escape(Short(from))} → {Markup.Escape(Short(to))} ({d:0.#}d / {c.TransitHours}h)");
-      }
-    }
-
-    return string.Join('\n', lines);
+    var names = ids.Bridge.Hubs
+      .OrderBy(h => h.Name, StringComparer.Ordinal)
+      .Take(12)
+      .Select(h => h.HubId.Equals(focus) ? $"[bold aqua]{Short(h.Name)}[/]" : $"[grey]{Short(h.Name)}[/]");
+    return string.Join(" · ", names);
   }
 
   private static string Short(string name) =>
-    name.Length <= 16 ? name : name[..14] + "…";
+    name.Length <= 10 ? name : name[..8] + "…";
 
-  private static string Truncate(string s, int n) =>
-    s.Length <= n ? s : s[..(n - 1)] + "…";
+  private static string Truncate(string text, int max) =>
+    text.Length <= max ? text : text[..(max - 1)] + "…";
 }

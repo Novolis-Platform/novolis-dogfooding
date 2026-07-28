@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using NearSolPolity;
 using Novolis.Economy;
+using Novolis.Economy.Agents;
 using Novolis.Economy.Logistics;
 using Novolis.Economy.Markets;
 using Novolis.Economy.Simulation;
@@ -17,10 +18,7 @@ if (!headless && (Console.IsOutputRedirected || Console.IsInputRedirected))
 }
 
 var (sim, ids) = PolityWorld.Create();
-var mining = new MiningHeuristic(sim, ids);
-var industry = new IndustryHeuristic(sim, ids);
-var station = new StationHeuristic(sim, ids);
-var carrier = new CarrierHeuristic(sim, ids);
+var agents = NearSolAgents.Create(sim, ids);
 var credits = new CreditCirculation(sim);
 var log = new Queue<string>();
 var eventCursor = sim.State.Events.Count;
@@ -52,12 +50,12 @@ if (headless)
   }
 
   sw.Stop();
-  HeadlessReport.Write(sim, ids, credits, openingLiquid, runHours, sw.Elapsed, carrier);
+  HeadlessReport.Write(sim, ids, credits, openingLiquid, runHours, sw.Elapsed, agents);
   return;
 }
 
 AnsiConsole.Write(new FigletText("Near-Sol").Color(Color.SteelBlue1));
-AnsiConsole.MarkupLine("[grey]Tycoon slice — Mining / Industry / Station / Carrier + hub order book.[/]");
+AnsiConsole.MarkupLine("[grey]Tycoon slice — economic agents + hub book + finance.[/]");
 AnsiConsole.MarkupLine(
   $"[grey]Travel:[/] {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly  " +
   $"(Sol→α Cen ~{AstroEconomyBridge.TransitDays(4.4):0.#}d)  " +
@@ -68,14 +66,14 @@ AnsiConsole.MarkupLine(
 AnsiConsole.MarkupLine("[grey]Headless:[/] [bold]--headless 100d[/]");
 Note($"Catalog online — {ids.Bridge.Hubs.Count} hubs, liquid {openingLiquid:0}");
 
-await AnsiConsole.Live(Dashboard.Build(sim, ids, mining, industry, station, carrier, credits, log, running, hoursPerPulse, pulseMs))
+await AnsiConsole.Live(Dashboard.Build(sim, ids, agents, credits, log, running, hoursPerPulse, pulseMs))
   .AutoClear(false)
   .Overflow(VerticalOverflow.Ellipsis)
   .StartAsync(async ctx =>
   {
     while (true)
     {
-      ctx.UpdateTarget(Dashboard.Build(sim, ids, mining, industry, station, carrier, credits, log, running, hoursPerPulse, pulseMs));
+      ctx.UpdateTarget(Dashboard.Build(sim, ids, agents, credits, log, running, hoursPerPulse, pulseMs));
 
       while (Console.KeyAvailable)
       {
@@ -83,7 +81,7 @@ await AnsiConsole.Live(Dashboard.Build(sim, ids, mining, industry, station, carr
         if (!HandleKey(key))
         {
           Note("Clearing docking clamps.");
-          ctx.UpdateTarget(Dashboard.Build(sim, ids, mining, industry, station, carrier, credits, log, running, hoursPerPulse, pulseMs));
+          ctx.UpdateTarget(Dashboard.Build(sim, ids, agents, credits, log, running, hoursPerPulse, pulseMs));
           return;
         }
       }
@@ -174,10 +172,8 @@ async Task PulseAsync(bool captureLog)
   var before = sim.State.Events.Count;
   for (var h = 0; h < hoursPerPulse; h++)
   {
-    mining.Tick();
-    industry.Tick();
-    station.Tick();
-    carrier.Tick();
+    var ctx = new AgentContext(sim, new DeterministicRandom(sim.State.Seed ^ (ulong)sim.State.Clock.HourIndex));
+    AgentScheduler.TickAll(agents.PulseOrder, ctx);
     await sim.AdvanceAsync(SimulationDuration.FromHours(1));
   }
 
