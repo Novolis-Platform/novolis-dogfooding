@@ -12,27 +12,27 @@ namespace NearSolPolity;
 internal static class PolityWorld
 {
   public const decimal OreBuy = 2m;
-  public const decimal OreSell = 14m;
-  /// <summary>Industry delivered Raw bid — wide enough vs mine gate + long-haul tolls.</summary>
-  public const decimal OreDelivered = 14m;
+  public const decimal OreSell = 10m;
+  /// <summary>Industry delivered Raw bid — above mine gate + haul, below Final gate.</summary>
+  public const decimal OreDelivered = 9m;
   public const decimal FreightPremiumPerUnit = 1.25m;
   public const decimal PartsPerOre = 0.15m;
   public const decimal OrePerFuel = 0.5m;
-  public const decimal PartsBuy = 4m;
-  public const decimal PartsSell = 10m;
-  public const decimal PartsDelivered = 13m;
-  /// <summary>Plant gate for Final — below Station shelf so freight+retail margins exist.</summary>
-  public const decimal GoodsFactory = 6m;
+  public const decimal PartsBuy = 5m;
+  public const decimal PartsSell = 9m;
+  public const decimal PartsDelivered = 11m;
+  /// <summary>Plant gate for Final — above ore/parts COGS so Industry stays liquid.</summary>
+  public const decimal GoodsFactory = 12m;
   /// <summary>Household shelf price — Final is the consumption sink.</summary>
-  public const decimal GoodsSell = 10m;
+  public const decimal GoodsSell = 15m;
   /// <summary>Station restock bid (delivered Final).</summary>
-  public const decimal GoodsDelivered = 15m;
+  public const decimal GoodsDelivered = 17m;
   public const decimal FuelUnitCost = 1m;
   /// <summary>
   /// Floor haul Δ after fuel/toll/crew. Small positive keeps empty pickups selective;
   /// holding-cargo dumps use BestOutboundFrom without this floor.
   /// </summary>
-  public const decimal MinMargin = 0.35m;
+  public const decimal MinMargin = 0.20m;
 
   /// <summary>Independent tramp firms (one hull each — CarrierFirmAgent is single-ship).</summary>
   public const int TrampFleetSize = 8;
@@ -43,7 +43,7 @@ internal static class PolityWorld
   public const decimal FirmCashFloor = 1_500m;
 
   /// <summary>Working capital for the Final sink loop (Industry must stay liquid).</summary>
-  public const decimal OpeningFirmCash = 14_000m;
+  public const decimal OpeningFirmCash = 18_000m;
   /// <summary>Household budget stock — spend into Final shelves (consumption sink).</summary>
   public const decimal OpeningHouseholdCredits = 85_000m;
 
@@ -168,7 +168,8 @@ internal static class PolityWorld
       Quantity.From(40m),
       FuelBurnPerDifficultyHour,
       CrewLaborPerUnderwayHour: 0.02m,
-      FuelTankCapacity: Quantity.From(8m));
+      // Large enough for typical multi-leg burns when origin tops off the tank.
+      FuelTankCapacity: Quantity.From(24m));
 
     builder
       .AddProduct(oreDef)
@@ -426,10 +427,10 @@ internal static class PolityWorld
           Add(ids.Mining, hub.LocationId, ids.Ore, 45m, OreBuy);
           Add(ids.Mining, hub.LocationId, ids.Parts, 40m, PartsBuy);
           Add(ids.Station, hub.LocationId, ids.Goods, 18m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 25m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 48m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
           }
 
           break;
@@ -437,45 +438,46 @@ internal static class PolityWorld
           Add(ids.Industry, hub.LocationId, ids.Ore, 55m, OreBuy);
           Add(ids.Industry, hub.LocationId, ids.Parts, 40m, PartsBuy);
           Add(ids.Industry, hub.LocationId, ids.Goods, 20m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 35m, FuelUnitCost);
+          Add(ids.Industry, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 56m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Capital:
           Add(ids.Station, hub.LocationId, ids.Parts, 20m, PartsBuy);
           Add(ids.Station, hub.LocationId, ids.Goods, 25m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 64m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Inhabited:
           Add(ids.Station, hub.LocationId, ids.Goods, 10m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 15m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 36m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 16m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Transit:
-          Add(ids.Station, hub.LocationId, ids.Fuel, 35m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 56m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 18m, FuelUnitCost);
           }
 
           break;
         default:
-          Add(ids.Station, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 24m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 6m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
           }
 
           break;

@@ -72,8 +72,8 @@ internal static class NearSolAgents
           MinInputOnHand: 1m, RequiredInput: ids.Parts,
           SellAboveStock: 2m, SellKeepFloor: 1m, SellMaxQty: 28m, GatePrice: PolityWorld.GoodsFactory),
         new ManufacturedSkuPolicy(
-          ids.Fuel, BaseRate: 2.5m, StockTarget: 36m, MinInputOnHand: 8m, RequiredInput: ids.Ore,
-          SellAboveStock: 8m, SellKeepFloor: 3m, SellMaxQty: 14m, GatePrice: PolityWorld.FuelUnitCost),
+          ids.Fuel, BaseRate: 4m, StockTarget: 72m, MinInputOnHand: 6m, RequiredInput: ids.Ore,
+          SellAboveStock: 10m, SellKeepFloor: 4m, SellMaxQty: 24m, GatePrice: PolityWorld.FuelUnitCost),
       ]));
 
     var station = new RetailFirmAgent(ids.Station, new RetailFirmAgentPolicy(
@@ -85,7 +85,7 @@ internal static class NearSolAgents
           PolityWorld.GoodsDelivered, PostRetailPrice: true),
       ],
       new BunkerSkuPolicy(
-        ids.Fuel, MinStock: 10m, BuyLimitPrice: PolityWorld.FuelUnitCost * 1.1m,
+        ids.Fuel, MinStock: 28m, BuyLimitPrice: PolityWorld.FuelUnitCost * 1.25m,
         SellPrice: PolityWorld.FuelUnitCost, AllowProcurement: true)));
 
     decimal Gate(ProductId p)
@@ -121,22 +121,23 @@ internal static class NearSolAgents
         new CarrierFirmAgentPolicy(
           allSites, [ids.Ore, ids.Parts, ids.Goods], ids.Fuel,
           ids.HullId, ids.Hull, PolityWorld.MinMargin, Gate,
-          FuelBuyLimitPrice: PolityWorld.FuelUnitCost * 1.25m),
+          FuelBuyLimitPrice: PolityWorld.FuelUnitCost * 1.5m,
+          MinBunkerFuel: 8m),
         homeHubs[i],
         rngSalt: 0x43415252UL ^ (ulong)(i + 1) * 0x9E3779B97F4A7C15UL));
     }
 
     var treasury = new TreasuryFirmAgent(ids.Station, new TreasuryFirmAgentPolicy(
       [ids.Mining, ids.Industry, .. ids.Carriers],
-      CashFloorToLend: 6_000m,
-      BorrowerCashFloor: PolityWorld.FirmCashFloor + 800m,
-      LoanPrincipal: Money.From(1_200m),
-      AnnualInterestRate: 0.08m,
-      TermHours: SimulationHour.HoursPerDay * 75,
-      MaxActiveLoansToBorrower: 3));
+      CashFloorToLend: 4_000m,
+      BorrowerCashFloor: PolityWorld.FirmCashFloor + 400m,
+      LoanPrincipal: Money.From(2_000m),
+      AnnualInterestRate: 0.06m,
+      TermHours: SimulationHour.HoursPerDay * 90,
+      MaxActiveLoansToBorrower: 4));
 
     sim.Enqueue(new OriginateLoan(
-      ids.Station, ids.Industry, Money.From(1_000m), 0.08m, SimulationHour.HoursPerDay * 120));
+      ids.Station, ids.Industry, Money.From(3_000m), 0.06m, SimulationHour.HoursPerDay * 150));
 
     var households = sim.State.World.Cohorts
       .Where(c => c.Definition.HouseholdFirmId is not null)
