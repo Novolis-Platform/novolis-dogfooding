@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TrampFreighterSim</RootNamespace>
+    <Description>Observational tramp freighter sim — variable speed over Economy logistics.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Novolis.Economy" />
+    <PackageReference Include="Novolis.Economy.Production" />
+    <PackageReference Include="Novolis.Economy.Markets" />
+    <PackageReference Include="Novolis.Economy.Accounting" />
+    <PackageReference Include="Novolis.Economy.Logistics" />
+    <PackageReference Include="Novolis.Economy.Population" />
+    <PackageReference Include="Novolis.Economy.Simulation" />
+  </ItemGroup>
+</Project>

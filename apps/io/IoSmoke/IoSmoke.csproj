@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>IoSmoke</RootNamespace>
+    <Description>Dogfood Novolis.IO — Paths, Recovery, Watching, Processes, Git status.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.IO.Git" />
+    <PackageReference Include="Novolis.IO.Paths" />
+    <PackageReference Include="Novolis.IO.Processes" />
+    <PackageReference Include="Novolis.IO.Recovery" />
+    <PackageReference Include="Novolis.IO.Watching" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>AstroSmoke</RootNamespace>
+    <Description>Dogfood Novolis.Astro + Physics.Astro — catalog, route bands, assessment, overlay, SVG plot.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Astro.Abstractions" />
+    <PackageReference Include="Novolis.Astro.Assessment" />
+    <PackageReference Include="Novolis.Astro.Catalog" />
+    <PackageReference Include="Novolis.Astro.Overlay" />
+    <PackageReference Include="Novolis.Astro.Plotting" />
+    <PackageReference Include="Novolis.Astro.Routing" />
+    <PackageReference Include="Novolis.Physics.Astro" />
+  </ItemGroup>
+</Project>

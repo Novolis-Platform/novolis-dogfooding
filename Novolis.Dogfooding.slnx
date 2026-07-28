@@ -61,6 +61,7 @@
   <Folder Name="/economy/">
     <Project Path="apps/economy/EconomyBoard/EconomyBoard.csproj" />
     <Project Path="apps/economy/TrampFreighterPlay/TrampFreighterPlay.csproj" />
+    <Project Path="apps/economy/TrampFreighterSim/TrampFreighterSim.csproj" />
   </Folder>
   <Folder Name="/io/">
     <Project Path="apps/io/IoSmoke/IoSmoke.csproj" />
