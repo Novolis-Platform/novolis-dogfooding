@@ -242,8 +242,10 @@ internal static class HeadlessReport
       "",
       "— Travel —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
+      $"Roles:        {ids.RoleSummary}",
       "Agents:       Novolis.Economy.Agents heuristics + DeterministicRandom",
       "Civics:       Station entity (tolls / treasury / ownership) — product copy",
+      "Geography:    SystemProfile potentials (Astro.Assessment) gate settlement/mining",
     ]);
 
     var failReasons = credits.PlanFailReasons

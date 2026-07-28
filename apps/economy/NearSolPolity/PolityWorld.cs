@@ -105,8 +105,9 @@ internal static class PolityWorld
       PriceElasticity = 0.8m,
     });
 
-    var bridge = AstroEconomyBridge.Build(catalog, builder);
-    var roleSummary = RoleAssigner.Summarize(bridge.Roles);
+    var bridge = AstroEconomyBridge.Build(catalog, builder, seed);
+    var roleSummary = RoleAssigner.Summarize(bridge.Roles)
+      + " · " + RoleAssigner.SummarizePotentials(bridge.Hubs);
 
     var oreCat = ProductCategoryId.From(builder.NextGuid());
     var partsCat = ProductCategoryId.From(builder.NextGuid());
@@ -288,6 +289,7 @@ internal static class PolityWorld
 
     var sim = new EconomySimulation(seed, builder.Build());
     SeedInventory(sim, ids);
+    SeedInvariants.Assert(ids, sim);
     return (sim, ids);
   }
 

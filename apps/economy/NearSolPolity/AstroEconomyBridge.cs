@@ -1,3 +1,4 @@
+using Novolis.Astro.Assessment;
 using Novolis.Astro.Catalog;
 using Novolis.Astro.Routing;
 using Novolis.Economy;
@@ -22,26 +23,36 @@ internal static class AstroEconomyBridge
   public const decimal TollPerLy = 2m;
   public const decimal CorridorMaxCargo = 80m;
 
+  /// <summary>Campaign seed for <see cref="SystemProfileGenerator"/> (matches <see cref="PolityWorld.Create"/> default).</summary>
+  public const ulong CampaignSeed = 1001;
+
   public sealed record HubBinding(
     string SystemId,
     string Name,
     SystemRole Role,
     TransportHubId HubId,
     InventoryLocationId LocationId,
-    TransportHub Hub);
+    TransportHub Hub,
+    SystemProfile Profile);
 
   public sealed record BridgeResult(
     IReadOnlyList<HubBinding> Hubs,
     IReadOnlyList<TransportCorridor> Corridors,
     RouteGraph Graph,
     IReadOnlyDictionary<string, SystemRole> Roles,
-    IReadOnlyDictionary<string, HubBinding> BySystemId);
+    IReadOnlyDictionary<string, HubBinding> BySystemId,
+    IReadOnlyDictionary<string, SystemProfile> Profiles);
 
-  public static BridgeResult Build(StarCatalog catalog, EconomyWorldBuilder builder)
+  public static BridgeResult Build(StarCatalog catalog, EconomyWorldBuilder builder, ulong campaignSeed = CampaignSeed)
   {
     var cost = RangeBandCostModel.CreatePrototypeCompatible();
     var graph = RouteGraph.Build(catalog.All, MaxRangeLy, cost);
-    var roles = RoleAssigner.Assign(catalog, graph);
+    var generator = new SystemProfileGenerator();
+    var profiles = catalog.All.ToDictionary(
+      s => s.Id.Value,
+      s => generator.Generate(s, campaignSeed),
+      StringComparer.OrdinalIgnoreCase);
+    var roles = RoleAssigner.Assign(catalog, graph, profiles);
 
     // Only systems that appear on the hop graph become economic hubs.
     var onGraph = catalog.All
@@ -62,11 +73,12 @@ internal static class AstroEconomyBridge
     foreach (var s in onGraph)
     {
       var role = roles.GetValueOrDefault(s.Id.Value, SystemRole.Waypoint);
+      var profile = profiles[s.Id.Value];
       var loc = InventoryLocationId.From(builder.NextGuid());
       var hubId = TransportHubId.From(builder.NextGuid());
       var (dwell, berths) = HubOps(role);
       var hub = new TransportHub(hubId, loc, s.Name, dwell, berths);
-      var binding = new HubBinding(s.Id.Value, s.Name, role, hubId, loc, hub);
+      var binding = new HubBinding(s.Id.Value, s.Name, role, hubId, loc, hub, profile);
       hubs.Add(binding);
       bySystem[s.Id.Value] = binding;
       builder.AddHub(hub);
@@ -116,7 +128,7 @@ internal static class AstroEconomyBridge
       }
     }
 
-    return new BridgeResult(hubs, corridors, graph, roles, bySystem);
+    return new BridgeResult(hubs, corridors, graph, roles, bySystem, profiles);
   }
 
   public static long TransitHours(double distanceLy) =>

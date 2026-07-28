@@ -26,6 +26,12 @@ foreach (var system in catalog.All.OrderBy(s => s.Coords.DistanceFromOrigin))
         $"  {system.Id.Value,-12} {system.Name,-18} {system.SpectralClass,-4} {system.Coords.DistanceFromOrigin,5:0.0} ly  habit={h.Score:0}/{h.Tier,-8} strategic={s.Score:0}/{s.Tier}{tags}");
 }
 
+var gen = new SystemProfileGenerator();
+var solProfile = gen.Generate(catalog.GetRequired("sol"), campaignSeed: 1001);
+Console.WriteLine(
+    $"Sol profile: mining={solProfile.Potential.Mining:0.00} agri={solProfile.Potential.Agriculture:0.00} " +
+    $"industry={solProfile.Potential.Industry:0.00} elements={solProfile.Elements.Count}");
+
 var overlay = new CatalogOverlay();
 overlay.Bind(new OverlayEntry("Home", "sol", new Dictionary<string, string> { ["role"] = "origin" }));
 overlay.Bind(new OverlayEntry("Nearest Neighbor", "proxima", new Dictionary<string, string> { ["role"] = "scout" }));

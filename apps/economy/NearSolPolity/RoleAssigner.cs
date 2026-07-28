@@ -1,11 +1,10 @@
-using Novolis.Astro.Abstractions;
 using Novolis.Astro.Assessment;
 using Novolis.Astro.Catalog;
 using Novolis.Astro.Routing;
 
 namespace NearSolPolity;
 
-/// <summary>Deterministic role assignment for the near-Sol polity.</summary>
+/// <summary>Deterministic role assignment from SystemProfile potentials.</summary>
 internal static class RoleAssigner
 {
   public const int TargetInhabited = 16;
@@ -13,10 +12,15 @@ internal static class RoleAssigner
   public const int TargetMining = 10;
   public const int TargetTransit = 20;
 
-  public static IReadOnlyDictionary<string, SystemRole> Assign(StarCatalog catalog, RouteGraph graph)
+  public const double AgricultureThreshold = 0.35;
+  public const double IndustryThreshold = 0.35;
+  public const double MiningThreshold = 0.35;
+
+  public static IReadOnlyDictionary<string, SystemRole> Assign(
+    StarCatalog catalog,
+    RouteGraph graph,
+    IReadOnlyDictionary<string, SystemProfile> profiles)
   {
-    var hab = new HabitabilityAssessor();
-    var strat = new StrategicValueAssessor();
     var systems = catalog.All.ToList();
     var roles = new Dictionary<string, SystemRole>(StringComparer.OrdinalIgnoreCase);
 
@@ -29,25 +33,14 @@ internal static class RoleAssigner
 
     var inhabited = systems
       .Where(s => !s.Id.Value.Equals("sol", StringComparison.OrdinalIgnoreCase))
-      .Select(s =>
+      .Where(s =>
       {
-        var score = hab.Assess(s).Score;
-        if (s.Tags.Any(t => t.Equals("planet-host", StringComparison.OrdinalIgnoreCase)))
-        {
-          score += 25;
-        }
-
-        if (s.Tags.Any(t => t.Equals("candidate", StringComparison.OrdinalIgnoreCase)))
-        {
-          score += 15;
-        }
-
-        return (System: s, Score: score);
+        var p = profiles[s.Id.Value].Potential;
+        return p.Agriculture >= AgricultureThreshold;
       })
-      .OrderByDescending(x => x.Score)
-      .ThenBy(x => x.System.Id.Value, StringComparer.Ordinal)
+      .OrderByDescending(s => profiles[s.Id.Value].Potential.Agriculture)
+      .ThenBy(s => s.Id.Value, StringComparer.Ordinal)
       .Take(TargetInhabited)
-      .Select(x => x.System)
       .ToList();
 
     foreach (var s in inhabited)
@@ -55,27 +48,32 @@ internal static class RoleAssigner
       roles[s.Id.Value] = SystemRole.Inhabited;
     }
 
-    var industrial = inhabited
-      .OrderByDescending(s => strat.Assess(s).Score)
+    var industrialPool = systems
+      .Where(s => roles[s.Id.Value] is SystemRole.Inhabited or SystemRole.Capital
+        || profiles[s.Id.Value].Potential.Agriculture > 0)
+      .Where(s => !s.Id.Value.Equals("sol", StringComparison.OrdinalIgnoreCase))
+      .Where(s => profiles[s.Id.Value].Potential.Industry >= IndustryThreshold)
+      .Where(s => profiles[s.Id.Value].Potential.Agriculture > 0)
+      .OrderByDescending(s => profiles[s.Id.Value].Potential.Industry)
       .ThenBy(s => s.Id.Value, StringComparer.Ordinal)
       .Take(TargetIndustrial)
       .ToList();
 
-    foreach (var s in industrial)
+    foreach (var s in industrialPool)
     {
       roles[s.Id.Value] = SystemRole.Industrial;
     }
 
-    // Prefer a couple of capital-adjacent industrials if Sol's neighbors scored high.
-    if (!industrial.Any() && inhabited.Count > 0)
+    if (!industrialPool.Any() && inhabited.Count > 0)
     {
       roles[inhabited[0].Id.Value] = SystemRole.Industrial;
     }
 
     var mining = systems
       .Where(s => roles[s.Id.Value] is SystemRole.Waypoint or SystemRole.Transit)
-      .Where(s => s.SpectralClass is SpectralClass.M or SpectralClass.K)
-      .OrderBy(s => s.Coords.DistanceFromOrigin)
+      .Where(s => profiles[s.Id.Value].Potential.Mining >= MiningThreshold)
+      .OrderByDescending(s => profiles[s.Id.Value].Potential.Mining)
+      .ThenBy(s => s.Coords.DistanceFromOrigin)
       .ThenBy(s => s.Id.Value, StringComparer.Ordinal)
       .Take(TargetMining)
       .ToList();
@@ -95,8 +93,9 @@ internal static class RoleAssigner
       .Select(s =>
       {
         var deg = degree[s.Id.Value];
-        var score = strat.Assess(s).Score + deg * 2.0;
-        return (System: s, Score: score, Deg: deg);
+        var industry = profiles[s.Id.Value].Potential.Industry;
+        var score = industry * 100.0 + deg * 2.0;
+        return (System: s, Score: score);
       })
       .OrderByDescending(x => x.Score)
       .ThenBy(x => x.System.Id.Value, StringComparer.Ordinal)
@@ -115,5 +114,15 @@ internal static class RoleAssigner
   {
     string C(SystemRole r) => roles.Values.Count(v => v == r).ToString();
     return $"C{C(SystemRole.Capital)} I{C(SystemRole.Inhabited)} Ind{C(SystemRole.Industrial)} M{C(SystemRole.Mining)} T{C(SystemRole.Transit)} W{C(SystemRole.Waypoint)}";
+  }
+
+  public static string SummarizePotentials(
+    IReadOnlyList<AstroEconomyBridge.HubBinding> hubs)
+  {
+    var mining = hubs.Count(h => h.Role == SystemRole.Mining);
+    var agri = hubs.Count(h =>
+      h.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial);
+    var barren = hubs.Count(h => h.Profile.Potential.Agriculture == 0);
+    return $"miningHubs={mining} agriHubs={agri} barrenAgri0={barren}";
   }
 }
