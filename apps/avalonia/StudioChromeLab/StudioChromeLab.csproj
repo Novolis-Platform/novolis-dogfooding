@@ -14,6 +14,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Novolis.Avalonia.Controls" />
     <PackageReference Include="Novolis.Avalonia.Studio" />
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="Novolis.Avalonia.Agent" />
+    <PackageReference Include="Novolis.Avalonia.Agent.Protocol" />
     <PackageReference Include="Novolis.IO.Processes" />
   </ItemGroup>
 </Project>

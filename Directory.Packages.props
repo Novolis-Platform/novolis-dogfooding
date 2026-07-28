@@ -16,6 +16,7 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
+    <PackageVersion Include="MessagePack" Version="3.1.8" />
     <PackageVersion Include="Novolis.Audio.Core" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Effects" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Filters" Version="2026.1.*" />
@@ -41,6 +42,8 @@
     <PackageVersion Include="Novolis.Avalonia.Timeline" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Controls" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Agent" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Agent.Protocol" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Git" Version="2026.1.*" />
@@ -102,6 +105,7 @@
     <PackageVersion Include="Novolis.Simulation.World" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Transports.LocalIpc" Version="2026.1.*" />
     <PackageVersion Include="PacketDotNet" Version="1.4.7" />
     <PackageVersion Include="TUnit" Version="1.44.39" />
   </ItemGroup>

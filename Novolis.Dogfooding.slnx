@@ -41,6 +41,7 @@
   </Folder>
   <Folder Name="/commands/">
     <Project Path="apps/BridgeCommander/BridgeCommander.csproj" />
+    <Project Path="apps/AvaloniaAgentMcp/AvaloniaAgentMcp.csproj" />
   </Folder>
   <Folder Name="/transports/">
     <Project Path="apps/WireFishViewer/WireFishViewer.csproj" />

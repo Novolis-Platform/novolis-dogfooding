@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Novolis.Avalonia.Agent;
+using Novolis.Avalonia.Agent.Protocol;
 using Novolis.Avalonia.Controls;
 using Novolis.Avalonia.Studio;
 using Novolis.IO.Processes;
@@ -46,12 +48,14 @@ internal sealed class MainWindow : Window
         };
 
         _statusText = new TextBlock { Text = "Clean", Foreground = Brushes.White };
+        AgentProperties.SetId(_statusText, "lab.status");
         _statusBar = new Border
         {
             Padding = new Thickness(12, 5),
             Background = StudioStatusBrushes.Clean,
             Child = _statusText
         };
+        AgentProperties.SetId(_statusBar, "lab.statusBar");
 
         var chapters = new[]
         {
@@ -61,8 +65,10 @@ internal sealed class MainWindow : Window
             new MarkedListRow("*", "4", "Ansible Silence", "640", "ch4"),
         };
         _navHost = MarkedListBox.Create(chapters);
+        AgentProperties.SetId(_navHost, "lab.nav", AgentRoleNames.ListBox);
 
         _jobs = new JobQueuePanel();
+        AgentProperties.SetId(_jobs, "lab.jobs");
         SeedJobs();
         _jobs.CancelRequested += row =>
         {
@@ -74,6 +80,7 @@ internal sealed class MainWindow : Window
         _jobs.OpenOutputRequested += row => _feedback.Flash($"Open output: {row.Title}");
 
         var btnRecovery = new Button { Content = "Fake recovery…" };
+        AgentProperties.SetId(btnRecovery, "lab.recovery", AgentRoleNames.Button);
         btnRecovery.Click += async (_, _) =>
         {
             var id = await ChoiceDialog.ShowAsync(this, "Recovery available",
@@ -89,6 +96,7 @@ internal sealed class MainWindow : Window
         };
 
         var btnConflict = new Button { Content = "Fake conflict…" };
+        AgentProperties.SetId(btnConflict, "lab.conflict", AgentRoleNames.Button);
         btnConflict.Click += async (_, _) =>
         {
             var id = await ChoiceDialog.ShowAsync(this, "External change",
@@ -103,6 +111,7 @@ internal sealed class MainWindow : Window
         };
 
         var btnGoTo = new Button { Content = "Go to…" };
+        AgentProperties.SetId(btnGoTo, "lab.goto", AgentRoleNames.Button);
         btnGoTo.Click += async (_, _) =>
         {
             var picks = chapters.Select(c => c.Primary).ToList();
@@ -111,9 +120,11 @@ internal sealed class MainWindow : Window
         };
 
         var btnFocus = new Button { Content = "Toggle focus (F11)" };
+        AgentProperties.SetId(btnFocus, "lab.focus", AgentRoleNames.Button);
         btnFocus.Click += (_, _) => ToggleFocus();
 
         var btnDirty = new Button { Content = "Toggle dirty" };
+        AgentProperties.SetId(btnDirty, "lab.dirty", AgentRoleNames.Button);
         btnDirty.Click += (_, _) =>
         {
             _dirty = !_dirty;
@@ -123,6 +134,7 @@ internal sealed class MainWindow : Window
         };
 
         var btnEnqueue = new Button { Content = "Enqueue dotnet --info" };
+        AgentProperties.SetId(btnEnqueue, "lab.enqueue", AgentRoleNames.Button);
         btnEnqueue.Click += (_, _) =>
         {
             _queue.Enqueue(new ProcessJobSpec
