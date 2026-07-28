@@ -213,8 +213,7 @@ internal static class HeadlessReport
         .Where(c => c.Definition.Area.Equals(region.AreaId))
         .Sum(c => HouseholdMath.LaborHoursPerTick(
           c.Definition.Population,
-          c.Definition.Productivity,
-          world.Policy.PeoplePerHousehold));
+          c.Definition.Productivity));
       lines.Add(
         $"  {region.AreaId.Value.ToString("N")[..8]}…  living {usedLive}/{region.LivingCapacityHouseholds}  " +
         $"mfg-slots {usedProd}/{region.ProductionSlots}  pool-h/tick {pool:0.##}");
@@ -231,7 +230,7 @@ internal static class HeadlessReport
       var prod = cohort.Definition.Productivity.ToString();
       lines.Add(
         $"  bud {cohort.BudgetRemaining.Amount,7:0}  floor {floor,5:0}  {above,-5}  {prod,-7}  " +
-        $"pop {cohort.Definition.Population.Value}");
+        $"hh {cohort.Definition.Population.Value}");
     }
 
     lines.Add("");

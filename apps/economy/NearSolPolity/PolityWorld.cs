@@ -190,7 +190,7 @@ internal static class PolityWorld
     }
 
     var sites = new Dictionary<string, Site>(StringComparer.OrdinalIgnoreCase);
-    var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop, FirmId HouseholdId)>();
+    var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Households, FirmId HouseholdId)>();
     var mfgSlotsNeeded = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     var livingNeeded = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -198,15 +198,15 @@ internal static class PolityWorld
     {
       if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial)
       {
-        var pop = hub.Role switch
+        // Cohort PopulationCount is household count (no headcount layer).
+        var households = hub.Role switch
         {
-          SystemRole.Capital => 400,
-          SystemRole.Industrial => 180,
-          _ => 120,
+          SystemRole.Capital => 100,
+          SystemRole.Industrial => 45,
+          _ => 30,
         };
-        var hhCount = Math.Max(1, pop / 4);
-        livingNeeded[hub.SystemId] = livingNeeded.GetValueOrDefault(hub.SystemId) + hhCount;
-        householdSeeds.Add((hub, pop, FirmId.From(builder.NextGuid())));
+        livingNeeded[hub.SystemId] = livingNeeded.GetValueOrDefault(hub.SystemId) + households;
+        householdSeeds.Add((hub, households, FirmId.From(builder.NextGuid())));
       }
 
       if (hub.Role is SystemRole.Mining or SystemRole.Industrial)
@@ -294,11 +294,11 @@ internal static class PolityWorld
       };
     }
 
-    var popSum = householdSeeds.Sum(h => h.Pop);
+    var householdSum = householdSeeds.Sum(h => h.Households);
     var creditsLeft = OpeningHouseholdCredits;
     for (var i = 0; i < householdSeeds.Count; i++)
     {
-      var (hub, pop, householdId) = householdSeeds[i];
+      var (hub, households, householdId) = householdSeeds[i];
       decimal budget;
       if (i == householdSeeds.Count - 1)
       {
@@ -306,7 +306,7 @@ internal static class PolityWorld
       }
       else
       {
-        budget = Math.Round(OpeningHouseholdCredits * pop / popSum, 2, MidpointRounding.AwayFromZero);
+        budget = Math.Round(OpeningHouseholdCredits * households / householdSum, 2, MidpointRounding.AwayFromZero);
         creditsLeft -= budget;
       }
 
@@ -321,7 +321,7 @@ internal static class PolityWorld
 
       builder.AddCohort(new ConsumerCohort(
         ConsumerCohortId.From(builder.NextGuid()),
-        new PopulationCount(pop),
+        new PopulationCount(households),
         Money.From(budget),
         new PreferenceProfile(prefs, 0.7m, 0m, 0m),
         areas[hub.SystemId],
