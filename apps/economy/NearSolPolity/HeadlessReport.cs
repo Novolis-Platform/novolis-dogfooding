@@ -2,6 +2,7 @@ using Novolis.Economy;
 using Novolis.Economy.Accounting;
 using Novolis.Economy.Finance;
 using Novolis.Economy.Markets;
+using Novolis.Economy.Population;
 using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
 using Spectre.Console;
@@ -200,6 +201,37 @@ internal static class HeadlessReport
       {
         lines.Add($"  {line}");
       }
+    }
+
+    lines.Add("");
+    lines.Add("— Habitats / regions —");
+    foreach (var region in world.Regions.Values.OrderBy(r => r.AreaId.Value))
+    {
+      var usedLive = world.UsedLivingHouseholds(region.AreaId);
+      var usedProd = world.UsedProductionSlots(region.AreaId);
+      var pool = world.Cohorts
+        .Where(c => c.Definition.Area.Equals(region.AreaId))
+        .Sum(c => HouseholdMath.LaborHoursPerTick(
+          c.Definition.Population,
+          c.Definition.Productivity,
+          world.Policy.PeoplePerHousehold));
+      lines.Add(
+        $"  {region.AreaId.Value.ToString("N")[..8]}…  living {usedLive}/{region.LivingCapacityHouseholds}  " +
+        $"mfg-slots {usedProd}/{region.ProductionSlots}  pool-h/tick {pool:0.##}");
+    }
+
+    lines.Add("");
+    lines.Add("— Household cohorts (budget / comfort / productivity) —");
+    var comfortHolds = agents.Households.Count(a => a.LastDecision == "comfort hold");
+    lines.Add($"  Agents: {agents.Households.Count}  comfort holds (last pulse): {comfortHolds}");
+    foreach (var cohort in world.Cohorts.OrderByDescending(c => c.BudgetRemaining.Amount).Take(8))
+    {
+      var floor = world.ComfortFloor(cohort).Amount;
+      var above = world.IsAboveComfort(cohort) ? "above" : "hold";
+      var prod = cohort.Definition.Productivity.ToString();
+      lines.Add(
+        $"  bud {cohort.BudgetRemaining.Amount,7:0}  floor {floor,5:0}  {above,-5}  {prod,-7}  " +
+        $"pop {cohort.Definition.Population.Value}");
     }
 
     lines.Add("");

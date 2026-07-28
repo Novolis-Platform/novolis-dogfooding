@@ -16,6 +16,7 @@ internal static class NearSolAgents
     public required CarrierFirmAgent Carrier { get; init; }
     public required IReadOnlyList<CarrierFirmAgent> Carriers { get; init; }
     public required TreasuryFirmAgent Treasury { get; init; }
+    public required IReadOnlyList<HouseholdFirmAgent> Households { get; init; }
     public required IReadOnlyList<IEconomicAgent> PulseOrder { get; init; }
   }
 
@@ -132,9 +133,23 @@ internal static class NearSolAgents
     sim.Enqueue(new OriginateLoan(
       ids.Station, ids.Mining, Money.From(400m), 0.08m, SimulationHour.HoursPerDay * 45));
 
+    var households = sim.State.World.Cohorts
+      .Where(c => c.Definition.HouseholdFirmId is not null)
+      .OrderBy(c => c.Definition.Id.Value)
+      .Select(c => new HouseholdFirmAgent(
+        c.Definition.HouseholdFirmId!.Value,
+        new HouseholdFirmAgentPolicy(
+          PreferredBorrower: ids.Industry,
+          PreferredIssuer: ids.Mining,
+          LoanPrincipal: Money.From(25m),
+          PurchaseFraction: 0.005m,
+          PurchasePrice: Money.From(20m))))
+      .ToList();
+
     IEconomicAgent[] pulse =
     [
       mining, industry, station, .. trampAgents.Cast<IEconomicAgent>(), treasury,
+      .. households.Cast<IEconomicAgent>(),
     ];
 
     return new Bundle
@@ -145,6 +160,7 @@ internal static class NearSolAgents
       Carrier = trampAgents[0],
       Carriers = trampAgents,
       Treasury = treasury,
+      Households = households,
       PulseOrder = pulse,
     };
   }

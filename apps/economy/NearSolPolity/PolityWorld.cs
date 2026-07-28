@@ -179,14 +179,10 @@ internal static class PolityWorld
       builder.AddFirm(carriers[i], $"MV Tramp {i + 1}", Money.From(OpeningFirmCash * 0.6m));
     }
 
+    // Carrier crew labor only — region pools supply manufacturing firms.
     builder
-      .SetOwnership(mining, station, 1m)
-      .SetOwnership(industry, station, 0.4m)
       .AddVehicleClass(hull)
       .SetTransportFuel(fuel, Money.From(FuelUnitCost))
-      .SetLabor(mining, 40m)
-      .SetLabor(industry, 48m)
-      .SetLabor(station, 24m)
       .SetLabor(carrier, 32m);
     foreach (var tramp in carriers.Skip(1))
     {
@@ -194,8 +190,49 @@ internal static class PolityWorld
     }
 
     var sites = new Dictionary<string, Site>(StringComparer.OrdinalIgnoreCase);
-    var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop)>();
+    var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop, FirmId HouseholdId)>();
+    var mfgSlotsNeeded = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    var livingNeeded = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+    foreach (var hub in bridge.Hubs.OrderBy(h => h.SystemId, StringComparer.Ordinal))
+    {
+      if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial)
+      {
+        var pop = hub.Role switch
+        {
+          SystemRole.Capital => 400,
+          SystemRole.Industrial => 180,
+          _ => 120,
+        };
+        var hhCount = Math.Max(1, pop / 4);
+        livingNeeded[hub.SystemId] = livingNeeded.GetValueOrDefault(hub.SystemId) + hhCount;
+        householdSeeds.Add((hub, pop, FirmId.From(builder.NextGuid())));
+      }
+
+      if (hub.Role is SystemRole.Mining or SystemRole.Industrial)
+      {
+        mfgSlotsNeeded[hub.SystemId] = mfgSlotsNeeded.GetValueOrDefault(hub.SystemId) + 1;
+      }
+    }
+
+    foreach (var hub in bridge.Hubs.OrderBy(h => h.SystemId, StringComparer.Ordinal))
+    {
+      var area = areas[hub.SystemId];
+      var roleFloor = hub.Role switch
+      {
+        SystemRole.Capital => 120,
+        SystemRole.Industrial => 50,
+        SystemRole.Inhabited => 40,
+        SystemRole.Mining => 10,
+        _ => 5,
+      };
+      var seededHh = livingNeeded.GetValueOrDefault(hub.SystemId);
+      var living = Math.Max(roleFloor, seededHh);
+      var production = mfgSlotsNeeded.GetValueOrDefault(hub.SystemId) + 2;
+      builder.AddRegion(area, living, production);
+    }
+
+    FirmId? capitalHousehold = null;
     foreach (var hub in bridge.Hubs.OrderBy(h => h.SystemId, StringComparer.Ordinal))
     {
       FirmId? owner = hub.Role switch
@@ -247,17 +284,6 @@ internal static class PolityWorld
         carrierPost = postId;
       }
 
-      if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial)
-      {
-        var pop = hub.Role switch
-        {
-          SystemRole.Capital => 400,
-          SystemRole.Industrial => 180,
-          _ => 120,
-        };
-        householdSeeds.Add((hub, pop));
-      }
-
       sites[hub.SystemId] = new Site
       {
         Hub = hub,
@@ -272,7 +298,7 @@ internal static class PolityWorld
     var creditsLeft = OpeningHouseholdCredits;
     for (var i = 0; i < householdSeeds.Count; i++)
     {
-      var (hub, pop) = householdSeeds[i];
+      var (hub, pop, householdId) = householdSeeds[i];
       decimal budget;
       if (i == householdSeeds.Count - 1)
       {
@@ -288,13 +314,33 @@ internal static class PolityWorld
         new CategoryPreference(goodsCat, 0.85m),
         new CategoryPreference(partsCat, 0.15m));
 
+      if (hub.Role == SystemRole.Capital && capitalHousehold is null)
+      {
+        capitalHousehold = householdId;
+      }
+
       builder.AddCohort(new ConsumerCohort(
         ConsumerCohortId.From(builder.NextGuid()),
         new PopulationCount(pop),
         Money.From(budget),
         new PreferenceProfile(prefs, 0.7m, 0m, 0m),
-        areas[hub.SystemId]));
+        areas[hub.SystemId],
+        HouseholdProductivityKind.Mean,
+        householdId));
     }
+
+    // Civic retains majority Mining; capital household holds a seed claim.
+    if (capitalHousehold is { } capitalHh)
+    {
+      builder.SetOwnership(mining, capitalHh, 0.15m);
+      builder.SetOwnership(mining, station, 0.85m);
+    }
+    else
+    {
+      builder.SetOwnership(mining, station, 1m);
+    }
+
+    builder.SetOwnership(industry, station, 0.4m);
 
     var ids = new Ids
     {

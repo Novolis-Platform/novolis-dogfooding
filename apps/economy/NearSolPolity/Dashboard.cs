@@ -72,6 +72,8 @@ internal static class Dashboard
     }
 
     left.AddRow("Treasury", $"[grey]{Markup.Escape(agents.Treasury.LastDecision)}[/]");
+    var hhHold = agents.Households.Count(a => a.LastDecision == "comfort hold");
+    left.AddRow("Households", $"[grey]{hhHold}/{agents.Households.Count} comfort hold[/]");
     left.AddRow("Eval", $"[grey]{Markup.Escape(Truncate(string.Join(" | ", fleet.Select(c => c.LastEval)), 70))}[/]");
     left.AddRow("Highlights", Markup.Escape(StockHighlights(sim, ids)));
 
