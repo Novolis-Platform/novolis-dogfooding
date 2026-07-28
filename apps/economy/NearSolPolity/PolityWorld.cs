@@ -39,8 +39,9 @@ internal static class PolityWorld
   public const decimal OpeningTrampCash = 15_000m;
   public const decimal OpeningHouseholdCredits = 20_000m;
 
-  // Short-band 10 ly @ 24 h/ly needs ≤ tank: burn = hours × difficulty × (1/48).
-  public const decimal FuelBurnPerDifficultyHour = 1m / 48m;
+  // Short-band ≤10 ly @ 7 d/ly → 1680h; burn ≈ ly/2 so tank 6 covers short hops.
+  // burn = hours × difficulty × rate → 10 × 168 × rate ≈ 5 ⇒ rate = 1/336.
+  public const decimal FuelBurnPerDifficultyHour = 1m / 336m;
 
   internal sealed class Site
   {
@@ -114,6 +115,7 @@ internal static class PolityWorld
       ImmutableArray<ProductAttributeDefinition>.Empty, process, null);
 
     // Tank 6 covers short ≤10 ly (burn ≈5); long band needs transit bunkering.
+    // Crew rate kept low so week-scale underways don't dominate margins.
     var hull = new VehicleClass(
       hullId,
       Quantity.From(30m),

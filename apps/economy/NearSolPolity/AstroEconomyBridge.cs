@@ -9,8 +9,14 @@ namespace NearSolPolity;
 /// <summary>Maps Astro catalog + hop graph into Economy hubs and corridors.</summary>
 internal static class AstroEconomyBridge
 {
-  /// <summary>Cruise at 1 ly/day → hours = ceil(ly × 24).</summary>
-  public const double CruiseLyPerHour = 1.0 / 24.0;
+  /// <summary>
+  /// Soft-SF tramp cruise: one week per light-year.
+  /// Kernel corridors store hours = ceil(ly × days/ly × 24).
+  /// </summary>
+  public const double CruiseDaysPerLy = 7.0;
+
+  /// <summary>Ly covered per simulation hour (derived from <see cref="CruiseDaysPerLy"/>).</summary>
+  public const double CruiseLyPerHour = 1.0 / (CruiseDaysPerLy * 24.0);
 
   public const double MaxRangeLy = 12.0;
   public const decimal TollPerLy = 2m;
@@ -115,6 +121,10 @@ internal static class AstroEconomyBridge
 
   public static long TransitHours(double distanceLy) =>
     Math.Max(1, (long)Math.Ceiling(distanceLy / CruiseLyPerHour));
+
+  /// <summary>Transit duration in whole/fractional days (for UI).</summary>
+  public static double TransitDays(double distanceLy) =>
+    TransitHours(distanceLy) / 24.0;
 
   private static (long Dwell, int Berths) HubOps(SystemRole role) => role switch
   {

@@ -1,14 +1,20 @@
+using System.Diagnostics;
 using NearSolPolity;
 using Novolis.Economy;
 using Novolis.Economy.Logistics;
 using Novolis.Economy.Simulation;
 using Spectre.Console;
 
-AnsiConsole.Write(new FigletText("Near-Sol").Color(Color.SteelBlue1));
-AnsiConsole.MarkupLine("[grey]Interstellar polity — closed-loop credits (wages→households→retail).[/]");
-AnsiConsole.MarkupLine(
-  "[grey]Keys:[/] [bold]1[/]=½×  [bold]2[/]=1×  [bold]3[/]=4×  [bold]4[/]=16×  " +
-  "[bold]5[/]=64×  [bold]6[/]=Warp  [bold]Space[/]=pause  [bold]Q[/]=quit");
+var headless = TryParseHeadless(args, out var runHours);
+if (!headless && (Console.IsOutputRedirected || Console.IsInputRedirected))
+{
+  // CI / piped runs default to headless 500h unless --live is forced.
+  headless = !args.Any(a => a.Equals("--live", StringComparison.OrdinalIgnoreCase));
+  if (!DurationArg.TryParse(args.FirstOrDefault(a => !a.StartsWith('-')), out runHours))
+  {
+    runHours = 500;
+  }
+}
 
 var (sim, ids) = PolityWorld.Create();
 var polity = new PolityController(sim, ids);
@@ -20,21 +26,45 @@ var running = true;
 var hoursPerPulse = 1;
 var pulseMs = 280;
 var openingLiquid = credits.LiquidStock;
-Note($"Catalog online — {ids.Bridge.Hubs.Count} hubs, liquid {openingLiquid:0}");
 
-if (Console.IsOutputRedirected || Console.IsInputRedirected)
+if (headless)
 {
-  var hours = args.Length > 0 && int.TryParse(args[0], out var h) && h > 0 ? h : 500;
-  AnsiConsole.MarkupLine($"[yellow]Non-interactive — advancing {hours}h then exiting.[/]");
-  for (var i = 0; i < hours; i++)
+  var sw = Stopwatch.StartNew();
+  // Chunk pulses for wall-clock speed; agents still tick each chunk.
+  hoursPerPulse = 24;
+  var remaining = runHours;
+  var lastPct = -1;
+  while (remaining > 0)
   {
-    await PulseAsync();
+    var step = (int)Math.Min(hoursPerPulse, remaining);
+    hoursPerPulse = step;
+    await PulseAsync(captureLog: false);
+    remaining -= step;
+
+    var done = runHours - remaining;
+    var pct = (int)(done * 100 / runHours);
+    if (pct != lastPct && pct % 10 == 0)
+    {
+      lastPct = pct;
+      Console.Error.WriteLine($"… {DurationArg.Format(done)} / {DurationArg.Format(runHours)} ({pct}%)");
+    }
   }
 
-  AnsiConsole.Write(Dashboard.Build(sim, ids, polity, tramp, credits, log, running, hoursPerPulse, pulseMs));
-  PrintSummary();
+  sw.Stop();
+  HeadlessReport.Write(sim, ids, credits, openingLiquid, runHours, sw.Elapsed);
   return;
 }
+
+AnsiConsole.Write(new FigletText("Near-Sol").Color(Color.SteelBlue1));
+AnsiConsole.MarkupLine("[grey]Interstellar polity — closed-loop credits (wages→households→retail).[/]");
+AnsiConsole.MarkupLine(
+  $"[grey]Travel:[/] {AstroEconomyBridge.CruiseDaysPerLy:0} d/ly  " +
+  $"(Sol→α Cen ~{AstroEconomyBridge.TransitDays(4.4):0.#}d)");
+AnsiConsole.MarkupLine(
+  "[grey]Keys:[/] [bold]1[/]=½×  [bold]2[/]=1×  [bold]3[/]=4×  [bold]4[/]=16×  " +
+  "[bold]5[/]=64×  [bold]6[/]=Warp  [bold]Space[/]=pause  [bold]Q[/]=quit");
+AnsiConsole.MarkupLine("[grey]Headless:[/] [bold]--headless 100d[/]  or  [bold]--headless 2000h[/]");
+Note($"Catalog online — {ids.Bridge.Hubs.Count} hubs, liquid {openingLiquid:0}");
 
 await AnsiConsole.Live(Dashboard.Build(sim, ids, polity, tramp, credits, log, running, hoursPerPulse, pulseMs))
   .AutoClear(false)
@@ -58,7 +88,7 @@ await AnsiConsole.Live(Dashboard.Build(sim, ids, polity, tramp, credits, log, ru
 
       if (running)
       {
-        await PulseAsync();
+        await PulseAsync(captureLog: true);
       }
 
       await Task.Delay(pulseMs);
@@ -67,6 +97,34 @@ await AnsiConsole.Live(Dashboard.Build(sim, ids, polity, tramp, credits, log, ru
 
 PrintSummary();
 return;
+
+bool TryParseHeadless(string[] argv, out long hours)
+{
+  hours = 500;
+  for (var i = 0; i < argv.Length; i++)
+  {
+    var a = argv[i];
+    if (a.Equals("--headless", StringComparison.OrdinalIgnoreCase)
+        || a.Equals("--report", StringComparison.OrdinalIgnoreCase)
+        || a.Equals("headless", StringComparison.OrdinalIgnoreCase))
+    {
+      if (i + 1 < argv.Length && DurationArg.TryParse(argv[i + 1], out hours))
+      {
+        return true;
+      }
+
+      hours = 500;
+      return true;
+    }
+
+    if (a.StartsWith("--headless=", StringComparison.OrdinalIgnoreCase))
+    {
+      return DurationArg.TryParse(a["--headless=".Length..], out hours);
+    }
+  }
+
+  return false;
+}
 
 bool HandleKey(ConsoleKeyInfo key)
 {
@@ -109,14 +167,25 @@ void SetSpeed(int hours, int ms, string label)
   Note($"speed {label} ({hours}h / pulse)");
 }
 
-async Task PulseAsync()
+async Task PulseAsync(bool captureLog)
 {
-  polity.Tick();
-  tramp.Tick();
   var before = sim.State.Events.Count;
-  await sim.AdvanceAsync(SimulationDuration.FromHours(hoursPerPulse));
+  for (var h = 0; h < hoursPerPulse; h++)
+  {
+    polity.Tick();
+    tramp.Tick();
+    await sim.AdvanceAsync(SimulationDuration.FromHours(1));
+  }
+
   credits.ObserveAfterPulse(before);
-  Capture(before);
+  if (captureLog)
+  {
+    Capture(before);
+  }
+  else
+  {
+    eventCursor = sim.State.Events.Count;
+  }
 }
 
 void Capture(int before)
@@ -135,7 +204,7 @@ void Capture(int before)
       TransportTollPaid e => $"toll {e.Amount.Amount:0.##}",
       WagesPaid e when e.Amount.Amount >= 0.5m => $"wages paid {e.Amount.Amount:0}",
       HouseholdCreditsIssued e when e.Amount.Amount >= 0.5m => $"hh credits {e.Amount.Amount:0}",
-      GoodsSold e => $"sold ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
+      GoodsSold e when e.Revenue.Amount >= 0.5m => $"sold ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
       GoodsSoldInterFirm e => $"B2B ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
       TransferGoodsFailed e => $"B2B failed: {e.Reason}",
       ProcurementFilled e => $"import ×{e.Quantity.Value:0}",
@@ -175,7 +244,6 @@ void PrintSummary()
   var trampCash = world.Ledgers[ids.Tramp].Cash.Amount;
   var polityCash = world.Ledgers[ids.Polity].Cash.Amount;
   var hh = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
-  var produced = sim.State.Events.OfType<BatchProduced>().Sum(e => e.Quantity.Value);
   var sold = sim.State.Events.OfType<GoodsSold>().Sum(e => e.Quantity.Value);
   var delivered = world.TransportStats.CargoDelivered.Value;
   AnsiConsole.MarkupLine(

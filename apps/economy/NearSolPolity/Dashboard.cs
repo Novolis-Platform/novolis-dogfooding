@@ -135,7 +135,9 @@ internal static class Dashboard
       var name = ids.Bridge.BySystemId.TryGetValue(e.To.Value, out var b) ? b.Name : e.To.Value;
       var role = ids.Bridge.BySystemId.TryGetValue(e.To.Value, out var b2) ? b2.Role.ToString() : "?";
       var hrs = AstroEconomyBridge.TransitHours(e.DistanceLy);
-      lines.Add($"  {e.DistanceLy:0.0} ly / {hrs}h ({e.BandTag}) → {Markup.Escape(Short(name))} ({Markup.Escape(role)})");
+      var days = AstroEconomyBridge.TransitDays(e.DistanceLy);
+      lines.Add(
+        $"  {e.DistanceLy:0.0} ly / {days:0.#}d ({hrs}h, {e.BandTag}) → {Markup.Escape(Short(name))} ({Markup.Escape(role)})");
     }
 
     if (ship is not null && ship.Itinerary.LegCount > 0)
@@ -152,7 +154,8 @@ internal static class Dashboard
         var from = ids.Bridge.Hubs.FirstOrDefault(h => h.HubId.Equals(c.From))?.Name ?? "?";
         var to = ids.Bridge.Hubs.FirstOrDefault(h => h.HubId.Equals(c.To))?.Name ?? "?";
         var mark = i == ship.LegIndex ? "◆" : "·";
-        lines.Add($"  {mark} {Markup.Escape(Short(from))} → {Markup.Escape(Short(to))} ({c.TransitHours}h)");
+        var d = c.TransitHours / 24.0;
+        lines.Add($"  {mark} {Markup.Escape(Short(from))} → {Markup.Escape(Short(to))} ({d:0.#}d / {c.TransitHours}h)");
       }
     }
 
