@@ -79,14 +79,33 @@ public static class AvaloniaAgentMcpTools
     public static async Task<string> UiType(
         [Description("Optional control AgentId to focus first.")]
         string? controlId = null,
-        [Description("Text to append into a TextBox.")]
+        [Description("Text to append into a TextBox (or replace when clear=true).")]
         string? text = null,
         [Description("Special keys, e.g. Enter, Tab, Escape.")]
         string[]? keys = null,
+        [Description("When true, replace TextBox text instead of appending.")]
+        bool clear = false,
         CancellationToken cancellationToken = default)
     {
         var response = await AvaloniaAgentRuntime.WithClientAsync(
-            c => c.TypeAsync(controlId, text, keys, cancellationToken).AsTask(),
+            c => c.TypeAsync(controlId, text, keys, clear, cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(response);
+    }
+
+    [McpServerTool]
+    [Description("Select an item in a ListBox, ComboBox, or TabControl by zero-based index or item/header text substring.")]
+    public static async Task<string> UiSelect(
+        [Description("Stable AgentId of the list/combo/tabs control.")]
+        string controlId,
+        [Description("Zero-based index. Prefer this when known.")]
+        int? index = null,
+        [Description("Substring match against item text or tab header (case-insensitive).")]
+        string? itemText = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.SelectAsync(controlId, index, itemText, cancellationToken).AsTask(),
             cancellationToken).ConfigureAwait(false);
         return AvaloniaAgentRuntime.ToJson(response);
     }
