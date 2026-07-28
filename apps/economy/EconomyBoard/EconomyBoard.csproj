@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>EconomyBoard</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Description>Avalonia dogfood board for EconomyWorld — inventory, ledger, shipments.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Novolis.Economy" />
+    <PackageReference Include="Novolis.Economy.Production" />
+    <PackageReference Include="Novolis.Economy.Markets" />
+    <PackageReference Include="Novolis.Economy.Accounting" />
+    <PackageReference Include="Novolis.Economy.Logistics" />
+    <PackageReference Include="Novolis.Economy.Population" />
+    <PackageReference Include="Novolis.Economy.Simulation" />
+  </ItemGroup>
+</Project>

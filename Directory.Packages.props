@@ -21,7 +21,14 @@
     <PackageVersion Include="Novolis.Audio.Filters" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Phraseology" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Playback" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Astro.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Astro.Assessment" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Astro.Catalog" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Astro.Overlay" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Astro.Plotting" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Astro.Routing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Voice.Manuscript" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Profiles" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.SherpaOnnx" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Kokoro" Version="2026.1.*" />
@@ -29,12 +36,19 @@
     <PackageVersion Include="Novolis.Audio.Voice.Platform.Windows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Design" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Studio" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.StarMap" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Voice" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Timeline" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Controls" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.IO.Git" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.IO.Paths" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.IO.Processes" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.IO.Recovery" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.IO.Watching" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Markup.Manuscript" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Host.NAudio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Snapshots.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Timeline.Abstractions" Version="2026.1.*" />
@@ -47,6 +61,13 @@
     <PackageVersion Include="Novolis.Commands.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Engine" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Commands.Queueing" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Accounting" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Logistics" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Markets" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Population" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Production" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Economy.Simulation" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Identity" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.MenuFlows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Multiplayer.Abstractions" Version="2026.1.*" />
@@ -54,6 +75,7 @@
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Messaging.Channels" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Physics.Astro" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Ballistics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Joints" Version="2026.1.*" />

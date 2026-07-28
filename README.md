@@ -41,6 +41,12 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `RagdollPlay` | `simulation/` | Raylib, Physics.Joints, Simulation |
 | `VoiceSmoke` | `audio/` | Audio.Voice, Voice.Atc (Sherpa Piper TTS, phraseology) |
 | `NovolisVoiceStudio` | `audio/` | Voice.Design + Avalonia.Voice — preset editor, preview, C# export |
+| `AstroSmoke` | `astro/` | Astro catalog/routing/assessment/overlay/plotting + Physics.Astro units |
+| `StarMapLab` | `astro/` | Avalonia.StarMap + Astro route planner (pan/zoom lab) |
+| `EconomyBoard` | `economy/` | Economy kernel — Avalonia Raw→Mid→Fin board |
+| `TrampFreighterPlay` | `economy/` | Economy logistics — Spectre tramp freighter (hubs/fuel/tolls) |
+| `IoSmoke` | `io/` | IO.Paths, Recovery, Watching, Processes, Git status |
+| `ManuscriptSmoke` | `manuscript/` | Markup.Manuscript metadata + Voice.Manuscript SpeechPlanner dry-run |
 | `BridgeCommander` | `commands/` | Spectre bridge + voiced patrol exchange; `--interactive` / `--no-voice` |
 | `WireFishViewer` | `transports/` | Avalonia, Transports.WireFish, Messaging.Channels |
 | `NeuralRacing` | `machine-learning/` | Simulation.Racing + MachineLearning.Neural (evolution demo; glue in app, not a library package) |

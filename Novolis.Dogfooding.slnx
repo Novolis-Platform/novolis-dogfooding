@@ -54,6 +54,20 @@
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
     <Project Path="apps/audio/NovolisVoiceStudio/NovolisVoiceStudio.csproj" />
   </Folder>
+  <Folder Name="/astro/">
+    <Project Path="apps/astro/AstroSmoke/AstroSmoke.csproj" />
+    <Project Path="apps/astro/StarMapLab/StarMapLab.csproj" />
+  </Folder>
+  <Folder Name="/economy/">
+    <Project Path="apps/economy/EconomyBoard/EconomyBoard.csproj" />
+    <Project Path="apps/economy/TrampFreighterPlay/TrampFreighterPlay.csproj" />
+  </Folder>
+  <Folder Name="/io/">
+    <Project Path="apps/io/IoSmoke/IoSmoke.csproj" />
+  </Folder>
+  <Folder Name="/manuscript/">
+    <Project Path="apps/manuscript/ManuscriptSmoke/ManuscriptSmoke.csproj" />
+  </Folder>
   <Folder Name="/gaming/">
     <Project Path="apps/gaming/GamingSmoke/GamingSmoke.csproj" />
     <Project Path="apps/gaming/TopDownDoom/TopDownDoom.csproj" />
