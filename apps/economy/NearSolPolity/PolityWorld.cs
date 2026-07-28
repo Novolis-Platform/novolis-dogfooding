@@ -12,37 +12,39 @@ namespace NearSolPolity;
 internal static class PolityWorld
 {
   public const decimal OreBuy = 2m;
-  public const decimal OreSell = 12m;
+  public const decimal OreSell = 14m;
   /// <summary>Industry delivered Raw bid — wide enough vs mine gate + long-haul tolls.</summary>
   public const decimal OreDelivered = 14m;
-  public const decimal FreightPremiumPerUnit = 1m;
+  public const decimal FreightPremiumPerUnit = 1.25m;
   public const decimal PartsPerOre = 0.15m;
   public const decimal OrePerFuel = 0.5m;
   public const decimal PartsBuy = 4m;
   public const decimal PartsSell = 10m;
-  public const decimal PartsDelivered = 12m;
+  public const decimal PartsDelivered = 13m;
   public const decimal GoodsFactory = 6m;
-  public const decimal GoodsSell = 12m;
-  public const decimal GoodsDelivered = 16m;
+  public const decimal GoodsSell = 13m;
+  public const decimal GoodsDelivered = 20m;
   public const decimal FuelUnitCost = 1m;
   /// <summary>
   /// Floor haul Δ after fuel/toll/crew. Small positive keeps empty pickups selective;
   /// holding-cargo dumps use BestOutboundFrom without this floor.
   /// </summary>
-  public const decimal MinMargin = 1m;
+  public const decimal MinMargin = 0.4m;
 
   /// <summary>Independent tramp firms (one hull each — CarrierFirmAgent is single-ship).</summary>
-  public const int TrampFleetSize = 3;
-  public const decimal MineOreCap = 80m;
-  public const decimal MinePartsFloor = 8m;
-  public const decimal PlantOreFloor = 20m;
-  public const decimal RetailStockTarget = 20m;
-  public const decimal FirmCashFloor = 1_000m;
+  public const int TrampFleetSize = 7;
+  public const decimal MineOreCap = 100m;
+  public const decimal MinePartsFloor = 10m;
+  public const decimal PlantOreFloor = 18m;
+  public const decimal RetailStockTarget = 28m;
+  public const decimal FirmCashFloor = 1_500m;
 
-  public const decimal OpeningFirmCash = 15_000m;
-  public const decimal OpeningHouseholdCredits = 20_000m;
+  /// <summary>Lean enough for treasury pressure; fat enough Industry survives 1000d.</summary>
+  public const decimal OpeningFirmCash = 12_000m;
+  /// <summary>Household budget stock sized so Mean cohorts clear comfort and buy claims.</summary>
+  public const decimal OpeningHouseholdCredits = 85_000m;
 
-  public const decimal FuelBurnPerDifficultyHour = 1m / 62.4m;
+  public const decimal FuelBurnPerDifficultyHour = 1m / 68m;
 
   public static string SkuLabel(ProductId product, Ids ids)
   {
@@ -104,13 +106,9 @@ internal static class PolityWorld
     var mining = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a1"));
     var industry = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
     var station = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a3"));
-    var carrierGuids = new[]
-    {
-      Guid.Parse("00000000-0000-4000-8000-0000000000a4"),
-      Guid.Parse("00000000-0000-4000-8000-0000000000a5"),
-      Guid.Parse("00000000-0000-4000-8000-0000000000a6"),
-    };
-    var carriers = carrierGuids.Take(TrampFleetSize).Select(FirmId.From).ToArray();
+    var carriers = Enumerable.Range(0, TrampFleetSize)
+      .Select(i => FirmId.From(Guid.Parse($"00000000-0000-4000-8000-00000000{(0xb0 + i):x4}")))
+      .ToArray();
     var carrier = carriers[0];
 
     var builder = new EconomyWorldBuilder(new EconomyPolicy
@@ -122,6 +120,7 @@ internal static class PolityWorld
       CohortBudgetResetMode = CohortBudgetResetMode.CarryForward,
       TollBeneficiaryFirmId = station,
       PriceElasticity = 0.8m,
+      HouseholdComfortThresholdPerHousehold = Money.From(40m),
     });
 
     var bridge = AstroEconomyBridge.Build(catalog, builder, seed);
@@ -160,10 +159,10 @@ internal static class PolityWorld
 
     var hull = new VehicleClass(
       hullId,
-      Quantity.From(30m),
+      Quantity.From(40m),
       FuelBurnPerDifficultyHour,
       CrewLaborPerUnderwayHour: 0.02m,
-      FuelTankCapacity: Quantity.From(6m));
+      FuelTankCapacity: Quantity.From(8m));
 
     builder
       .AddProduct(oreDef)
@@ -176,7 +175,7 @@ internal static class PolityWorld
       .AddFirm(carrier, "MV Independent", Money.From(OpeningFirmCash));
     for (var i = 1; i < carriers.Length; i++)
     {
-      builder.AddFirm(carriers[i], $"MV Tramp {i + 1}", Money.From(OpeningFirmCash * 0.6m));
+      builder.AddFirm(carriers[i], $"MV Tramp {i + 1}", Money.From(OpeningFirmCash * 0.45m));
     }
 
     // Carrier crew labor only — region pools supply manufacturing firms.
@@ -196,13 +195,16 @@ internal static class PolityWorld
 
     foreach (var hub in bridge.Hubs.OrderBy(h => h.SystemId, StringComparer.Ordinal))
     {
-      if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial)
+      if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial
+          or SystemRole.Mining)
       {
         // Cohort PopulationCount is household count (no headcount layer).
+        // Mining camps are small but required — region labor pools are area-local.
         var households = hub.Role switch
         {
           SystemRole.Capital => 100,
           SystemRole.Industrial => 45,
+          SystemRole.Mining => 12,
           _ => 30,
         };
         livingNeeded[hub.SystemId] = livingNeeded.GetValueOrDefault(hub.SystemId) + households;
@@ -223,7 +225,7 @@ internal static class PolityWorld
         SystemRole.Capital => 120,
         SystemRole.Industrial => 50,
         SystemRole.Inhabited => 40,
-        SystemRole.Mining => 10,
+        SystemRole.Mining => 20,
         _ => 5,
       };
       var seededHh = livingNeeded.GetValueOrDefault(hub.SystemId);
@@ -329,18 +331,18 @@ internal static class PolityWorld
         householdId));
     }
 
-    // Civic retains majority Mining; capital household holds a seed claim.
+    // Civic majority + capital seed + float for household PurchaseOwnership.
     if (capitalHousehold is { } capitalHh)
     {
       builder.SetOwnership(mining, capitalHh, 0.15m);
-      builder.SetOwnership(mining, station, 0.85m);
+      builder.SetOwnership(mining, station, 0.7m);
     }
     else
     {
-      builder.SetOwnership(mining, station, 1m);
+      builder.SetOwnership(mining, station, 0.85m);
     }
 
-    builder.SetOwnership(industry, station, 0.4m);
+    builder.SetOwnership(industry, station, 0.35m);
 
     var ids = new Ids
     {
@@ -392,23 +394,23 @@ internal static class PolityWorld
       switch (hub.Role)
       {
         case SystemRole.Mining:
-          Add(ids.Mining, hub.LocationId, ids.Ore, 30m, OreBuy);
-          Add(ids.Mining, hub.LocationId, ids.Parts, 25m, PartsBuy);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
+          Add(ids.Mining, hub.LocationId, ids.Ore, 45m, OreBuy);
+          Add(ids.Mining, hub.LocationId, ids.Parts, 40m, PartsBuy);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 25m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
           }
 
           break;
         case SystemRole.Industrial:
-          Add(ids.Industry, hub.LocationId, ids.Ore, 40m, OreBuy);
-          Add(ids.Industry, hub.LocationId, ids.Parts, 30m, PartsBuy);
-          Add(ids.Industry, hub.LocationId, ids.Goods, 15m, GoodsSell * 0.4m);
-          Add(ids.Station, hub.LocationId, ids.Fuel, 30m, FuelUnitCost);
+          Add(ids.Industry, hub.LocationId, ids.Ore, 55m, OreBuy);
+          Add(ids.Industry, hub.LocationId, ids.Parts, 40m, PartsBuy);
+          Add(ids.Industry, hub.LocationId, ids.Goods, 20m, GoodsSell * 0.4m);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 35m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {
-            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
           }
 
           break;

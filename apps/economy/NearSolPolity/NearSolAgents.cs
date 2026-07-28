@@ -47,24 +47,24 @@ internal static class NearSolAgents
 
     var mining = new ExtractiveFirmAgent(ids.Mining, new ExtractiveFirmAgentPolicy(
       miningSites, ids.Ore, ids.Parts,
-      BaseOutputRate: 2m, OutputCap: PolityWorld.MineOreCap,
+      BaseOutputRate: 3.5m, OutputCap: PolityWorld.MineOreCap,
       InputPerOutput: PolityWorld.PartsPerOre, InputFloor: PolityWorld.MinePartsFloor,
-      SellAboveStock: 10m, SellKeepFloor: 5m, SellMaxQty: 20m,
+      SellAboveStock: 8m, SellKeepFloor: 4m, SellMaxQty: 30m,
       OutputGatePrice: PolityWorld.OreBuy, InputLimitPrice: PolityWorld.PartsDelivered));
 
     var industry = new ManufacturingFirmAgent(ids.Industry, new ManufacturingFirmAgentPolicy(
-      plantSites, ids.Ore, PolityWorld.PlantOreFloor + 15m, PolityWorld.OreDelivered,
+      plantSites, ids.Ore, PolityWorld.PlantOreFloor + 12m, PolityWorld.OreDelivered,
       [
         new ManufacturedSkuPolicy(
-          ids.Parts, BaseRate: 4m, StockTarget: 40m, MinInputOnHand: 1m, RequiredInput: ids.Ore,
-          SellAboveStock: 8m, SellKeepFloor: 4m, SellMaxQty: 15m, GatePrice: PolityWorld.PartsBuy),
+          ids.Parts, BaseRate: 6m, StockTarget: 55m, MinInputOnHand: 1m, RequiredInput: ids.Ore,
+          SellAboveStock: 4m, SellKeepFloor: 2m, SellMaxQty: 22m, GatePrice: PolityWorld.PartsBuy),
         new ManufacturedSkuPolicy(
-          ids.Goods, BaseRate: 2.5m, StockTarget: PolityWorld.RetailStockTarget * 1.5m,
+          ids.Goods, BaseRate: 3m, StockTarget: PolityWorld.RetailStockTarget * 1.4m,
           MinInputOnHand: 1m, RequiredInput: ids.Parts,
-          SellAboveStock: 6m, SellKeepFloor: 2m, SellMaxQty: 12m, GatePrice: PolityWorld.GoodsFactory),
+          SellAboveStock: 5m, SellKeepFloor: 2m, SellMaxQty: 14m, GatePrice: PolityWorld.GoodsFactory),
         new ManufacturedSkuPolicy(
-          ids.Fuel, BaseRate: 2m, StockTarget: 30m, MinInputOnHand: 10m, RequiredInput: ids.Ore,
-          SellAboveStock: 10m, SellKeepFloor: 4m, SellMaxQty: 12m, GatePrice: PolityWorld.FuelUnitCost),
+          ids.Fuel, BaseRate: 2.5m, StockTarget: 36m, MinInputOnHand: 8m, RequiredInput: ids.Ore,
+          SellAboveStock: 8m, SellKeepFloor: 3m, SellMaxQty: 14m, GatePrice: PolityWorld.FuelUnitCost),
       ]));
 
     var station = new RetailFirmAgent(ids.Station, new RetailFirmAgentPolicy(
@@ -89,23 +89,21 @@ internal static class NearSolAgents
       return PolityWorld.FuelUnitCost;
     }
 
-    // Home hubs: Sol, first mine, first plant — spreads tramp coverage across the graph.
-    var homeHubs = new List<TransportHubId> { ids.Sites["sol"].Hub.HubId };
-    var mineHome = miningSites.FirstOrDefault(s => s.HubId is not null)?.HubId;
-    var plantHome = plantSites.FirstOrDefault(s => s.HubId is not null)?.HubId;
-    if (mineHome is { } mh)
+    // Home hubs: cycle Sol / mines / plants so the larger tramp fleet fans out.
+    var homeHubs = new List<TransportHubId>();
+    var mineHomes = miningSites.Where(s => s.HubId is not null).Select(s => s.HubId!.Value).ToList();
+    var plantHomes = plantSites.Where(s => s.HubId is not null).Select(s => s.HubId!.Value).ToList();
+    var pool = new List<TransportHubId> { ids.Sites["sol"].Hub.HubId };
+    pool.AddRange(mineHomes);
+    pool.AddRange(plantHomes);
+    if (pool.Count == 0)
     {
-      homeHubs.Add(mh);
+      pool.Add(ids.Sites["sol"].Hub.HubId);
     }
 
-    if (plantHome is { } ph)
+    for (var i = 0; i < ids.Carriers.Count; i++)
     {
-      homeHubs.Add(ph);
-    }
-
-    while (homeHubs.Count < ids.Carriers.Count)
-    {
-      homeHubs.Add(ids.Sites["sol"].Hub.HubId);
+      homeHubs.Add(pool[i % pool.Count]);
     }
 
     var trampAgents = new List<CarrierFirmAgent>(ids.Carriers.Count);
@@ -123,15 +121,15 @@ internal static class NearSolAgents
 
     var treasury = new TreasuryFirmAgent(ids.Station, new TreasuryFirmAgentPolicy(
       [ids.Mining, ids.Industry, .. ids.Carriers],
-      CashFloorToLend: 8_000m,
-      BorrowerCashFloor: PolityWorld.FirmCashFloor + 2_000m,
-      LoanPrincipal: Money.From(500m),
+      CashFloorToLend: 5_000m,
+      BorrowerCashFloor: PolityWorld.FirmCashFloor + 1_000m,
+      LoanPrincipal: Money.From(900m),
       AnnualInterestRate: 0.08m,
-      TermHours: SimulationHour.HoursPerDay * 30));
+      TermHours: SimulationHour.HoursPerDay * 60,
+      MaxActiveLoansToBorrower: 2));
 
-    // Seed a small working-capital loan so Finance is exercised from hour 0.
     sim.Enqueue(new OriginateLoan(
-      ids.Station, ids.Mining, Money.From(400m), 0.08m, SimulationHour.HoursPerDay * 45));
+      ids.Station, ids.Industry, Money.From(800m), 0.08m, SimulationHour.HoursPerDay * 90));
 
     var households = sim.State.World.Cohorts
       .Where(c => c.Definition.HouseholdFirmId is not null)
@@ -139,11 +137,12 @@ internal static class NearSolAgents
       .Select(c => new HouseholdFirmAgent(
         c.Definition.HouseholdFirmId!.Value,
         new HouseholdFirmAgentPolicy(
-          PreferredBorrower: ids.Industry,
+          // Invest into Mining float; leave working-capital credit to Civic treasury.
+          PreferredBorrower: null,
           PreferredIssuer: ids.Mining,
-          LoanPrincipal: Money.From(25m),
-          PurchaseFraction: 0.005m,
-          PurchasePrice: Money.From(20m))))
+          PurchaseFraction: 0.01m,
+          PurchasePrice: Money.From(40m),
+          MaxActiveLoans: 1)))
       .ToList();
 
     IEconomicAgent[] pulse =

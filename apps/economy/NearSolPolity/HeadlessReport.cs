@@ -282,7 +282,7 @@ internal static class HeadlessReport
       "",
       "— Travel —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
-      $"Fleet:        {agents.Carriers.Count} tramps  MinMargin {PolityWorld.MinMargin:0}",
+      $"Fleet:        {agents.Carriers.Count} tramps  MinMargin {PolityWorld.MinMargin:0.##}",
       $"Roles:        {ids.RoleSummary}",
       "Agents:       Novolis.Economy.Agents heuristics + DeterministicRandom",
       "Civics:       Station entity (tolls / treasury / ownership) — product copy",

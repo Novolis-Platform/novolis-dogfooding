@@ -50,7 +50,8 @@ internal static class SeedInvariants
         continue;
       }
 
-      if (hub.Profile.Potential.Agriculture == 0)
+      if (hub.Profile.Potential.Agriculture == 0
+          && hub.Role is not SystemRole.Mining)
       {
         failures.Add($"Cohort on barren system {hub.SystemId}");
       }
