@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>NearSolPolity</RootNamespace>
+    <Description>Near-Sol interstellar polity — Astro catalog bridged to Economy logistics and production.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Novolis.Astro.Abstractions" />
+    <PackageReference Include="Novolis.Astro.Assessment" />
+    <PackageReference Include="Novolis.Astro.Catalog" />
+    <PackageReference Include="Novolis.Astro.Routing" />
+    <PackageReference Include="Novolis.Economy" />
+    <PackageReference Include="Novolis.Economy.Production" />
+    <PackageReference Include="Novolis.Economy.Markets" />
+    <PackageReference Include="Novolis.Economy.Accounting" />
+    <PackageReference Include="Novolis.Economy.Logistics" />
+    <PackageReference Include="Novolis.Economy.Population" />
+    <PackageReference Include="Novolis.Economy.Simulation" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="data\nearsol-100.json" LogicalName="NearSolPolity.nearsol-100.json" />
+  </ItemGroup>
+</Project>

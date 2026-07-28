@@ -50,6 +50,9 @@
     <Project Path="apps/NeuralRacing/NeuralRacing.csproj" />
     <Project Path="apps/NeuralRacing.Tests/NeuralRacing.Tests.csproj" />
   </Folder>
+  <Folder Name="/avalonia/">
+    <Project Path="apps/avalonia/StudioChromeLab/StudioChromeLab.csproj" />
+  </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
     <Project Path="apps/audio/NovolisVoiceStudio/NovolisVoiceStudio.csproj" />
@@ -62,6 +65,7 @@
     <Project Path="apps/economy/EconomyBoard/EconomyBoard.csproj" />
     <Project Path="apps/economy/TrampFreighterPlay/TrampFreighterPlay.csproj" />
     <Project Path="apps/economy/TrampFreighterSim/TrampFreighterSim.csproj" />
+    <Project Path="apps/economy/NearSolPolity/NearSolPolity.csproj" />
   </Folder>
   <Folder Name="/io/">
     <Project Path="apps/io/IoSmoke/IoSmoke.csproj" />
