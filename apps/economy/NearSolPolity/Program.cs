@@ -2,13 +2,13 @@ using System.Diagnostics;
 using NearSolPolity;
 using Novolis.Economy;
 using Novolis.Economy.Logistics;
+using Novolis.Economy.Markets;
 using Novolis.Economy.Simulation;
 using Spectre.Console;
 
 var headless = TryParseHeadless(args, out var runHours);
 if (!headless && (Console.IsOutputRedirected || Console.IsInputRedirected))
 {
-  // CI / piped runs default to headless 500h unless --live is forced.
   headless = !args.Any(a => a.Equals("--live", StringComparison.OrdinalIgnoreCase));
   if (!DurationArg.TryParse(args.FirstOrDefault(a => !a.StartsWith('-')), out runHours))
   {
@@ -17,8 +17,10 @@ if (!headless && (Console.IsOutputRedirected || Console.IsInputRedirected))
 }
 
 var (sim, ids) = PolityWorld.Create();
-var polity = new PolityController(sim, ids);
-var tramp = new TrampFleetAutopilot(sim, ids);
+var mining = new MiningHeuristic(sim, ids);
+var industry = new IndustryHeuristic(sim, ids);
+var station = new StationHeuristic(sim, ids);
+var carrier = new CarrierHeuristic(sim, ids);
 var credits = new CreditCirculation(sim);
 var log = new Queue<string>();
 var eventCursor = sim.State.Events.Count;
@@ -30,7 +32,6 @@ var openingLiquid = credits.LiquidStock;
 if (headless)
 {
   var sw = Stopwatch.StartNew();
-  // Chunk pulses for wall-clock speed; agents still tick each chunk.
   hoursPerPulse = 24;
   var remaining = runHours;
   var lastPct = -1;
@@ -51,12 +52,12 @@ if (headless)
   }
 
   sw.Stop();
-  HeadlessReport.Write(sim, ids, credits, openingLiquid, runHours, sw.Elapsed);
+  HeadlessReport.Write(sim, ids, credits, openingLiquid, runHours, sw.Elapsed, carrier);
   return;
 }
 
 AnsiConsole.Write(new FigletText("Near-Sol").Color(Color.SteelBlue1));
-AnsiConsole.MarkupLine("[grey]Interstellar polity — closed-loop credits (wages→households→retail).[/]");
+AnsiConsole.MarkupLine("[grey]Tycoon slice — Mining / Industry / Station / Carrier + hub order book.[/]");
 AnsiConsole.MarkupLine(
   $"[grey]Travel:[/] {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly  " +
   $"(Sol→α Cen ~{AstroEconomyBridge.TransitDays(4.4):0.#}d)  " +
@@ -64,17 +65,17 @@ AnsiConsole.MarkupLine(
 AnsiConsole.MarkupLine(
   "[grey]Keys:[/] [bold]1[/]=½×  [bold]2[/]=1×  [bold]3[/]=4×  [bold]4[/]=16×  " +
   "[bold]5[/]=64×  [bold]6[/]=Warp  [bold]Space[/]=pause  [bold]Q[/]=quit");
-AnsiConsole.MarkupLine("[grey]Headless:[/] [bold]--headless 100d[/]  or  [bold]--headless 2000h[/]");
+AnsiConsole.MarkupLine("[grey]Headless:[/] [bold]--headless 100d[/]");
 Note($"Catalog online — {ids.Bridge.Hubs.Count} hubs, liquid {openingLiquid:0}");
 
-await AnsiConsole.Live(Dashboard.Build(sim, ids, polity, tramp, credits, log, running, hoursPerPulse, pulseMs))
+await AnsiConsole.Live(Dashboard.Build(sim, ids, mining, industry, station, carrier, credits, log, running, hoursPerPulse, pulseMs))
   .AutoClear(false)
   .Overflow(VerticalOverflow.Ellipsis)
   .StartAsync(async ctx =>
   {
     while (true)
     {
-      ctx.UpdateTarget(Dashboard.Build(sim, ids, polity, tramp, credits, log, running, hoursPerPulse, pulseMs));
+      ctx.UpdateTarget(Dashboard.Build(sim, ids, mining, industry, station, carrier, credits, log, running, hoursPerPulse, pulseMs));
 
       while (Console.KeyAvailable)
       {
@@ -82,7 +83,7 @@ await AnsiConsole.Live(Dashboard.Build(sim, ids, polity, tramp, credits, log, ru
         if (!HandleKey(key))
         {
           Note("Clearing docking clamps.");
-          ctx.UpdateTarget(Dashboard.Build(sim, ids, polity, tramp, credits, log, running, hoursPerPulse, pulseMs));
+          ctx.UpdateTarget(Dashboard.Build(sim, ids, mining, industry, station, carrier, credits, log, running, hoursPerPulse, pulseMs));
           return;
         }
       }
@@ -173,8 +174,10 @@ async Task PulseAsync(bool captureLog)
   var before = sim.State.Events.Count;
   for (var h = 0; h < hoursPerPulse; h++)
   {
-    polity.Tick();
-    tramp.Tick();
+    mining.Tick();
+    industry.Tick();
+    station.Tick();
+    carrier.Tick();
     await sim.AdvanceAsync(SimulationDuration.FromHours(1));
   }
 
@@ -197,19 +200,15 @@ void Capture(int before)
     var line = events[i] switch
     {
       ShipmentDeparted e => $"departed ×{e.Quantity.Value:0}",
-      ShipmentLegStarted => "entered corridor",
-      ShipmentHubArrived => "hub arrival / dwell",
       ShipmentDelivered e => $"delivered ×{e.Quantity.Value:0}",
       ShipmentPlanFailed e => $"plan failed: {e.Reason}",
-      FuelBunkered e => $"bunkered {e.Quantity.Value:0.##}",
-      TransportTollPaid e => $"toll {e.Amount.Amount:0.##}",
-      WagesPaid e when e.Amount.Amount >= 0.5m => $"wages paid {e.Amount.Amount:0}",
-      HouseholdCreditsIssued e when e.Amount.Amount >= 0.5m => $"hh credits {e.Amount.Amount:0}",
+      HubOrderFilled e => $"book fill {PolityWorld.SkuLabel(e.ProductId, ids)} ×{e.Quantity.Value:0}",
+      HubOrderPosted => null,
       GoodsSold e when e.Revenue.Amount >= 0.5m => $"sold ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
-      GoodsSoldInterFirm e => $"B2B ×{e.Quantity.Value:0} → {e.Revenue.Amount:0.##}",
-      TransferGoodsFailed e => $"B2B failed: {e.Reason}",
+      GoodsSoldInterFirm e => $"B2B ×{e.Quantity.Value:0}",
+      HouseholdCreditsIssued e when e.Amount.Amount >= 0.5m => $"hh credits {e.Amount.Amount:0}",
       ProcurementFilled e => $"import ×{e.Quantity.Value:0}",
-      BatchProduced e => $"produced {ProductHint(e.ProductId)} ×{e.Quantity.Value:0}",
+      BatchProduced e => $"produced {PolityWorld.SkuLabel(e.ProductId, ids)} ×{e.Quantity.Value:0}",
       _ => null,
     };
     if (line is not null)
@@ -220,8 +219,6 @@ void Capture(int before)
 
   eventCursor = events.Count;
 }
-
-string ProductHint(ProductId p) => PolityWorld.SkuLabel(p, ids);
 
 void Note(string msg)
 {
@@ -234,22 +231,12 @@ void Note(string msg)
 
 void PrintSummary()
 {
-  var world = sim.State.World;
-  var trampCash = world.Ledgers[ids.Tramp].Cash.Amount;
-  var polityCash = world.Ledgers[ids.Polity].Cash.Amount;
-  var hh = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
-  var sold = sim.State.Events.OfType<GoodsSold>().Sum(e => e.Quantity.Value);
-  var delivered = world.TransportStats.CargoDelivered.Value;
   AnsiConsole.MarkupLine(
-    "[green]Done.[/] Hash [bold]{0:X16}[/]  liquid {1:0} (open {2:0})  tramp {3:0}  polity {4:0}  hh {5:0}  wages→hh {6:0}  imports {7:0}  sold {8:0}  delivered {9:0}",
+    "[green]Done.[/] Hash [bold]{0:X16}[/]  liquid {1:0} (open {2:0})  fills {3}  wages→hh {4:0}  imports {5:0}",
     sim.State.Hash,
     credits.LiquidStock,
     openingLiquid,
-    trampCash,
-    polityCash,
-    hh,
+    credits.BookFills,
     credits.WagesDistributed,
-    credits.ImportSpend,
-    sold,
-    delivered);
+    credits.ImportSpend);
 }

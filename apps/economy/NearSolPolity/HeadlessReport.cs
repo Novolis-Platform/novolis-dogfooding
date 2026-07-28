@@ -1,12 +1,11 @@
 using Novolis.Economy;
 using Novolis.Economy.Accounting;
-using Novolis.Economy.Logistics;
+using Novolis.Economy.Markets;
 using Novolis.Economy.Simulation;
 using Spectre.Console;
 
 namespace NearSolPolity;
 
-/// <summary>Parses duration args like <c>100d</c>, <c>2000h</c>, or bare hours.</summary>
 internal static class DurationArg
 {
   public static bool TryParse(string? text, out long hours)
@@ -43,7 +42,6 @@ internal static class DurationArg
       : $"{hours}h (~{hours / (double)SimulationHour.HoursPerDay:0.#}d)";
 }
 
-/// <summary>Plain-text end-of-run report for headless / CI runs.</summary>
 internal static class HeadlessReport
 {
   public static void Write(
@@ -52,56 +50,72 @@ internal static class HeadlessReport
     CreditCirculation credits,
     decimal openingLiquid,
     long requestedHours,
-    TimeSpan wall)
+    TimeSpan wall,
+    CarrierHeuristic? carrier = null)
   {
     var world = sim.State.World;
-    var tramp = world.Ledgers[ids.Tramp];
-    var polity = world.Ledgers[ids.Polity];
     var hh = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
-    var produced = sim.State.Events.OfType<BatchProduced>().Sum(e => e.Quantity.Value);
-    var sold = sim.State.Events.OfType<GoodsSold>().Sum(e => e.Quantity.Value);
-    var b2b = sim.State.Events.OfType<GoodsSoldInterFirm>().Sum(e => e.Quantity.Value);
     var delivered = world.TransportStats.CargoDelivered.Value;
     var day = sim.State.Clock.Date.DayIndex;
     var liquidDelta = credits.LiquidStock - openingLiquid;
+    var openOrders = world.HubOrders.Count(o => !o.IsFilled);
 
-    var lines = new[]
+    var lines = new List<string>
     {
-      "=== Near-Sol Polity report ===",
+      "=== Near-Sol Tycoon report ===",
       $"Sim time:     day {day} ({sim.State.Clock.HourIndex}h)  requested {DurationArg.Format(requestedHours)}",
       $"Wall clock:   {wall.TotalSeconds:0.#}s",
       $"Hash:         {sim.State.Hash:X16}",
       "",
       "— Money stock —",
       $"Liquid:       {credits.LiquidStock:0}  (open {openingLiquid:0}, Δ {liquidDelta:0})",
-      $"  Polity:     {polity.Cash.Amount:0}",
-      $"  Tramp:      {tramp.Cash.Amount:0}",
+      $"  vs imports: Δ+imports = {liquidDelta + credits.ImportSpend:0} (want ~0)",
       $"  Households: {hh:0}",
       $"Wages→hh:     {credits.WagesDistributed:0}",
       $"Imports:      {credits.ImportSpend:0}",
-      $"Tolls→polity: {credits.TollsToPolity:0.##}",
+      $"Tolls→Station:{credits.TollsToTreasury:0.##}",
+      "",
+      "— Firms (cash / revenue) —",
+    };
+
+    foreach (var (name, firmId) in ids.Firms)
+    {
+      var ledger = world.Ledgers[firmId];
+      lines.Add(
+        $"  {name,-9} cash {ledger.Cash.Amount,8:0}  rev {Math.Abs(ledger.Balance(AccountRole.Revenue).Amount),8:0}");
+    }
+
+    lines.AddRange(
+    [
       "",
       "— Activity —",
-      $"Produced:     {produced:0}",
-      $"Retail sold:  {sold:0}",
-      $"B2B qty:      {b2b:0}",
+      $"Produced:     {credits.Produced:0}",
+      $"Retail sold:  {credits.RetailSold:0}",
+      $"Book fills:   {credits.BookFills}  (qty {credits.BookFillQty:0})  open {openOrders}",
       $"Delivered:    {delivered:0}",
+      $"Departed:     {credits.Departed}",
       $"Fuel burned:  {world.TransportStats.FuelBurned.Value:0.#}",
       $"Plan fails:   {world.TransportStats.FailedPlans}",
       "",
-      "— Tramp opex (ledger) —",
-      $"Fuel expense: {tramp.Balance(AccountRole.TransportFuelExpense).Amount:0.##}",
-      $"Toll expense: {tramp.Balance(AccountRole.TransportTollExpense).Amount:0.##}",
-      $"Wage expense: {tramp.Balance(AccountRole.WageExpense).Amount:0.##}",
-      $"Revenue:      {Math.Abs(tramp.Balance(AccountRole.Revenue).Amount):0}",
-      "",
       "— Travel / freight —",
-      $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} day(s)/ly  ({AstroEconomyBridge.CruiseLyPerHour:0.####} ly/h)",
-      $"Example Sol→α Cen (~4.4 ly): {AstroEconomyBridge.TransitHours(4.4)}h / {AstroEconomyBridge.TransitDays(4.4):0.#}d",
-      "B2B price:    gate + haul(variable)/qty + premium",
-      "SKU story:    Raw(ore) / Capital(parts) / Final(goods) / Energy(fuel)",
-      "===============================",
-    };
+      $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
+      "Agents:       heuristics + DeterministicRandom jitter only",
+    ]);
+    if (carrier is not null)
+    {
+      lines.Add($"Carrier last: {carrier.LastDecision} | {carrier.LastEval}");
+    }
+
+    var failReasons = credits.PlanFailReasons
+      .OrderByDescending(kv => kv.Value)
+      .Take(5)
+      .Select(kv => $"{kv.Key}×{kv.Value}");
+    if (failReasons.Any())
+    {
+      lines.Add($"Fail reasons: {string.Join(", ", failReasons)}");
+    }
+
+    lines.Add("===============================");
 
     foreach (var line in lines)
     {

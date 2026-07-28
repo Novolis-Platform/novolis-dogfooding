@@ -8,39 +8,33 @@ using Novolis.Economy.Simulation;
 
 namespace NearSolPolity;
 
-/// <summary>Seeds the near-Sol polity economy on top of the Astro bridge.</summary>
+/// <summary>Seeds the near-Sol four-firm tycoon economy on the Astro bridge.</summary>
 internal static class PolityWorld
 {
   public const decimal OreBuy = 2m;
-  /// <summary>Consumer-facing raw ask (rarely used; cohorts prefer final goods).</summary>
   public const decimal OreSell = 12m;
-  /// <summary>Thin per-unit premium on top of gate + haul variable cost (B2B).</summary>
+  /// <summary>Industry delivered Raw bid — wide enough vs mine gate to clear haul + MinMargin.</summary>
+  public const decimal OreDelivered = 8m;
   public const decimal FreightPremiumPerUnit = 1m;
-  /// <summary>Parts per ore unit (mine maintenance / capital draw).</summary>
   public const decimal PartsPerOre = 0.15m;
-  /// <summary>Ore per fuel unit (bunker refining at industrial hubs).</summary>
   public const decimal OrePerFuel = 0.5m;
   public const decimal PartsBuy = 4m;
-  /// <summary>Baseline retail for capital/intermediate (light consumer weight).</summary>
   public const decimal PartsSell = 10m;
-  /// <summary>Baseline retail for final goods (&amp; services abstracted).</summary>
+  public const decimal PartsDelivered = 7m;
+  public const decimal GoodsFactory = 6m;
   public const decimal GoodsSell = 12m;
+  public const decimal GoodsDelivered = 11m;
   public const decimal FuelUnitCost = 1m;
-  public const decimal MinMargin = 15m;
-  /// <summary>Stop mining when local ore stock exceeds this (avoids endless piles).</summary>
+  public const decimal MinMargin = 5m;
   public const decimal MineOreCap = 80m;
   public const decimal MinePartsFloor = 8m;
   public const decimal PlantOreFloor = 20m;
   public const decimal RetailStockTarget = 20m;
-  /// <summary>Soft floor — emergency fuel still allowed below this.</summary>
-  public const decimal PolityCashFloor = 1_000m;
+  public const decimal FirmCashFloor = 1_000m;
 
-  /// <summary>Opening firm cash + household credits (closed liquid stock at t0).</summary>
-  public const decimal OpeningPolityCash = 45_000m;
-  public const decimal OpeningTrampCash = 15_000m;
+  public const decimal OpeningFirmCash = 15_000m;
   public const decimal OpeningHouseholdCredits = 20_000m;
 
-  // Short-band ≤10 ly @ 1.3 d/ly → 312h; burn ≈5 ⇒ rate ≈ 1/62.4.
   public const decimal FuelBurnPerDifficultyHour = 1m / 62.4m;
 
   public static string SkuLabel(ProductId product, Ids ids)
@@ -55,15 +49,18 @@ internal static class PolityWorld
   internal sealed class Site
   {
     public required AstroEconomyBridge.HubBinding Hub { get; init; }
-    public FacilityId? PolityFacility { get; init; }
-    public FacilityId? TrampPost { get; init; }
+    public FirmId? OwnerFirm { get; init; }
+    public FacilityId? Facility { get; init; }
+    public FacilityId? CarrierPost { get; init; }
     public OperatingUnitId? MfgUnit { get; init; }
   }
 
   internal sealed class Ids
   {
-    public required FirmId Polity { get; init; }
-    public required FirmId Tramp { get; init; }
+    public required FirmId Mining { get; init; }
+    public required FirmId Industry { get; init; }
+    public required FirmId Station { get; init; }
+    public required FirmId Carrier { get; init; }
     public required ProductId Ore { get; init; }
     public required ProductId Parts { get; init; }
     public required ProductId Goods { get; init; }
@@ -76,13 +73,27 @@ internal static class PolityWorld
     public required AstroEconomyBridge.BridgeResult Bridge { get; init; }
     public required IReadOnlyDictionary<string, Site> Sites { get; init; }
     public required string RoleSummary { get; init; }
+
+    public IEnumerable<(string Name, FirmId Id)> Firms
+    {
+      get
+      {
+        yield return ("Mining", Mining);
+        yield return ("Industry", Industry);
+        yield return ("Station", Station);
+        yield return ("Carrier", Carrier);
+      }
+    }
   }
 
   internal static (EconomySimulation Sim, Ids Ids) Create(ulong seed = 1001)
   {
     var catalog = NearSolCatalog.Load();
-    var polity = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a1"));
-    var tramp = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
+    var mining = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a1"));
+    var industry = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
+    var station = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a3"));
+    var carrier = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a4"));
+
     var builder = new EconomyWorldBuilder(new EconomyPolicy
     {
       WageRatePerHour = Money.From(12m),
@@ -90,7 +101,8 @@ internal static class PolityWorld
       PeriodHours = 24,
       HouseholdCreditFromWages = true,
       CohortBudgetResetMode = CohortBudgetResetMode.CarryForward,
-      TollBeneficiaryFirmId = polity,
+      TollBeneficiaryFirmId = station,
+      PriceElasticity = 0.8m,
     });
 
     var bridge = AstroEconomyBridge.Build(catalog, builder);
@@ -106,13 +118,12 @@ internal static class PolityWorld
     var fuel = ProductId.From(builder.NextGuid());
     var process = ProductionProcessId.From(Guid.Parse("00000000-0000-4000-8000-000000000099"));
     var hullId = VehicleClassId.From(builder.NextGuid());
-    // One geographic area per system for local demand clearing.
     var areas = new Dictionary<string, GeographicAreaId>(StringComparer.OrdinalIgnoreCase);
     foreach (var hub in bridge.Hubs)
     {
       areas[hub.SystemId] = GeographicAreaId.From(builder.NextGuid());
     }
-    // Circular recipes: parts maintain mines → ore → parts/goods/fuel.
+
     var oreDef = new ProductDefinition(
       ore, oreCat,
       ImmutableArray.Create(new ProductInput(parts, Quantity.From(PartsPerOre))),
@@ -127,8 +138,6 @@ internal static class PolityWorld
       fuel, fuelCat, ImmutableArray.Create(new ProductInput(ore, Quantity.From(OrePerFuel))),
       ImmutableArray<ProductAttributeDefinition>.Empty, process, null);
 
-    // Tank 6 covers short ≤10 ly (burn ≈5); long band needs transit bunkering.
-    // Crew rate kept low so week-scale underways don't dominate margins.
     var hull = new VehicleClass(
       hullId,
       Quantity.From(30m),
@@ -141,30 +150,44 @@ internal static class PolityWorld
       .AddProduct(partsDef)
       .AddProduct(goodsDef)
       .AddProduct(fuelDef)
-      .AddFirm(polity, "Near-Sol Co-op", Money.From(OpeningPolityCash))
-      .AddFirm(tramp, "MV Independent", Money.From(OpeningTrampCash))
+      .AddFirm(mining, "Near-Sol Mining", Money.From(OpeningFirmCash))
+      .AddFirm(industry, "Near-Sol Industry", Money.From(OpeningFirmCash))
+      .AddFirm(station, "Near-Sol Station", Money.From(OpeningFirmCash))
+      .AddFirm(carrier, "MV Independent", Money.From(OpeningFirmCash))
       .AddVehicleClass(hull)
       .SetTransportFuel(fuel, Money.From(FuelUnitCost))
-      .SetLabor(polity, 96m)
-      .SetLabor(tramp, 32m);
+      .SetLabor(mining, 40m)
+      .SetLabor(industry, 48m)
+      .SetLabor(station, 24m)
+      .SetLabor(carrier, 32m);
 
     var sites = new Dictionary<string, Site>(StringComparer.OrdinalIgnoreCase);
-    var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop, SystemRole Role)>();
+    var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop)>();
 
     foreach (var hub in bridge.Hubs.OrderBy(h => h.SystemId, StringComparer.Ordinal))
     {
-      FacilityId? polityFacility = null;
-      FacilityId? trampPost = null;
-      OperatingUnitId? mfg = null;
+      FirmId? owner = hub.Role switch
+      {
+        SystemRole.Mining => mining,
+        SystemRole.Industrial => industry,
+        SystemRole.Capital or SystemRole.Inhabited => station,
+        _ => null,
+      };
 
-      if (hub.Role is SystemRole.Mining or SystemRole.Industrial or SystemRole.Inhabited or SystemRole.Capital)
+      FacilityId? facility = null;
+      OperatingUnitId? mfg = null;
+      FacilityId? carrierPost = null;
+      var area = areas[hub.SystemId];
+
+      if (owner is { } firmId && hub.Role is SystemRole.Mining or SystemRole.Industrial
+          or SystemRole.Inhabited or SystemRole.Capital)
       {
         var facilityId = FacilityId.From(builder.NextGuid());
         var unitId = OperatingUnitId.From(builder.NextGuid());
         mfg = unitId;
         var kind = hub.Role is SystemRole.Mining or SystemRole.Industrial
           ? OperatingUnitKind.Manufacturing
-          : OperatingUnitKind.Storage;
+          : OperatingUnitKind.Sales;
         var capacity = hub.Role switch
         {
           SystemRole.Capital => 200m,
@@ -172,13 +195,12 @@ internal static class PolityWorld
           SystemRole.Mining => 80m,
           _ => 60m,
         };
-        var area = areas[hub.SystemId];
         var layout = new FacilityLayout(
           ImmutableDictionary<OperatingUnitId, OperatingUnit>.Empty
             .Add(unitId, new OperatingUnit(unitId, kind, Quantity.From(capacity))),
           ImmutableArray<MaterialRoute>.Empty);
-        builder.AddFacility(new FacilityBinding(facilityId, polity, hub.LocationId, hub.LocationId, layout, area));
-        polityFacility = facilityId;
+        builder.AddFacility(new FacilityBinding(facilityId, firmId, hub.LocationId, hub.LocationId, layout, area));
+        facility = facilityId;
       }
 
       if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial or SystemRole.Mining)
@@ -189,8 +211,8 @@ internal static class PolityWorld
           ImmutableDictionary<OperatingUnitId, OperatingUnit>.Empty
             .Add(store, new OperatingUnit(store, OperatingUnitKind.Storage, Quantity.From(80m))),
           ImmutableArray<MaterialRoute>.Empty);
-        builder.AddFacility(new FacilityBinding(postId, tramp, hub.LocationId, hub.LocationId, layout, areas[hub.SystemId]));
-        trampPost = postId;
+        builder.AddFacility(new FacilityBinding(postId, carrier, hub.LocationId, hub.LocationId, layout, area));
+        carrierPost = postId;
       }
 
       if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial)
@@ -201,24 +223,24 @@ internal static class PolityWorld
           SystemRole.Industrial => 180,
           _ => 120,
         };
-        householdSeeds.Add((hub, pop, hub.Role));
+        householdSeeds.Add((hub, pop));
       }
 
       sites[hub.SystemId] = new Site
       {
         Hub = hub,
-        PolityFacility = polityFacility,
-        TrampPost = trampPost,
+        OwnerFirm = owner,
+        Facility = facility,
+        CarrierPost = carrierPost,
         MfgUnit = mfg,
       };
     }
 
-    // Finite household float carved from opening money stock (not reminted each day).
     var popSum = householdSeeds.Sum(h => h.Pop);
     var creditsLeft = OpeningHouseholdCredits;
     for (var i = 0; i < householdSeeds.Count; i++)
     {
-      var (hub, pop, role) = householdSeeds[i];
+      var (hub, pop) = householdSeeds[i];
       decimal budget;
       if (i == householdSeeds.Count - 1)
       {
@@ -230,7 +252,6 @@ internal static class PolityWorld
         creditsLeft -= budget;
       }
 
-      // Final goods dominate; capital is light; raw is not a consumer SKU.
       var prefs = ImmutableArray.Create(
         new CategoryPreference(goodsCat, 0.85m),
         new CategoryPreference(partsCat, 0.15m));
@@ -241,13 +262,14 @@ internal static class PolityWorld
         Money.From(budget),
         new PreferenceProfile(prefs, 0.7m, 0m, 0m),
         areas[hub.SystemId]));
-      _ = role;
     }
 
     var ids = new Ids
     {
-      Polity = polity,
-      Tramp = tramp,
+      Mining = mining,
+      Industry = industry,
+      Station = station,
+      Carrier = carrier,
       Ore = ore,
       Parts = parts,
       Goods = goods,
@@ -290,31 +312,36 @@ internal static class PolityWorld
       switch (hub.Role)
       {
         case SystemRole.Mining:
-          Add(ids.Polity, hub.LocationId, ids.Ore, 30m, OreBuy);
-          Add(ids.Polity, hub.LocationId, ids.Parts, 25m, PartsBuy); // maintenance float
-          Add(ids.Polity, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
+          Add(ids.Mining, hub.LocationId, ids.Ore, 30m, OreBuy);
+          Add(ids.Mining, hub.LocationId, ids.Parts, 25m, PartsBuy);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
+          Add(ids.Carrier, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
           break;
         case SystemRole.Industrial:
-          Add(ids.Polity, hub.LocationId, ids.Ore, 40m, OreBuy);
-          Add(ids.Polity, hub.LocationId, ids.Parts, 30m, PartsBuy);
-          Add(ids.Polity, hub.LocationId, ids.Goods, 15m, GoodsSell * 0.4m);
-          Add(ids.Polity, hub.LocationId, ids.Fuel, 30m, FuelUnitCost);
+          Add(ids.Industry, hub.LocationId, ids.Ore, 40m, OreBuy);
+          Add(ids.Industry, hub.LocationId, ids.Parts, 30m, PartsBuy);
+          Add(ids.Industry, hub.LocationId, ids.Goods, 15m, GoodsSell * 0.4m);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 30m, FuelUnitCost);
+          Add(ids.Carrier, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
           break;
         case SystemRole.Capital:
-          Add(ids.Polity, hub.LocationId, ids.Parts, 20m, PartsBuy);
-          Add(ids.Polity, hub.LocationId, ids.Goods, 25m, GoodsSell * 0.4m);
-          Add(ids.Polity, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
-          Add(ids.Tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Parts, 20m, PartsBuy);
+          Add(ids.Station, hub.LocationId, ids.Goods, 25m, GoodsSell * 0.4m);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
+          Add(ids.Carrier, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
           break;
         case SystemRole.Inhabited:
-          Add(ids.Polity, hub.LocationId, ids.Goods, 10m, GoodsSell * 0.4m);
-          Add(ids.Polity, hub.LocationId, ids.Fuel, 15m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Goods, 10m, GoodsSell * 0.4m);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 15m, FuelUnitCost);
+          Add(ids.Carrier, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
           break;
         case SystemRole.Transit:
-          Add(ids.Polity, hub.LocationId, ids.Fuel, 35m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 35m, FuelUnitCost);
+          Add(ids.Carrier, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
           break;
         default:
-          Add(ids.Polity, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
+          Add(ids.Station, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
+          Add(ids.Carrier, hub.LocationId, ids.Fuel, 6m, FuelUnitCost);
           break;
       }
     }

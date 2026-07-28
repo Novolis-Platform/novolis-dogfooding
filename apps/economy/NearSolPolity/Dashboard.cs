@@ -1,6 +1,7 @@
 using Novolis.Economy;
 using Novolis.Economy.Accounting;
 using Novolis.Economy.Logistics;
+using Novolis.Economy.Markets;
 using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
 using Spectre.Console;
@@ -12,8 +13,10 @@ internal static class Dashboard
   public static Table Build(
     EconomySimulation sim,
     PolityWorld.Ids ids,
-    PolityController polity,
-    TrampFleetAutopilot tramp,
+    MiningHeuristic mining,
+    IndustryHeuristic industry,
+    StationHeuristic station,
+    CarrierHeuristic carrier,
     CreditCirculation credits,
     IReadOnlyCollection<string> log,
     bool running,
@@ -21,15 +24,15 @@ internal static class Dashboard
     int pulseMs)
   {
     var world = sim.State.World;
-    var trampLedger = world.Ledgers[ids.Tramp];
-    var polityLedger = world.Ledgers[ids.Polity];
     var stats = world.TransportStats;
     var households = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
     var ship = world.Shipments.FirstOrDefault(s =>
-      !s.IsLegacy && s.FirmId.Equals(ids.Tramp) && s.Status == ShipmentStatus.InTransit);
+      !s.IsLegacy && s.FirmId.Equals(ids.Carrier) && s.Status == ShipmentStatus.InTransit);
+    var openOrders = world.HubOrders.Count(o => !o.IsFilled);
+    var fills = credits.BookFills;
 
     var root = new Table().Border(TableBorder.Rounded).Expand();
-    root.AddColumn(new TableColumn("[steelblue1]Near-Sol Polity[/]").Width(48));
+    root.AddColumn(new TableColumn("[steelblue1]Near-Sol Tycoon[/]").Width(48));
     root.AddColumn(new TableColumn("[grey]Network[/]"));
 
     var left = new Table().HideHeaders().Border(TableBorder.None);
@@ -41,26 +44,29 @@ internal static class Dashboard
       : "[yellow]PAUSED[/]");
     left.AddRow("Systems", $"{ids.Bridge.Hubs.Count} hubs · {ids.Bridge.Corridors.Count / 2} lanes");
     left.AddRow("Roles", $"[aqua]{Markup.Escape(ids.RoleSummary)}[/]");
-    left.AddRow("Liquid $", $"[bold]{credits.LiquidStock:0}[/] (firms+hh)");
+    left.AddRow("Liquid $", $"[bold]{credits.LiquidStock:0}[/]");
     left.AddRow("Households", $"{households:0}");
     left.AddRow("Wages→hh", $"{credits.WagesDistributed:0}");
     left.AddRow("Imports", $"{credits.ImportSpend:0}");
-    left.AddRow("Tramp cash", $"[green]{trampLedger.Cash.Amount:0}[/]");
-    left.AddRow("Polity cash", $"{polityLedger.Cash.Amount:0}");
-    left.AddRow("Fuel opex", $"{trampLedger.Balance(AccountRole.TransportFuelExpense).Amount:0.##}");
-    left.AddRow("Tolls", $"{trampLedger.Balance(AccountRole.TransportTollExpense).Amount:0.##}");
-    left.AddRow("Wages", $"{trampLedger.Balance(AccountRole.WageExpense).Amount:0.##}");
-    left.AddRow("Tramp rev", $"{Math.Abs(trampLedger.Balance(AccountRole.Revenue).Amount):0}");
+    left.AddRow("Book", $"open {openOrders}  fills {fills}");
+    foreach (var (name, firmId) in ids.Firms)
+    {
+      var ledger = world.Ledgers[firmId];
+      left.AddRow(name, $"cash {ledger.Cash.Amount:0}  rev {Math.Abs(ledger.Balance(AccountRole.Revenue).Amount):0}");
+    }
+
     left.AddRow("Delivered", $"{stats.CargoDelivered.Value:0}  burn {stats.FuelBurned.Value:0.#}");
     left.AddRow("Fails", $"{stats.FailedPlans}");
-    left.AddRow("Polity", $"[grey]{Markup.Escape(polity.LastAction)}[/]");
-    left.AddRow("Tramp", $"[yellow]{Markup.Escape(tramp.LastDecision)}[/]");
-    left.AddRow("Eval", $"[grey]{Markup.Escape(Truncate(tramp.LastEval, 70))}[/]");
+    left.AddRow("Mining", $"[grey]{Markup.Escape(mining.LastAction)}[/]");
+    left.AddRow("Industry", $"[grey]{Markup.Escape(industry.LastAction)}[/]");
+    left.AddRow("Station", $"[grey]{Markup.Escape(station.LastAction)}[/]");
+    left.AddRow("Carrier", $"[yellow]{Markup.Escape(carrier.LastDecision)}[/]");
+    left.AddRow("Eval", $"[grey]{Markup.Escape(Truncate(carrier.LastEval, 70))}[/]");
     left.AddRow("Highlights", Markup.Escape(StockHighlights(sim, ids)));
 
     if (ship is null)
     {
-      var hubName = world.Hubs.TryGetValue(tramp.CurrentHub, out var h) ? h.Name : "?";
+      var hubName = world.Hubs.TryGetValue(carrier.CurrentHub, out var h) ? h.Name : "?";
       left.AddRow("Hull", $"[grey]docked @ {Markup.Escape(hubName)}[/]");
     }
     else
@@ -68,10 +74,9 @@ internal static class Dashboard
       var hubName = world.Hubs.TryGetValue(ship.CurrentHubId, out var h) ? h.Name : "?";
       left.AddRow("Hull", $"[aqua]{ship.Phase}[/] @ {Markup.Escape(hubName)}");
       left.AddRow("Leg", $"{ship.LegIndex}/{ship.Itinerary.LegCount}  seg {ship.SegmentHoursRemaining}h");
-      left.AddRow("Fuel onboard", $"{ship.OnboardFuel.Value:0.##}");
     }
 
-    var map = new Panel(BuildRouteStrip(ids, ship, tramp.CurrentHub))
+    var map = new Panel(BuildRouteStrip(ids, ship, carrier.CurrentHub))
     {
       Header = new PanelHeader(" Route strip "),
       Border = BoxBorder.Square,
@@ -80,8 +85,8 @@ internal static class Dashboard
     {
       Header = new PanelHeader(" Log "),
       Border = BoxBorder.Rounded,
+      Height = 14,
     };
-
     root.AddRow(left, new Rows(map, journal));
     return root;
   }
@@ -93,7 +98,7 @@ internal static class Dashboard
       .Where(s => s.Hub.Role == SystemRole.Mining)
       .Select(s => (
         Name: Short(s.Hub.Name),
-        Ore: world.Inventory.GetQuantity(new InventoryKey(ids.Polity, s.Hub.LocationId, ids.Ore)).Value))
+        Ore: world.Inventory.GetQuantity(new InventoryKey(ids.Mining, s.Hub.LocationId, ids.Ore)).Value))
       .OrderByDescending(x => x.Ore)
       .Take(2)
       .Select(x => $"M:{x.Name} raw{x.Ore:0}");
@@ -102,8 +107,8 @@ internal static class Dashboard
       .Where(s => s.Hub.Role == SystemRole.Industrial)
       .Select(s => (
         Name: Short(s.Hub.Name),
-        Parts: world.Inventory.GetQuantity(new InventoryKey(ids.Polity, s.Hub.LocationId, ids.Parts)).Value,
-        Goods: world.Inventory.GetQuantity(new InventoryKey(ids.Polity, s.Hub.LocationId, ids.Goods)).Value))
+        Parts: world.Inventory.GetQuantity(new InventoryKey(ids.Industry, s.Hub.LocationId, ids.Parts)).Value,
+        Goods: world.Inventory.GetQuantity(new InventoryKey(ids.Industry, s.Hub.LocationId, ids.Goods)).Value))
       .OrderByDescending(x => x.Parts + x.Goods)
       .Take(2)
       .Select(x => $"I:{x.Name} cap{x.Parts:0}/fin{x.Goods:0}");
@@ -162,8 +167,9 @@ internal static class Dashboard
     return string.Join('\n', lines);
   }
 
-  private static string Short(string name) => name.Length <= 14 ? name : name[..13] + "…";
+  private static string Short(string name) =>
+    name.Length <= 16 ? name : name[..14] + "…";
 
-  private static string Truncate(string s, int max) =>
-    string.IsNullOrEmpty(s) ? "" : s.Length <= max ? s : s[..(max - 1)] + "…";
+  private static string Truncate(string s, int n) =>
+    s.Length <= n ? s : s[..(n - 1)] + "…";
 }

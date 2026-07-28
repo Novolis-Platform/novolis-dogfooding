@@ -3,18 +3,20 @@ using Novolis.Economy.Simulation;
 
 namespace NearSolPolity;
 
-/// <summary>
-/// Dashboard metrics for liquid stock and import leakage.
-/// Wage→household credits and toll treasury live in the Economy kernel
-/// (<see cref="EconomyPolicy.HouseholdCreditFromWages"/>, <see cref="EconomyPolicy.TollBeneficiaryFirmId"/>).
-/// </summary>
+/// <summary>Dashboard metrics for liquid stock, imports, and activity (incremental event scan).</summary>
 internal sealed class CreditCirculation
 {
   private readonly EconomySimulation _sim;
   private int _eventCursor;
   private decimal _wagesDistributed;
   private decimal _importSpend;
-  private decimal _tollsToPolity;
+  private decimal _tollsToTreasury;
+  private decimal _produced;
+  private decimal _retailSold;
+  private int _bookFills;
+  private decimal _bookFillQty;
+  private int _departed;
+  private readonly Dictionary<string, int> _planFailReasons = new(StringComparer.Ordinal);
 
   public CreditCirculation(EconomySimulation sim)
   {
@@ -24,19 +26,15 @@ internal sealed class CreditCirculation
 
   public decimal WagesDistributed => _wagesDistributed;
   public decimal ImportSpend => _importSpend;
-  public decimal TollsToPolity => _tollsToPolity;
+  public decimal TollsToTreasury => _tollsToTreasury;
+  public decimal Produced => _produced;
+  public decimal RetailSold => _retailSold;
+  public int BookFills => _bookFills;
+  public decimal BookFillQty => _bookFillQty;
+  public int Departed => _departed;
+  public IReadOnlyDictionary<string, int> PlanFailReasons => _planFailReasons;
 
-  /// <summary>Firm cash + household budgets (closed liquid stock, excluding imports burned).</summary>
-  public decimal LiquidStock
-  {
-    get
-    {
-      var world = _sim.State.World;
-      var firms = world.Ledgers.Values.Sum(l => l.Cash.Amount);
-      var households = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
-      return firms + households;
-    }
-  }
+  public decimal LiquidStock => MoneyStock.Liquid(_sim.State.World);
 
   public void ObserveAfterPulse(int eventsBeforePulse)
   {
@@ -52,7 +50,23 @@ internal sealed class CreditCirculation
           _importSpend += e.UnitPrice.Amount * e.Quantity.Value;
           break;
         case TransportTollPaid e:
-          _tollsToPolity += e.Amount.Amount;
+          _tollsToTreasury += e.Amount.Amount;
+          break;
+        case BatchProduced e:
+          _produced += e.Quantity.Value;
+          break;
+        case GoodsSold e:
+          _retailSold += e.Quantity.Value;
+          break;
+        case HubOrderFilled e:
+          _bookFills++;
+          _bookFillQty += e.Quantity.Value;
+          break;
+        case ShipmentDeparted:
+          _departed++;
+          break;
+        case ShipmentPlanFailed e:
+          _planFailReasons[e.Reason] = _planFailReasons.GetValueOrDefault(e.Reason) + 1;
           break;
       }
     }
