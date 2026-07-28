@@ -14,6 +14,7 @@ internal static class NearSolAgents
     public required ManufacturingFirmAgent Industry { get; init; }
     public required RetailFirmAgent Station { get; init; }
     public required CarrierFirmAgent Carrier { get; init; }
+    public required IReadOnlyList<CarrierFirmAgent> Carriers { get; init; }
     public required TreasuryFirmAgent Treasury { get; init; }
     public required IReadOnlyList<IEconomicAgent> PulseOrder { get; init; }
   }
@@ -87,16 +88,40 @@ internal static class NearSolAgents
       return PolityWorld.FuelUnitCost;
     }
 
-    var carrier = new CarrierFirmAgent(
-      ids.Carrier,
-      new CarrierFirmAgentPolicy(
-        allSites, [ids.Ore, ids.Parts, ids.Goods], ids.Fuel,
-        ids.HullId, ids.Hull, PolityWorld.MinMargin, Gate,
-        FuelBuyLimitPrice: PolityWorld.FuelUnitCost * 1.25m),
-      ids.Sites["sol"].Hub.HubId);
+    // Home hubs: Sol, first mine, first plant — spreads tramp coverage across the graph.
+    var homeHubs = new List<TransportHubId> { ids.Sites["sol"].Hub.HubId };
+    var mineHome = miningSites.FirstOrDefault(s => s.HubId is not null)?.HubId;
+    var plantHome = plantSites.FirstOrDefault(s => s.HubId is not null)?.HubId;
+    if (mineHome is { } mh)
+    {
+      homeHubs.Add(mh);
+    }
+
+    if (plantHome is { } ph)
+    {
+      homeHubs.Add(ph);
+    }
+
+    while (homeHubs.Count < ids.Carriers.Count)
+    {
+      homeHubs.Add(ids.Sites["sol"].Hub.HubId);
+    }
+
+    var trampAgents = new List<CarrierFirmAgent>(ids.Carriers.Count);
+    for (var i = 0; i < ids.Carriers.Count; i++)
+    {
+      trampAgents.Add(new CarrierFirmAgent(
+        ids.Carriers[i],
+        new CarrierFirmAgentPolicy(
+          allSites, [ids.Ore, ids.Parts, ids.Goods], ids.Fuel,
+          ids.HullId, ids.Hull, PolityWorld.MinMargin, Gate,
+          FuelBuyLimitPrice: PolityWorld.FuelUnitCost * 1.25m),
+        homeHubs[i],
+        rngSalt: 0x43415252UL ^ (ulong)(i + 1) * 0x9E3779B97F4A7C15UL));
+    }
 
     var treasury = new TreasuryFirmAgent(ids.Station, new TreasuryFirmAgentPolicy(
-      [ids.Mining, ids.Industry],
+      [ids.Mining, ids.Industry, .. ids.Carriers],
       CashFloorToLend: 8_000m,
       BorrowerCashFloor: PolityWorld.FirmCashFloor + 2_000m,
       LoanPrincipal: Money.From(500m),
@@ -107,14 +132,20 @@ internal static class NearSolAgents
     sim.Enqueue(new OriginateLoan(
       ids.Station, ids.Mining, Money.From(400m), 0.08m, SimulationHour.HoursPerDay * 45));
 
+    IEconomicAgent[] pulse =
+    [
+      mining, industry, station, .. trampAgents.Cast<IEconomicAgent>(), treasury,
+    ];
+
     return new Bundle
     {
       Mining = mining,
       Industry = industry,
       Station = station,
-      Carrier = carrier,
+      Carrier = trampAgents[0],
+      Carriers = trampAgents,
       Treasury = treasury,
-      PulseOrder = [mining, industry, station, carrier, treasury],
+      PulseOrder = pulse,
     };
   }
 }

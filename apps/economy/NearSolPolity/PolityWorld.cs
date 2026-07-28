@@ -13,19 +13,26 @@ internal static class PolityWorld
 {
   public const decimal OreBuy = 2m;
   public const decimal OreSell = 12m;
-  /// <summary>Industry delivered Raw bid — wide enough vs mine gate to clear haul + MinMargin.</summary>
-  public const decimal OreDelivered = 8m;
+  /// <summary>Industry delivered Raw bid — wide enough vs mine gate + long-haul tolls.</summary>
+  public const decimal OreDelivered = 14m;
   public const decimal FreightPremiumPerUnit = 1m;
   public const decimal PartsPerOre = 0.15m;
   public const decimal OrePerFuel = 0.5m;
   public const decimal PartsBuy = 4m;
   public const decimal PartsSell = 10m;
-  public const decimal PartsDelivered = 7m;
+  public const decimal PartsDelivered = 12m;
   public const decimal GoodsFactory = 6m;
   public const decimal GoodsSell = 12m;
-  public const decimal GoodsDelivered = 11m;
+  public const decimal GoodsDelivered = 16m;
   public const decimal FuelUnitCost = 1m;
-  public const decimal MinMargin = 5m;
+  /// <summary>
+  /// Floor haul Δ after fuel/toll/crew. Small positive keeps empty pickups selective;
+  /// holding-cargo dumps use BestOutboundFrom without this floor.
+  /// </summary>
+  public const decimal MinMargin = 1m;
+
+  /// <summary>Independent tramp firms (one hull each — CarrierFirmAgent is single-ship).</summary>
+  public const int TrampFleetSize = 3;
   public const decimal MineOreCap = 80m;
   public const decimal MinePartsFloor = 8m;
   public const decimal PlantOreFloor = 20m;
@@ -61,6 +68,7 @@ internal static class PolityWorld
     public required FirmId Industry { get; init; }
     public required FirmId Station { get; init; }
     public required FirmId Carrier { get; init; }
+    public required IReadOnlyList<FirmId> Carriers { get; init; }
     public required ProductId Ore { get; init; }
     public required ProductId Parts { get; init; }
     public required ProductId Goods { get; init; }
@@ -82,6 +90,10 @@ internal static class PolityWorld
         yield return ("Industry", Industry);
         yield return ("Station", Station);
         yield return ("Carrier", Carrier);
+        for (var i = 1; i < Carriers.Count; i++)
+        {
+          yield return ($"Tramp{i + 1}", Carriers[i]);
+        }
       }
     }
   }
@@ -92,7 +104,14 @@ internal static class PolityWorld
     var mining = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a1"));
     var industry = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
     var station = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a3"));
-    var carrier = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a4"));
+    var carrierGuids = new[]
+    {
+      Guid.Parse("00000000-0000-4000-8000-0000000000a4"),
+      Guid.Parse("00000000-0000-4000-8000-0000000000a5"),
+      Guid.Parse("00000000-0000-4000-8000-0000000000a6"),
+    };
+    var carriers = carrierGuids.Take(TrampFleetSize).Select(FirmId.From).ToArray();
+    var carrier = carriers[0];
 
     var builder = new EconomyWorldBuilder(new EconomyPolicy
     {
@@ -154,7 +173,13 @@ internal static class PolityWorld
       .AddFirm(mining, "Near-Sol Mining", Money.From(OpeningFirmCash))
       .AddFirm(industry, "Near-Sol Industry", Money.From(OpeningFirmCash))
       .AddCivic(station, "Near-Sol Station", Money.From(OpeningFirmCash), "nearsol-civic")
-      .AddFirm(carrier, "MV Independent", Money.From(OpeningFirmCash))
+      .AddFirm(carrier, "MV Independent", Money.From(OpeningFirmCash));
+    for (var i = 1; i < carriers.Length; i++)
+    {
+      builder.AddFirm(carriers[i], $"MV Tramp {i + 1}", Money.From(OpeningFirmCash * 0.6m));
+    }
+
+    builder
       .SetOwnership(mining, station, 1m)
       .SetOwnership(industry, station, 0.4m)
       .AddVehicleClass(hull)
@@ -163,6 +188,10 @@ internal static class PolityWorld
       .SetLabor(industry, 48m)
       .SetLabor(station, 24m)
       .SetLabor(carrier, 32m);
+    foreach (var tramp in carriers.Skip(1))
+    {
+      builder.SetLabor(tramp, 28m);
+    }
 
     var sites = new Dictionary<string, Site>(StringComparer.OrdinalIgnoreCase);
     var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop)>();
@@ -273,6 +302,7 @@ internal static class PolityWorld
       Industry = industry,
       Station = station,
       Carrier = carrier,
+      Carriers = carriers,
       Ore = ore,
       Parts = parts,
       Goods = goods,
@@ -319,33 +349,57 @@ internal static class PolityWorld
           Add(ids.Mining, hub.LocationId, ids.Ore, 30m, OreBuy);
           Add(ids.Mining, hub.LocationId, ids.Parts, 25m, PartsBuy);
           Add(ids.Station, hub.LocationId, ids.Fuel, 20m, FuelUnitCost);
-          Add(ids.Carrier, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+          foreach (var tramp in ids.Carriers)
+          {
+            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+          }
+
           break;
         case SystemRole.Industrial:
           Add(ids.Industry, hub.LocationId, ids.Ore, 40m, OreBuy);
           Add(ids.Industry, hub.LocationId, ids.Parts, 30m, PartsBuy);
           Add(ids.Industry, hub.LocationId, ids.Goods, 15m, GoodsSell * 0.4m);
           Add(ids.Station, hub.LocationId, ids.Fuel, 30m, FuelUnitCost);
-          Add(ids.Carrier, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+          foreach (var tramp in ids.Carriers)
+          {
+            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+          }
+
           break;
         case SystemRole.Capital:
           Add(ids.Station, hub.LocationId, ids.Parts, 20m, PartsBuy);
           Add(ids.Station, hub.LocationId, ids.Goods, 25m, GoodsSell * 0.4m);
           Add(ids.Station, hub.LocationId, ids.Fuel, 40m, FuelUnitCost);
-          Add(ids.Carrier, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+          foreach (var tramp in ids.Carriers)
+          {
+            Add(tramp, hub.LocationId, ids.Fuel, 12m, FuelUnitCost);
+          }
+
           break;
         case SystemRole.Inhabited:
           Add(ids.Station, hub.LocationId, ids.Goods, 10m, GoodsSell * 0.4m);
           Add(ids.Station, hub.LocationId, ids.Fuel, 15m, FuelUnitCost);
-          Add(ids.Carrier, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
+          foreach (var tramp in ids.Carriers)
+          {
+            Add(tramp, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
+          }
+
           break;
         case SystemRole.Transit:
           Add(ids.Station, hub.LocationId, ids.Fuel, 35m, FuelUnitCost);
-          Add(ids.Carrier, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+          foreach (var tramp in ids.Carriers)
+          {
+            Add(tramp, hub.LocationId, ids.Fuel, 10m, FuelUnitCost);
+          }
+
           break;
         default:
           Add(ids.Station, hub.LocationId, ids.Fuel, 8m, FuelUnitCost);
-          Add(ids.Carrier, hub.LocationId, ids.Fuel, 6m, FuelUnitCost);
+          foreach (var tramp in ids.Carriers)
+          {
+            Add(tramp, hub.LocationId, ids.Fuel, 6m, FuelUnitCost);
+          }
+
           break;
       }
     }

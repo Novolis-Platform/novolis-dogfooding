@@ -23,11 +23,12 @@ internal static class Dashboard
     var world = sim.State.World;
     var stats = world.TransportStats;
     var households = world.Cohorts.Sum(c => c.BudgetRemaining.Amount);
-    var ship = world.Shipments.FirstOrDefault(s =>
-      !s.IsLegacy && s.FirmId.Equals(ids.Carrier) && s.Status == ShipmentStatus.InTransit);
+    var ships = world.Shipments
+      .Where(s => !s.IsLegacy && ids.Carriers.Any(c => c.Equals(s.FirmId)) && s.Status == ShipmentStatus.InTransit)
+      .ToList();
     var openOrders = world.HubOrders.Count(o => !o.IsFilled);
     var fills = credits.BookFills;
-    var carrier = agents.Carrier;
+    var fleet = agents.Carriers;
 
     var root = new Table().Border(TableBorder.Rounded).Expand();
     root.AddColumn(new TableColumn("[steelblue1]Near-Sol Tycoon[/]").Width(48));
@@ -64,24 +65,34 @@ internal static class Dashboard
     left.AddRow("Mining", $"[grey]{Markup.Escape(agents.Mining.LastDecision)}[/]");
     left.AddRow("Industry", $"[grey]{Markup.Escape(agents.Industry.LastDecision)}[/]");
     left.AddRow("Station", $"[grey]{Markup.Escape(agents.Station.LastDecision)}[/]");
-    left.AddRow("Carrier", $"[yellow]{Markup.Escape(carrier.LastDecision)}[/]");
+    for (var i = 0; i < fleet.Count; i++)
+    {
+      var label = i == 0 ? "Carrier" : $"Tramp{i + 1}";
+      left.AddRow(label, $"[yellow]{Markup.Escape(fleet[i].LastDecision)}[/]");
+    }
+
     left.AddRow("Treasury", $"[grey]{Markup.Escape(agents.Treasury.LastDecision)}[/]");
-    left.AddRow("Eval", $"[grey]{Markup.Escape(Truncate(carrier.LastEval, 70))}[/]");
+    left.AddRow("Eval", $"[grey]{Markup.Escape(Truncate(string.Join(" | ", fleet.Select(c => c.LastEval)), 70))}[/]");
     left.AddRow("Highlights", Markup.Escape(StockHighlights(sim, ids)));
 
-    if (ship is null)
+    var underway = ships.Count;
+    left.AddRow("Fleet", $"[aqua]{underway}/{fleet.Count} underway[/]");
+    if (ships.Count > 0)
     {
-      var hubName = world.Hubs.TryGetValue(carrier.CurrentHub, out var h) ? h.Name : "?";
-      left.AddRow("Hull", $"[grey]docked @ {Markup.Escape(hubName)}[/]");
+      foreach (var ship in ships.Take(3))
+      {
+        var hubName = world.Hubs.TryGetValue(ship.CurrentHubId, out var h) ? h.Name : "?";
+        left.AddRow("Hull", $"[aqua]{ship.Phase}[/] @ {Markup.Escape(hubName)}");
+      }
     }
     else
     {
-      var hubName = world.Hubs.TryGetValue(ship.CurrentHubId, out var h) ? h.Name : "?";
-      left.AddRow("Hull", $"[aqua]{ship.Phase}[/] @ {Markup.Escape(hubName)}");
-      left.AddRow("Leg", $"{ship.LegIndex}/{ship.Itinerary.LegCount}  seg {ship.SegmentHoursRemaining}h");
+      var hubs = string.Join(", ", fleet.Select(c =>
+        world.Hubs.TryGetValue(c.CurrentHub, out var h) ? h.Name : "?"));
+      left.AddRow("Hulls", $"[grey]docked @ {Markup.Escape(Truncate(hubs, 40))}[/]");
     }
 
-    var map = new Panel(BuildRouteStrip(ids, ship, carrier.CurrentHub))
+    var map = new Panel(BuildRouteStrip(ids, ships.FirstOrDefault(), fleet[0].CurrentHub))
     {
       Header = new PanelHeader(" Route strip "),
       Border = BoxBorder.Square,

@@ -20,7 +20,7 @@ internal static class AstroEconomyBridge
   public const double CruiseLyPerHour = 1.0 / (CruiseDaysPerLy * 24.0);
 
   public const double MaxRangeLy = 12.0;
-  public const decimal TollPerLy = 2m;
+  public const decimal TollPerLy = 0.5m;
   public const decimal CorridorMaxCargo = 80m;
 
   /// <summary>Campaign seed for <see cref="SystemProfileGenerator"/> (matches <see cref="PolityWorld.Create"/> default).</summary>

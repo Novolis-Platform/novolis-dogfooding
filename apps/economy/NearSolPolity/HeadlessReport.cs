@@ -237,11 +237,21 @@ internal static class HeadlessReport
       $"Mining:       {agents.Mining.LastDecision}",
       $"Industry:     {agents.Industry.LastDecision}",
       $"Station:      {agents.Station.LastDecision}",
-      $"Carrier:      {agents.Carrier.LastDecision} | {agents.Carrier.LastEval}",
+    ]);
+    for (var i = 0; i < agents.Carriers.Count; i++)
+    {
+      var c = agents.Carriers[i];
+      var label = i == 0 ? "Carrier" : $"Tramp{i + 1}";
+      lines.Add($"{label + ":",-14}{c.LastDecision} | {c.LastEval}");
+    }
+
+    lines.AddRange(
+    [
       $"Treasury:     {agents.Treasury.LastDecision}",
       "",
       "— Travel —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly",
+      $"Fleet:        {agents.Carriers.Count} tramps  MinMargin {PolityWorld.MinMargin:0}",
       $"Roles:        {ids.RoleSummary}",
       "Agents:       Novolis.Economy.Agents heuristics + DeterministicRandom",
       "Civics:       Station entity (tolls / treasury / ownership) — product copy",
