@@ -21,27 +21,30 @@ internal static class PolityWorld
   public const decimal PartsBuy = 4m;
   public const decimal PartsSell = 10m;
   public const decimal PartsDelivered = 13m;
+  /// <summary>Plant gate for Final — below Station shelf so freight+retail margins exist.</summary>
   public const decimal GoodsFactory = 6m;
-  public const decimal GoodsSell = 13m;
-  public const decimal GoodsDelivered = 20m;
+  /// <summary>Household shelf price — Final is the consumption sink.</summary>
+  public const decimal GoodsSell = 10m;
+  /// <summary>Station restock bid (delivered Final).</summary>
+  public const decimal GoodsDelivered = 15m;
   public const decimal FuelUnitCost = 1m;
   /// <summary>
   /// Floor haul Δ after fuel/toll/crew. Small positive keeps empty pickups selective;
   /// holding-cargo dumps use BestOutboundFrom without this floor.
   /// </summary>
-  public const decimal MinMargin = 0.4m;
+  public const decimal MinMargin = 0.35m;
 
   /// <summary>Independent tramp firms (one hull each — CarrierFirmAgent is single-ship).</summary>
-  public const int TrampFleetSize = 7;
+  public const int TrampFleetSize = 8;
   public const decimal MineOreCap = 100m;
   public const decimal MinePartsFloor = 10m;
   public const decimal PlantOreFloor = 18m;
-  public const decimal RetailStockTarget = 28m;
+  public const decimal RetailStockTarget = 32m;
   public const decimal FirmCashFloor = 1_500m;
 
-  /// <summary>Lean enough for treasury pressure; fat enough Industry survives 1000d.</summary>
-  public const decimal OpeningFirmCash = 12_000m;
-  /// <summary>Household budget stock sized so Mean cohorts clear comfort and buy claims.</summary>
+  /// <summary>Working capital for the Final sink loop (Industry must stay liquid).</summary>
+  public const decimal OpeningFirmCash = 14_000m;
+  /// <summary>Household budget stock — spend into Final shelves (consumption sink).</summary>
   public const decimal OpeningHouseholdCredits = 85_000m;
 
   public const decimal FuelBurnPerDifficultyHour = 1m / 68m;
@@ -59,7 +62,10 @@ internal static class PolityWorld
   {
     public required AstroEconomyBridge.HubBinding Hub { get; init; }
     public FirmId? OwnerFirm { get; init; }
+    /// <summary>Retail / demand-facing facility (Station Sales when present).</summary>
     public FacilityId? Facility { get; init; }
+    /// <summary>Manufacturing facility when distinct from retail (mines / plants).</summary>
+    public FacilityId? MfgFacility { get; init; }
     public FacilityId? CarrierPost { get; init; }
     public OperatingUnitId? MfgUnit { get; init; }
   }
@@ -246,6 +252,7 @@ internal static class PolityWorld
       };
 
       FacilityId? facility = null;
+      FacilityId? mfgFacility = null;
       OperatingUnitId? mfg = null;
       FacilityId? carrierPost = null;
       var area = areas[hub.SystemId];
@@ -271,7 +278,28 @@ internal static class PolityWorld
             .Add(unitId, new OperatingUnit(unitId, kind, Quantity.From(capacity))),
           ImmutableArray<MaterialRoute>.Empty);
         builder.AddFacility(new FacilityBinding(facilityId, firmId, hub.LocationId, hub.LocationId, layout, area));
-        facility = facilityId;
+        if (hub.Role is SystemRole.Mining or SystemRole.Industrial)
+        {
+          mfgFacility = facilityId;
+        }
+        else
+        {
+          facility = facilityId; // Station Sales at Capital / Inhabited
+        }
+      }
+
+      // Mining camps: Station Sales shelf so Final consumption can sink household budgets.
+      if (hub.Role is SystemRole.Mining)
+      {
+        var retailId = FacilityId.From(builder.NextGuid());
+        var salesUnit = OperatingUnitId.From(builder.NextGuid());
+        var retailLayout = new FacilityLayout(
+          ImmutableDictionary<OperatingUnitId, OperatingUnit>.Empty
+            .Add(salesUnit, new OperatingUnit(salesUnit, OperatingUnitKind.Sales, Quantity.From(80m))),
+          ImmutableArray<MaterialRoute>.Empty);
+        builder.AddFacility(new FacilityBinding(
+          retailId, station, hub.LocationId, hub.LocationId, retailLayout, area));
+        facility = retailId;
       }
 
       if (hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial or SystemRole.Mining)
@@ -291,6 +319,7 @@ internal static class PolityWorld
         Hub = hub,
         OwnerFirm = owner,
         Facility = facility,
+        MfgFacility = mfgFacility,
         CarrierPost = carrierPost,
         MfgUnit = mfg,
       };
@@ -312,9 +341,9 @@ internal static class PolityWorld
         creditsLeft -= budget;
       }
 
+      // Final (Goods) is the household consumption sink — not Capital parts.
       var prefs = ImmutableArray.Create(
-        new CategoryPreference(goodsCat, 0.85m),
-        new CategoryPreference(partsCat, 0.15m));
+        new CategoryPreference(goodsCat, 1m));
 
       if (hub.Role == SystemRole.Capital && capitalHousehold is null)
       {
@@ -396,6 +425,7 @@ internal static class PolityWorld
         case SystemRole.Mining:
           Add(ids.Mining, hub.LocationId, ids.Ore, 45m, OreBuy);
           Add(ids.Mining, hub.LocationId, ids.Parts, 40m, PartsBuy);
+          Add(ids.Station, hub.LocationId, ids.Goods, 18m, GoodsSell * 0.4m);
           Add(ids.Station, hub.LocationId, ids.Fuel, 25m, FuelUnitCost);
           foreach (var tramp in ids.Carriers)
           {

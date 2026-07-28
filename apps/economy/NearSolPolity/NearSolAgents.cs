@@ -24,26 +24,33 @@ internal static class NearSolAgents
   {
     AgentSite Site(PolityWorld.Site s) => new(
       s.Hub.LocationId, s.Facility, s.Hub.HubId, s.Hub.Name);
+    AgentSite MfgSite(PolityWorld.Site s) => new(
+      s.Hub.LocationId, s.MfgFacility, s.Hub.HubId, s.Hub.Name);
 
     var miningSites = ids.Sites.Values
-      .Where(s => s.Hub.Role == SystemRole.Mining && s.Facility is not null)
-      .Select(Site)
+      .Where(s => s.Hub.Role == SystemRole.Mining && s.MfgFacility is not null)
+      .Select(MfgSite)
       .ToList();
     var plantSites = ids.Sites.Values
-      .Where(s => s.Hub.Role == SystemRole.Industrial && s.Facility is not null)
-      .Select(Site)
+      .Where(s => s.Hub.Role == SystemRole.Industrial && s.MfgFacility is not null)
+      .Select(MfgSite)
       .ToList();
+    // Final retail shelves only (Station Sales) — consumption sink sites.
     var retailSites = ids.Sites.Values
       .Where(s => s.Facility is not null
-                  && s.Hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Industrial)
+                  && s.Hub.Role is SystemRole.Capital or SystemRole.Inhabited or SystemRole.Mining)
       .Select(Site)
       .ToList();
     var bunkerSites = ids.Sites.Values
       .Where(s => s.Hub.Role is SystemRole.Transit or SystemRole.Capital
         or SystemRole.Industrial or SystemRole.Mining)
-      .Select(Site)
+      .Select(s => new AgentSite(
+        s.Hub.LocationId, s.Facility ?? s.MfgFacility ?? s.CarrierPost, s.Hub.HubId, s.Hub.Name))
       .ToList();
-    var allSites = ids.Sites.Values.Select(Site).ToList();
+    var allSites = ids.Sites.Values
+      .Select(s => new AgentSite(
+        s.Hub.LocationId, s.Facility ?? s.MfgFacility ?? s.CarrierPost, s.Hub.HubId, s.Hub.Name))
+      .ToList();
 
     var mining = new ExtractiveFirmAgent(ids.Mining, new ExtractiveFirmAgentPolicy(
       miningSites, ids.Ore, ids.Parts,
@@ -55,13 +62,15 @@ internal static class NearSolAgents
     var industry = new ManufacturingFirmAgent(ids.Industry, new ManufacturingFirmAgentPolicy(
       plantSites, ids.Ore, PolityWorld.PlantOreFloor + 12m, PolityWorld.OreDelivered,
       [
+        // Capital intermediates keep mines alive (not a household sink).
         new ManufacturedSkuPolicy(
           ids.Parts, BaseRate: 6m, StockTarget: 55m, MinInputOnHand: 1m, RequiredInput: ids.Ore,
-          SellAboveStock: 4m, SellKeepFloor: 2m, SellMaxQty: 22m, GatePrice: PolityWorld.PartsBuy),
+          SellAboveStock: 3m, SellKeepFloor: 2m, SellMaxQty: 24m, GatePrice: PolityWorld.PartsBuy),
+        // Final — freight to Station shelves; household retail is the sink.
         new ManufacturedSkuPolicy(
-          ids.Goods, BaseRate: 3m, StockTarget: PolityWorld.RetailStockTarget * 1.4m,
+          ids.Goods, BaseRate: 5.5m, StockTarget: PolityWorld.RetailStockTarget,
           MinInputOnHand: 1m, RequiredInput: ids.Parts,
-          SellAboveStock: 5m, SellKeepFloor: 2m, SellMaxQty: 14m, GatePrice: PolityWorld.GoodsFactory),
+          SellAboveStock: 2m, SellKeepFloor: 1m, SellMaxQty: 28m, GatePrice: PolityWorld.GoodsFactory),
         new ManufacturedSkuPolicy(
           ids.Fuel, BaseRate: 2.5m, StockTarget: 36m, MinInputOnHand: 8m, RequiredInput: ids.Ore,
           SellAboveStock: 8m, SellKeepFloor: 3m, SellMaxQty: 14m, GatePrice: PolityWorld.FuelUnitCost),
@@ -70,12 +79,10 @@ internal static class NearSolAgents
     var station = new RetailFirmAgent(ids.Station, new RetailFirmAgentPolicy(
       retailSites, bunkerSites,
       [
+        // Only Final on the consumer shelf — the closed-loop sink.
         new RetailSkuPolicy(
           ids.Goods, PolityWorld.GoodsSell, PolityWorld.RetailStockTarget,
           PolityWorld.GoodsDelivered, PostRetailPrice: true),
-        new RetailSkuPolicy(
-          ids.Parts, PolityWorld.PartsSell, PolityWorld.RetailStockTarget * 0.5m,
-          PolityWorld.PartsDelivered, PostRetailPrice: true),
       ],
       new BunkerSkuPolicy(
         ids.Fuel, MinStock: 10m, BuyLimitPrice: PolityWorld.FuelUnitCost * 1.1m,
@@ -121,15 +128,15 @@ internal static class NearSolAgents
 
     var treasury = new TreasuryFirmAgent(ids.Station, new TreasuryFirmAgentPolicy(
       [ids.Mining, ids.Industry, .. ids.Carriers],
-      CashFloorToLend: 5_000m,
-      BorrowerCashFloor: PolityWorld.FirmCashFloor + 1_000m,
-      LoanPrincipal: Money.From(900m),
+      CashFloorToLend: 6_000m,
+      BorrowerCashFloor: PolityWorld.FirmCashFloor + 800m,
+      LoanPrincipal: Money.From(1_200m),
       AnnualInterestRate: 0.08m,
-      TermHours: SimulationHour.HoursPerDay * 60,
-      MaxActiveLoansToBorrower: 2));
+      TermHours: SimulationHour.HoursPerDay * 75,
+      MaxActiveLoansToBorrower: 3));
 
     sim.Enqueue(new OriginateLoan(
-      ids.Station, ids.Industry, Money.From(800m), 0.08m, SimulationHour.HoursPerDay * 90));
+      ids.Station, ids.Industry, Money.From(1_000m), 0.08m, SimulationHour.HoursPerDay * 120));
 
     var households = sim.State.World.Cohorts
       .Where(c => c.Definition.HouseholdFirmId is not null)

@@ -13,9 +13,9 @@ dotnet run --project novolis-dogfooding/apps/economy/NearSolPolity -- --headless
 | Mining | `ExtractiveFirmAgent` |
 | Industry | `ManufacturingFirmAgent` |
 | Station | `RetailFirmAgent` + `TreasuryFirmAgent` |
-| Carrier + Tramp2…7 | `CarrierFirmAgent` (one hull each; homes cycle Sol / mines / plants) |
+| Carrier + Tramp2…7 | `CarrierFirmAgent` (homes cycle Sol / mines / plants) |
 | Cohorts | `HouseholdFirmAgent` (comfort invest into Mining float) |
 
-SKU story (app only): Raw / Capital / Final / Energy. Travel: 1.3 d/ly. Agents are heuristic economic agents + `DeterministicRandom` — not ML.
+**Consumption sink:** households spend only on **Final** (Goods). Station shelves at Capital, Inhabited, and Mining camps. Capital parts stay B2B (plant → mine). Wages refill `BudgetRemaining`; retail destroys Final stock — that loop is the intended equilibrium / growth driver.
 
-**Pressures:** region labor pools need mining-camp households (area-local); wider delivered spreads + `MinMargin` 0.4; lean firm cash + Civic treasury loans; household comfort invest into Mining ownership float. Manufacturing labor from Mean pools; carriers keep crew `SetLabor`.
+SKU story (app only): Raw / Capital / Final / Energy. Travel: 1.3 d/ly. Agents are heuristic + `DeterministicRandom` — not ML.
