@@ -12,25 +12,26 @@ namespace NearSolPolity;
 internal static class PolityWorld
 {
   public const decimal OreBuy = 2m;
-  /// <summary>Consumer-facing ore ask (rarely used; cohorts prefer goods/parts).</summary>
-  public const decimal OreSell = 18m;
-  /// <summary>B2B delivered ore price paid by polity to tramp (mine gate + thin freight).</summary>
-  public const decimal OreFreightUnit = 6m;
-  /// <summary>Parts per ore unit (mine maintenance).</summary>
+  /// <summary>Consumer-facing raw ask (rarely used; cohorts prefer final goods).</summary>
+  public const decimal OreSell = 12m;
+  /// <summary>Thin per-unit premium on top of gate + haul variable cost (B2B).</summary>
+  public const decimal FreightPremiumPerUnit = 1m;
+  /// <summary>Parts per ore unit (mine maintenance / capital draw).</summary>
   public const decimal PartsPerOre = 0.15m;
   /// <summary>Ore per fuel unit (bunker refining at industrial hubs).</summary>
   public const decimal OrePerFuel = 0.5m;
-  /// <summary>B2B parts delivered to mines (gate + thin freight).</summary>
-  public const decimal PartsFreightUnit = 6m;
   public const decimal PartsBuy = 4m;
-  public const decimal PartsSell = 16m;
-  public const decimal GoodsSell = 22m;
+  /// <summary>Baseline retail for capital/intermediate (light consumer weight).</summary>
+  public const decimal PartsSell = 10m;
+  /// <summary>Baseline retail for final goods (&amp; services abstracted).</summary>
+  public const decimal GoodsSell = 12m;
   public const decimal FuelUnitCost = 1m;
-  public const decimal MinMargin = 25m;
+  public const decimal MinMargin = 15m;
   /// <summary>Stop mining when local ore stock exceeds this (avoids endless piles).</summary>
   public const decimal MineOreCap = 80m;
   public const decimal MinePartsFloor = 8m;
   public const decimal PlantOreFloor = 20m;
+  public const decimal RetailStockTarget = 20m;
   /// <summary>Soft floor — emergency fuel still allowed below this.</summary>
   public const decimal PolityCashFloor = 1_000m;
 
@@ -39,9 +40,17 @@ internal static class PolityWorld
   public const decimal OpeningTrampCash = 15_000m;
   public const decimal OpeningHouseholdCredits = 20_000m;
 
-  // Short-band ≤10 ly @ 7 d/ly → 1680h; burn ≈ ly/2 so tank 6 covers short hops.
-  // burn = hours × difficulty × rate → 10 × 168 × rate ≈ 5 ⇒ rate = 1/336.
-  public const decimal FuelBurnPerDifficultyHour = 1m / 336m;
+  // Short-band ≤10 ly @ 1.3 d/ly → 312h; burn ≈5 ⇒ rate ≈ 1/62.4.
+  public const decimal FuelBurnPerDifficultyHour = 1m / 62.4m;
+
+  public static string SkuLabel(ProductId product, Ids ids)
+  {
+    if (product.Equals(ids.Ore)) return "Raw";
+    if (product.Equals(ids.Parts)) return "Capital";
+    if (product.Equals(ids.Goods)) return "Final";
+    if (product.Equals(ids.Fuel)) return "Energy";
+    return "sku";
+  }
 
   internal sealed class Site
   {
@@ -76,7 +85,7 @@ internal static class PolityWorld
     var tramp = FirmId.From(Guid.Parse("00000000-0000-4000-8000-0000000000a2"));
     var builder = new EconomyWorldBuilder(new EconomyPolicy
     {
-      WageRatePerHour = Money.From(3m),
+      WageRatePerHour = Money.From(12m),
       LaborHoursPerOutputUnit = 0.05m,
       PeriodHours = 24,
       HouseholdCreditFromWages = true,
@@ -97,8 +106,12 @@ internal static class PolityWorld
     var fuel = ProductId.From(builder.NextGuid());
     var process = ProductionProcessId.From(Guid.Parse("00000000-0000-4000-8000-000000000099"));
     var hullId = VehicleClassId.From(builder.NextGuid());
-    var area = GeographicAreaId.From(builder.NextGuid());
-
+    // One geographic area per system for local demand clearing.
+    var areas = new Dictionary<string, GeographicAreaId>(StringComparer.OrdinalIgnoreCase);
+    foreach (var hub in bridge.Hubs)
+    {
+      areas[hub.SystemId] = GeographicAreaId.From(builder.NextGuid());
+    }
     // Circular recipes: parts maintain mines → ore → parts/goods/fuel.
     var oreDef = new ProductDefinition(
       ore, oreCat,
@@ -132,8 +145,8 @@ internal static class PolityWorld
       .AddFirm(tramp, "MV Independent", Money.From(OpeningTrampCash))
       .AddVehicleClass(hull)
       .SetTransportFuel(fuel, Money.From(FuelUnitCost))
-      .SetLabor(polity, 48m)
-      .SetLabor(tramp, 16m);
+      .SetLabor(polity, 96m)
+      .SetLabor(tramp, 32m);
 
     var sites = new Dictionary<string, Site>(StringComparer.OrdinalIgnoreCase);
     var householdSeeds = new List<(AstroEconomyBridge.HubBinding Hub, int Pop, SystemRole Role)>();
@@ -159,11 +172,12 @@ internal static class PolityWorld
           SystemRole.Mining => 80m,
           _ => 60m,
         };
+        var area = areas[hub.SystemId];
         var layout = new FacilityLayout(
           ImmutableDictionary<OperatingUnitId, OperatingUnit>.Empty
             .Add(unitId, new OperatingUnit(unitId, kind, Quantity.From(capacity))),
           ImmutableArray<MaterialRoute>.Empty);
-        builder.AddFacility(new FacilityBinding(facilityId, polity, hub.LocationId, hub.LocationId, layout));
+        builder.AddFacility(new FacilityBinding(facilityId, polity, hub.LocationId, hub.LocationId, layout, area));
         polityFacility = facilityId;
       }
 
@@ -175,7 +189,7 @@ internal static class PolityWorld
           ImmutableDictionary<OperatingUnitId, OperatingUnit>.Empty
             .Add(store, new OperatingUnit(store, OperatingUnitKind.Storage, Quantity.From(80m))),
           ImmutableArray<MaterialRoute>.Empty);
-        builder.AddFacility(new FacilityBinding(postId, tramp, hub.LocationId, hub.LocationId, layout));
+        builder.AddFacility(new FacilityBinding(postId, tramp, hub.LocationId, hub.LocationId, layout, areas[hub.SystemId]));
         trampPost = postId;
       }
 
@@ -216,21 +230,18 @@ internal static class PolityWorld
         creditsLeft -= budget;
       }
 
-      var prefs = role == SystemRole.Industrial
-        ? ImmutableArray.Create(
-          new CategoryPreference(partsCat, 0.4m),
-          new CategoryPreference(goodsCat, 0.6m))
-        : ImmutableArray.Create(
-          new CategoryPreference(goodsCat, 0.7m),
-          new CategoryPreference(partsCat, 0.3m));
+      // Final goods dominate; capital is light; raw is not a consumer SKU.
+      var prefs = ImmutableArray.Create(
+        new CategoryPreference(goodsCat, 0.85m),
+        new CategoryPreference(partsCat, 0.15m));
 
       builder.AddCohort(new ConsumerCohort(
         ConsumerCohortId.From(builder.NextGuid()),
         new PopulationCount(pop),
         Money.From(budget),
         new PreferenceProfile(prefs, 0.7m, 0m, 0m),
-        area));
-      _ = hub;
+        areas[hub.SystemId]));
+      _ = role;
     }
 
     var ids = new Ids

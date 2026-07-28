@@ -58,8 +58,9 @@ if (headless)
 AnsiConsole.Write(new FigletText("Near-Sol").Color(Color.SteelBlue1));
 AnsiConsole.MarkupLine("[grey]Interstellar polity — closed-loop credits (wages→households→retail).[/]");
 AnsiConsole.MarkupLine(
-  $"[grey]Travel:[/] {AstroEconomyBridge.CruiseDaysPerLy:0} d/ly  " +
-  $"(Sol→α Cen ~{AstroEconomyBridge.TransitDays(4.4):0.#}d)");
+  $"[grey]Travel:[/] {AstroEconomyBridge.CruiseDaysPerLy:0.##} d/ly  " +
+  $"(Sol→α Cen ~{AstroEconomyBridge.TransitDays(4.4):0.#}d)  " +
+  "[grey]SKU:[/] Raw / Capital / Final / Energy");
 AnsiConsole.MarkupLine(
   "[grey]Keys:[/] [bold]1[/]=½×  [bold]2[/]=1×  [bold]3[/]=4×  [bold]4[/]=16×  " +
   "[bold]5[/]=64×  [bold]6[/]=Warp  [bold]Space[/]=pause  [bold]Q[/]=quit");
@@ -220,14 +221,7 @@ void Capture(int before)
   eventCursor = events.Count;
 }
 
-string ProductHint(ProductId p)
-{
-  if (p.Equals(ids.Ore)) return "ore";
-  if (p.Equals(ids.Parts)) return "parts";
-  if (p.Equals(ids.Goods)) return "goods";
-  if (p.Equals(ids.Fuel)) return "fuel";
-  return "sku";
-}
+string ProductHint(ProductId p) => PolityWorld.SkuLabel(p, ids);
 
 void Note(string msg)
 {

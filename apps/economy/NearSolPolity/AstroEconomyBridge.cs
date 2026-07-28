@@ -10,10 +10,10 @@ namespace NearSolPolity;
 internal static class AstroEconomyBridge
 {
   /// <summary>
-  /// Soft-SF tramp cruise: one week per light-year.
+  /// Soft-SF tramp cruise: 1.3 days per light-year.
   /// Kernel corridors store hours = ceil(ly × days/ly × 24).
   /// </summary>
-  public const double CruiseDaysPerLy = 7.0;
+  public const double CruiseDaysPerLy = 1.3;
 
   /// <summary>Ly covered per simulation hour (derived from <see cref="CruiseDaysPerLy"/>).</summary>
   public const double CruiseLyPerHour = 1.0 / (CruiseDaysPerLy * 24.0);

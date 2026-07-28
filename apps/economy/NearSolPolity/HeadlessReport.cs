@@ -95,9 +95,11 @@ internal static class HeadlessReport
       $"Wage expense: {tramp.Balance(AccountRole.WageExpense).Amount:0.##}",
       $"Revenue:      {Math.Abs(tramp.Balance(AccountRole.Revenue).Amount):0}",
       "",
-      "— Travel model —",
+      "— Travel / freight —",
       $"Cruise:       {AstroEconomyBridge.CruiseDaysPerLy:0.##} day(s)/ly  ({AstroEconomyBridge.CruiseLyPerHour:0.####} ly/h)",
       $"Example Sol→α Cen (~4.4 ly): {AstroEconomyBridge.TransitHours(4.4)}h / {AstroEconomyBridge.TransitDays(4.4):0.#}d",
+      "B2B price:    gate + haul(variable)/qty + premium",
+      "SKU story:    Raw(ore) / Capital(parts) / Final(goods) / Energy(fuel)",
       "===============================",
     };
 

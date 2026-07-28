@@ -1,5 +1,6 @@
 using Novolis.Economy;
 using Novolis.Economy.Logistics;
+using Novolis.Economy.Markets;
 using Novolis.Economy.Production;
 using Novolis.Economy.Simulation;
 
@@ -86,6 +87,7 @@ internal sealed class PolityController
 
   private void EnsureRetailPrices()
   {
+    var world = _sim.State.World;
     foreach (var site in _ids.Sites.Values)
     {
       if (site.PolityFacility is not { } facility)
@@ -98,13 +100,25 @@ internal sealed class PolityController
         case SystemRole.Capital:
         case SystemRole.Inhabited:
         case SystemRole.Industrial:
-          _sim.Enqueue(new SetRetailPrice(_ids.Polity, facility, _ids.Goods, Money.From(PolityWorld.GoodsSell)));
-          _sim.Enqueue(new SetRetailPrice(_ids.Polity, facility, _ids.Parts, Money.From(PolityWorld.PartsSell)));
+        {
+          var goodsStock = Qty(world, site.Hub.LocationId, _ids.Goods);
+          var partsStock = Qty(world, site.Hub.LocationId, _ids.Parts);
+          var goodsPrice = InventoryPressurePricing.Adjust(
+            Money.From(PolityWorld.GoodsSell), goodsStock, PolityWorld.RetailStockTarget);
+          var partsPrice = InventoryPressurePricing.Adjust(
+            Money.From(PolityWorld.PartsSell), partsStock, PolityWorld.RetailStockTarget);
+          _sim.Enqueue(new SetRetailPrice(_ids.Polity, facility, _ids.Goods, goodsPrice));
+          _sim.Enqueue(new SetRetailPrice(_ids.Polity, facility, _ids.Parts, partsPrice));
           break;
+        }
         case SystemRole.Mining:
-          // Spare parts for local upkeep / tramp lifts.
-          _sim.Enqueue(new SetRetailPrice(_ids.Polity, facility, _ids.Ore, Money.From(PolityWorld.OreBuy)));
+        {
+          var oreStock = Qty(world, site.Hub.LocationId, _ids.Ore);
+          var orePrice = InventoryPressurePricing.Adjust(
+            Money.From(PolityWorld.OreBuy), oreStock, PolityWorld.MineOreCap / 2m);
+          _sim.Enqueue(new SetRetailPrice(_ids.Polity, facility, _ids.Ore, orePrice));
           break;
+        }
       }
     }
   }

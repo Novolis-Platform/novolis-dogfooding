@@ -96,7 +96,7 @@ internal static class Dashboard
         Ore: world.Inventory.GetQuantity(new InventoryKey(ids.Polity, s.Hub.LocationId, ids.Ore)).Value))
       .OrderByDescending(x => x.Ore)
       .Take(2)
-      .Select(x => $"M:{x.Name} ore{x.Ore:0}");
+      .Select(x => $"M:{x.Name} raw{x.Ore:0}");
 
     var plants = ids.Sites.Values
       .Where(s => s.Hub.Role == SystemRole.Industrial)
@@ -106,7 +106,7 @@ internal static class Dashboard
         Goods: world.Inventory.GetQuantity(new InventoryKey(ids.Polity, s.Hub.LocationId, ids.Goods)).Value))
       .OrderByDescending(x => x.Parts + x.Goods)
       .Take(2)
-      .Select(x => $"I:{x.Name} p{x.Parts:0}/g{x.Goods:0}");
+      .Select(x => $"I:{x.Name} cap{x.Parts:0}/fin{x.Goods:0}");
 
     return string.Join(" · ", mines.Concat(plants));
   }
