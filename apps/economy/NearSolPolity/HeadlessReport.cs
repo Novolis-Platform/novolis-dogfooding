@@ -128,6 +128,81 @@ internal static class HeadlessReport
     }
 
     lines.Add("");
+    lines.Add("— Macro events (counts) —");
+    lines.Add(
+      $"Credit:      originated {credits.LoansOriginated}  defaults {credits.LoansDefaulted}  " +
+      $"freezes {credits.CreditFreezes} (now frozen {credits.CreditFrozenFirms})");
+    lines.Add(
+      $"Ownership:   changes {credits.OwnershipChanges}  dividends {credits.Dividends} " +
+      $"(cash {credits.DividendCash:0})  absorbs {credits.FacilitiesAbsorbed}");
+    lines.Add(
+      $"Capacity:    upgrades {credits.FacilityUpgrades}  upgrade-fails {credits.FacilityUpgradeFails}");
+    lines.Add(
+      $"B2B xfer:    fills {credits.B2bFills} (qty {credits.B2bQty:0})  " +
+      $"fail cash {credits.B2bFailCash} / stock {credits.B2bFailStock}");
+
+    lines.Add("");
+    lines.Add("— Summary ratios —");
+    var firmCash = ids.Firms.Sum(f => world.Ledgers[f.Id].Cash.Amount);
+    var totalCashPool = firmCash + hh;
+    var days = Math.Max(1, day);
+    lines.Add(
+      $"Cash split:  firms {firmCash:0} ({Pct(firmCash, totalCashPool)})  " +
+      $"hh {hh:0} ({Pct(hh, totalCashPool)})  inv-book {credits.InventoryBookValue:0}");
+    lines.Add($"Per day:     fills {credits.BookFills / (decimal)days:0.##}  " +
+              $"delivered {delivered / days:0.##}  produced {credits.Produced / days:0.##}  " +
+              $"retail {credits.RetailSold / days:0.##}");
+    lines.Add(
+      $"Throughput:  retail/produced {Ratio(credits.RetailSold, credits.Produced)}  " +
+      $"delivered/departed {Ratio(delivered, credits.Departed)}  " +
+      $"fill qty/fill {Ratio(credits.BookFillQty, credits.BookFills)}");
+    lines.Add("Firm cash % of firm pool:");
+    if (firmCash > 0m)
+    {
+      foreach (var (name, firmId) in ids.Firms)
+      {
+        var c = world.Ledgers[firmId].Cash.Amount;
+        lines.Add($"  {name,-9} {c,7:0}  {Pct(c, firmCash)}");
+      }
+    }
+
+    if (credits.Milestones.Count > 0)
+    {
+      lines.Add("");
+      lines.Add("— Milestones (cumulative) —");
+      lines.Add(
+        "  day   liquid    hh   inv$  prod  retail fills  deliv  defs  div$  abs  upg");
+      MacroSnapshot? prev = null;
+      foreach (var m in credits.Milestones)
+      {
+        lines.Add(
+          $"  {m.DayIndex,4}  {m.Liquid,7:0}  {m.Households,5:0}  {m.InventoryBook,5:0}  " +
+          $"{m.Produced,5:0}  {m.RetailSold,5:0}  {m.BookFills,5}  {m.Delivered,5:0}  " +
+          $"{m.LoansDefaulted,4}  {m.DividendsPaid,4:0}  {m.FacilitiesAbsorbed,3}  {m.Upgrades,3}");
+        if (prev is { } p)
+        {
+          var dDays = Math.Max(1, m.DayIndex - p.DayIndex);
+          lines.Add(
+            $"       Δ/day fills {(m.BookFills - p.BookFills) / (decimal)dDays:0.##}  " +
+            $"deliv {(m.Delivered - p.Delivered) / dDays:0.##}  " +
+            $"hh Δ {m.Households - p.Households:0}");
+        }
+
+        prev = m;
+      }
+    }
+
+    if (credits.MacroLog.Count > 0)
+    {
+      lines.Add("");
+      lines.Add("— Macro event log (recent) —");
+      foreach (var line in credits.MacroLog)
+      {
+        lines.Add($"  {line}");
+      }
+    }
+
+    lines.Add("");
     lines.Add("— Facility owners —");
     foreach (var fac in world.Facilities.Values.OrderBy(f => f.Id.Value).Take(8))
     {
@@ -203,4 +278,10 @@ internal static class HeadlessReport
 
   private static decimal Abs(FirmLedger ledger, AccountRole role) =>
     Math.Abs(ledger.Balance(role).Amount);
+
+  private static string Pct(decimal part, decimal whole) =>
+    whole <= 0m ? "—" : $"{100m * part / whole:0.#}%";
+
+  private static string Ratio(decimal num, decimal den) =>
+    den <= 0m ? "—" : $"{num / den:0.##}";
 }

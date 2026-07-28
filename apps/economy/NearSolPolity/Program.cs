@@ -20,6 +20,7 @@ if (!headless && (Console.IsOutputRedirected || Console.IsInputRedirected))
 var (sim, ids) = PolityWorld.Create();
 var agents = NearSolAgents.Create(sim, ids);
 var credits = new CreditCirculation(sim);
+credits.SetFirmNames(ids.Firms);
 var log = new Queue<string>();
 var eventCursor = sim.State.Events.Count;
 var running = true;
@@ -50,6 +51,7 @@ if (headless)
   }
 
   sw.Stop();
+  credits.CaptureFinalMilestone();
   HeadlessReport.Write(sim, ids, credits, openingLiquid, runHours, sw.Elapsed, agents);
   return;
 }
