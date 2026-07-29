@@ -6,6 +6,7 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <Description>Dogfood Novolis.Avalonia.3D — lightweight C4D-inspired modeling (Object Manager, primitives, array, boole, shaping).</Description>
     <IsPackable>false</IsPackable>
+    <DefaultItemExcludes>$(DefaultItemExcludes);tools\**\*</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
