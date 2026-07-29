@@ -1,0 +1,318 @@
+{
+  "format": "novolis.scene",
+  "schemaVersion": 1,
+  "name": "Primitive Stage",
+  "createdAt": "2026-07-29T20:53:07.1956201+00:00",
+  "modifiedAt": "2026-07-29T20:53:07.1984632+00:00",
+  "unitScaleMeters": 1,
+  "nodes": [
+    {
+      "kind": "group",
+      "id": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "name": "Scene",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "camera",
+      "fovDeg": 45,
+      "near": 0.1,
+      "far": 1000,
+      "target": [
+        0,
+        0.5,
+        0
+      ],
+      "id": "20554ff7-0475-4243-a6b2-e4cdf241d7e8",
+      "name": "Camera",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          5,
+          3.5,
+          7
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "omni",
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "intensity": 2,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "af11dfaa-f370-46bc-86d7-dcc94c27079c",
+      "name": "Key",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          2,
+          4,
+          2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "plane",
+      "size": [
+        10,
+        0.05,
+        10
+      ],
+      "segments": 16,
+      "id": "8648a53b-2abb-409c-9931-1ba4d88f2055",
+      "name": "Floor",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "box",
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "segments": 16,
+      "id": "50650dc4-acd1-4093-ae55-2f99bd629bcc",
+      "name": "Box",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          -1.5,
+          0.5,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "sphere",
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "segments": 20,
+      "id": "a20275ae-614e-4e14-bd63-d9155af5adcd",
+      "name": "Sphere",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          0,
+          0.6,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "cylinder",
+      "size": [
+        0.8,
+        1.2,
+        0.8
+      ],
+      "segments": 16,
+      "id": "5293d6d4-4a32-415b-8202-a83c7579647e",
+      "name": "Cylinder",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          1.5,
+          0.6,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "cone",
+      "size": [
+        0.9,
+        1.2,
+        0.9
+      ],
+      "segments": 16,
+      "id": "059b4a54-abb7-4da1-b6a4-9eedb383acc9",
+      "name": "Cone",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          0,
+          0.6,
+          1.8
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "torus",
+      "size": [
+        1.2,
+        1,
+        0.8
+      ],
+      "segments": 24,
+      "id": "6759b9d6-3271-45d7-8379-a7a25041ab6a",
+      "name": "Torus",
+      "parentId": "d7a5eb47-cb21-418c-b39c-75bf27901869",
+      "transform": {
+        "position": [
+          0,
+          0.4,
+          -1.8
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    }
+  ],
+  "activeCameraId": "20554ff7-0475-4243-a6b2-e4cdf241d7e8"
+}

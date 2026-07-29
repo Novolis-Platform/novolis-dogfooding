@@ -1,0 +1,247 @@
+{
+  "format": "novolis.scene",
+  "schemaVersion": 1,
+  "name": "Edit Box",
+  "createdAt": "2026-07-29T21:34:49.829677+00:00",
+  "modifiedAt": "2026-07-29T21:34:49.8348253+00:00",
+  "unitScaleMeters": 1,
+  "nodes": [
+    {
+      "kind": "group",
+      "id": "1427b5df-8006-4877-8c22-8755931e5c2b",
+      "name": "Scene",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "camera",
+      "fovDeg": 45,
+      "near": 0.1,
+      "far": 1000,
+      "target": [
+        0,
+        0.5,
+        0
+      ],
+      "id": "b09e40fd-9b81-4b8b-9d90-6255b297aca1",
+      "name": "Camera",
+      "parentId": "1427b5df-8006-4877-8c22-8755931e5c2b",
+      "transform": {
+        "position": [
+          5,
+          3.5,
+          7
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "omni",
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "intensity": 2,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "289ec756-fccd-4a2d-a9ec-e3d6d2f36cd8",
+      "name": "Key",
+      "parentId": "1427b5df-8006-4877-8c22-8755931e5c2b",
+      "transform": {
+        "position": [
+          2,
+          4,
+          2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "plane",
+      "size": [
+        10,
+        0.05,
+        10
+      ],
+      "segments": 16,
+      "id": "ba482595-db01-4bda-a9b2-d9025c646bfd",
+      "name": "Floor",
+      "parentId": "1427b5df-8006-4877-8c22-8755931e5c2b",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "box",
+      "size": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "segments": 16,
+      "vertices": [
+        -0.75,
+        -0.75,
+        -0.75,
+        0.75,
+        -0.75,
+        -0.75,
+        0.75,
+        0.75,
+        -0.75,
+        -0.75,
+        0.75,
+        -0.75,
+        -0.75,
+        -0.75,
+        0.75,
+        0.75,
+        -0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        -0.75,
+        0.75,
+        0.75
+      ],
+      "indices": [
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
+        4,
+        6,
+        5,
+        4,
+        7,
+        6,
+        0,
+        4,
+        5,
+        0,
+        5,
+        1,
+        2,
+        6,
+        7,
+        2,
+        7,
+        3,
+        0,
+        3,
+        7,
+        0,
+        7,
+        4,
+        1,
+        5,
+        6,
+        1,
+        6,
+        2
+      ],
+      "id": "4b313499-608b-47b8-92c0-5bc178bc57a5",
+      "name": "Editable Box",
+      "parentId": "1427b5df-8006-4877-8c22-8755931e5c2b",
+      "transform": {
+        "position": [
+          0,
+          0.75,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    }
+  ],
+  "activeCameraId": "b09e40fd-9b81-4b8b-9d90-6255b297aca1",
+  "selectionId": "4b313499-608b-47b8-92c0-5bc178bc57a5"
+}

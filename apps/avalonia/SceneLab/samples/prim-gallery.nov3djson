@@ -1,0 +1,658 @@
+{
+  "format": "novolis.scene",
+  "schemaVersion": 1,
+  "name": "Primitive Gallery",
+  "createdAt": "2026-07-29T21:34:49.9069306+00:00",
+  "modifiedAt": "2026-07-29T21:34:49.9070464+00:00",
+  "unitScaleMeters": 1,
+  "nodes": [
+    {
+      "kind": "group",
+      "id": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "name": "Scene",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "camera",
+      "fovDeg": 45,
+      "near": 0.1,
+      "far": 1000,
+      "target": [
+        0,
+        0.5,
+        0
+      ],
+      "id": "48d69581-ff4b-4fff-91c2-9653002249be",
+      "name": "Camera",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          5,
+          3.5,
+          7
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "omni",
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "intensity": 2,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "fd42bfcd-7dd4-473e-a201-5567b15668ec",
+      "name": "Key",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          2,
+          4,
+          2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "plane",
+      "size": [
+        10,
+        0.05,
+        10
+      ],
+      "segments": 16,
+      "id": "3865ee88-3e6a-4b99-b1b3-32e3ba4e93f0",
+      "name": "Floor",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "box",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "f5c80a32-e4a6-4563-9a3f-01b353ff4ab7",
+      "name": "Box",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          -4.4,
+          0.5,
+          -2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "sphere",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "6d7ad872-54d8-47df-95cf-dd66f7991258",
+      "name": "Sphere",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          -2.2,
+          0.5,
+          -2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "plane",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "34557987-0e33-4771-9762-6f2670f64eb9",
+      "name": "Plane",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          0,
+          0.5,
+          -2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "cylinder",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "c8976e3e-d8fe-444a-8a31-b92510dc3ceb",
+      "name": "Cylinder",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          2.2000003,
+          0.5,
+          -2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "cone",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "0743e9b7-f855-47ef-a4b0-4f5d50efff30",
+      "name": "Cone",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          4.4,
+          0.5,
+          -2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "capsule",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "bb9c1d11-197c-4c41-9bb7-02013c7ed8df",
+      "name": "Capsule",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          -4.4,
+          0.5,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "torus",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "f2b29b3d-8120-4c4b-bccb-33d42aae91f5",
+      "name": "Torus",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          -2.2,
+          0.5,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "pyramid",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "61260cfc-35b9-4080-8956-e97b3919122a",
+      "name": "Pyramid",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          0,
+          0.5,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "disc",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "581ade71-f078-467b-8675-0b460e27a1c6",
+      "name": "Disc",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          2.2000003,
+          0.5,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "tube",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "a8a6eadb-43da-49b8-85ef-54c857c068f0",
+      "name": "Tube",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          4.4,
+          0.5,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "platonicTetra",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "78f79e07-0f33-45dc-a0d7-8090ba388fc6",
+      "name": "PlatonicTetra",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          -4.4,
+          0.5,
+          2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "platonicOcta",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "6ef280ae-a6e2-4b88-9cfd-bf2f45ce58c8",
+      "name": "PlatonicOcta",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          -2.2,
+          0.5,
+          2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "platonicIcosa",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "98e50b99-cd3c-43e7-8558-8e2d33c9f907",
+      "name": "PlatonicIcosa",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          0,
+          0.5,
+          2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "platonicDodeca",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 16,
+      "id": "5e45a9ad-9f5c-4fe7-896d-fa9a3a28ada6",
+      "name": "PlatonicDodeca",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          2.2000003,
+          0.5,
+          2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "landscape",
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "segments": 12,
+      "id": "24fcd0eb-b8ae-48a5-9d08-52fecf0be17b",
+      "name": "Landscape",
+      "parentId": "ded752e3-fd46-415f-a176-74ecb68824e9",
+      "transform": {
+        "position": [
+          4.4,
+          0.5,
+          2.2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    }
+  ],
+  "activeCameraId": "48d69581-ff4b-4fff-91c2-9653002249be"
+}

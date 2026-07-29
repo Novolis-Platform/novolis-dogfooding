@@ -1,0 +1,297 @@
+{
+  "format": "novolis.scene",
+  "schemaVersion": 1,
+  "name": "Troop Corvette \u2014 keel",
+  "createdAt": "2026-07-29T21:56:09.6939033+00:00",
+  "modifiedAt": "2026-07-29T21:56:09.7030774+00:00",
+  "unitScaleMeters": 1,
+  "nodes": [
+    {
+      "kind": "group",
+      "id": "74d5b0d3-da53-45ac-9c5b-2ef0ad10dbb4",
+      "name": "Shipyard",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "camera",
+      "fovDeg": 38,
+      "near": 0.1,
+      "far": 1000,
+      "target": [
+        0,
+        0.6,
+        0
+      ],
+      "id": "e19ac709-d888-4a62-8d0e-c9f8f1911440",
+      "name": "Shipyard Cam",
+      "parentId": "74d5b0d3-da53-45ac-9c5b-2ef0ad10dbb4",
+      "transform": {
+        "position": [
+          14,
+          6,
+          12
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "box",
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "segments": 16,
+      "vertices": [
+        -0.275,
+        0.17500001,
+        -8,
+        0.275,
+        0.17500001,
+        -8,
+        0.275,
+        0.625,
+        -8,
+        -0.275,
+        0.625,
+        -8,
+        -0.275,
+        0.17500001,
+        8,
+        0.275,
+        0.17500001,
+        8,
+        0.275,
+        0.625,
+        8,
+        -0.275,
+        0.625,
+        8
+      ],
+      "indices": [
+        0,
+        1,
+        2,
+        0,
+        2,
+        3,
+        4,
+        6,
+        5,
+        4,
+        7,
+        6,
+        0,
+        4,
+        5,
+        0,
+        5,
+        1,
+        2,
+        6,
+        7,
+        2,
+        7,
+        3,
+        0,
+        3,
+        7,
+        0,
+        7,
+        4,
+        1,
+        5,
+        6,
+        1,
+        6,
+        2
+      ],
+      "id": "ca0f3945-3da5-4c08-a384-d42316deadc2",
+      "name": "Troop Corvette",
+      "parentId": "74d5b0d3-da53-45ac-9c5b-2ef0ad10dbb4",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "spot",
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "intensity": 3.4,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "30974cd9-850e-4656-846f-f950f69bd398",
+      "name": "Bay Key",
+      "parentId": "74d5b0d3-da53-45ac-9c5b-2ef0ad10dbb4",
+      "transform": {
+        "position": [
+          8,
+          10,
+          6
+        ],
+        "rotationDeg": [
+          40,
+          -30,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "omni",
+      "color": [
+        0.35,
+        0.8,
+        1
+      ],
+      "intensity": 2.6,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "36e55b25-5ccc-4ab1-bce0-0e5c8029d7a5",
+      "name": "Engine Glow",
+      "parentId": "74d5b0d3-da53-45ac-9c5b-2ef0ad10dbb4",
+      "transform": {
+        "position": [
+          0,
+          0.2,
+          -9.6
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "infinite",
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "intensity": 0.45,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "ab4df5dd-01d3-466d-ae85-09a639627e02",
+      "name": "Rim",
+      "parentId": "74d5b0d3-da53-45ac-9c5b-2ef0ad10dbb4",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          -40,
+          25,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    }
+  ],
+  "activeCameraId": "e19ac709-d888-4a62-8d0e-c9f8f1911440",
+  "selectionId": "ca0f3945-3da5-4c08-a384-d42316deadc2"
+}

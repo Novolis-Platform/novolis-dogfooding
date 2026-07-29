@@ -1,0 +1,219 @@
+{
+  "format": "novolis.scene",
+  "schemaVersion": 1,
+  "name": "Cloner Row",
+  "createdAt": "2026-07-29T20:53:07.2691022+00:00",
+  "modifiedAt": "2026-07-29T20:53:07.2693076+00:00",
+  "unitScaleMeters": 1,
+  "nodes": [
+    {
+      "kind": "group",
+      "id": "775284a3-90dc-4936-bbc4-38e520470670",
+      "name": "Scene",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "camera",
+      "fovDeg": 45,
+      "near": 0.1,
+      "far": 1000,
+      "target": [
+        0,
+        0.5,
+        0
+      ],
+      "id": "6c57fa85-9321-4fb8-910a-9074a337732e",
+      "name": "Camera",
+      "parentId": "775284a3-90dc-4936-bbc4-38e520470670",
+      "transform": {
+        "position": [
+          5,
+          3.5,
+          7
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "light",
+      "lightKind": "omni",
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "intensity": 2,
+      "coneAngleDeg": 45,
+      "penumbraDeg": 5,
+      "areaSize": [
+        1,
+        1
+      ],
+      "castShadows": true,
+      "enabled": true,
+      "id": "46618a19-d409-4d33-ad79-7623f20e1e52",
+      "name": "Key",
+      "parentId": "775284a3-90dc-4936-bbc4-38e520470670",
+      "transform": {
+        "position": [
+          2,
+          4,
+          2
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "plane",
+      "size": [
+        10,
+        0.05,
+        10
+      ],
+      "segments": 16,
+      "id": "e144abd5-cbb4-4943-9792-4e125594f999",
+      "name": "Floor",
+      "parentId": "775284a3-90dc-4936-bbc4-38e520470670",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "mesh",
+      "primitive": "box",
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "segments": 16,
+      "id": "65663efa-5325-4978-91a7-3fc8fe496c7a",
+      "name": "Source Box",
+      "parentId": "775284a3-90dc-4936-bbc4-38e520470670",
+      "transform": {
+        "position": [
+          0,
+          0.35,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    },
+    {
+      "kind": "generator",
+      "generator": "cloner",
+      "sourceId": "65663efa-5325-4978-91a7-3fc8fe496c7a",
+      "booleanKind": "difference",
+      "count": 5,
+      "offset": [
+        1.2,
+        0,
+        0
+      ],
+      "axis": "x",
+      "id": "88ce7dbe-dc75-482d-885b-ba2f517826f5",
+      "name": "Array",
+      "parentId": "775284a3-90dc-4936-bbc4-38e520470670",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "positionV": {},
+        "rotationDegV": {},
+        "scaleV": {}
+      },
+      "visible": true
+    }
+  ],
+  "activeCameraId": "6c57fa85-9321-4fb8-910a-9074a337732e"
+}

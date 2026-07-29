@@ -49,6 +49,9 @@
     <PackageVersion Include="Novolis.Avalonia.Agent.Protocol" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Session" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Cad" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.3D" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Agent.Surface" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Modeling.Scene" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Git" Version="2026.1.*" />
@@ -90,6 +93,7 @@
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Joints" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Bindings" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Capture" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Runtime" Version="2026.1.*" />
@@ -102,6 +106,7 @@
     <PackageVersion Include="Novolis.Rendering.DependencyInjection" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Materials" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.PathTrace.Demos" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Rendering.Presentation.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Presentation.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Presentation.Silk" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Runtime" Version="2026.1.*" />

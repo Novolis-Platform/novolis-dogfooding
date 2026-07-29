@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>SceneLab</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>Dogfood Novolis.Avalonia.3D — lightweight C4D-inspired modeling (Object Manager, primitives, array, boole, shaping).</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Novolis.Avalonia.3D" />
+    <PackageReference Include="Novolis.Agent.Surface" />
+    <PackageReference Include="Novolis.Modeling.Scene" />
+    <!-- Explicit: ProjectRef mode is non-transitive for NuGet graphs (same pattern as CalypsoCad). -->
+    <PackageReference Include="Novolis.Avalonia.Raylib" />
+    <PackageReference Include="Novolis.Raylib" />
+    <PackageReference Include="Novolis.Raylib.Abstractions" />
+    <PackageReference Include="Novolis.Raylib.Bindings" />
+    <PackageReference Include="Novolis.Raylib.Runtime" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Silk" />
+  </ItemGroup>
+</Project>

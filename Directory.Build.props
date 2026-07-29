@@ -43,6 +43,9 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);CS0067;CS0108;CS0168;CS0219;CS0433;CS4014;CS1574;CS1717;CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8619;CS8620;CS8625;CS8629;CS8631;CS8632;CS8765;DV2001;RS1014;NU1504;NU1507;NU1510;NU1603;NU1605;NU1608;NU1901;NU1902;NU1903;NU1904;NU1701</WarningsNotAsErrors>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.PackageIcon.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.PackageIcon.props')" />
+
   <ItemGroup Label="Novolis.Raylib.Native packaged targets expect repo paths; RID assets in nupkg suffice.">
     <PackageReference Update="Novolis.Raylib">
       <ExcludeAssets>buildTransitive</ExcludeAssets>
