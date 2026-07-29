@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RootNamespace>SketchLab</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>Dogfood SketchControl — simple freehand sketch app with transparent PNG / SVG clipboard export.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Novolis.Avalonia.Controls" />
+    <PackageReference Include="Optris.Icons.Avalonia" />
+    <PackageReference Include="Optris.Icons.Avalonia.FontAwesome" />
+  </ItemGroup>
+</Project>

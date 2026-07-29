@@ -53,6 +53,7 @@
   </Folder>
   <Folder Name="/avalonia/">
     <Project Path="apps/avalonia/StudioChromeLab/StudioChromeLab.csproj" />
+    <Project Path="apps/avalonia/SketchLab/SketchLab.csproj" />
   </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
@@ -77,5 +78,8 @@
   <Folder Name="/gaming/">
     <Project Path="apps/gaming/GamingSmoke/GamingSmoke.csproj" />
     <Project Path="apps/gaming/TopDownDoom/TopDownDoom.csproj" />
+  </Folder>
+  <Folder Name="/cad/">
+    <Project Path="apps/cad/CalypsoCad/CalypsoCad.csproj" />
   </Folder>
 </Solution>

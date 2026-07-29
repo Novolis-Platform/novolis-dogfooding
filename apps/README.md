@@ -6,12 +6,21 @@ Add a project under `apps/` (or `apps/<repo>/` for multi-app repos like `renderi
 
 In-repo API walkthroughs (`HelloGame`, `HelloRuntime`, …) stay in `novolis-raylib/samples/`. Published-package demos and cross-repo integration apps live here.
 
-## WireFish Viewer
+## SketchLab
 
-Live packet capture UI for `Novolis.Transports.WireFish` (WireShark-style layout). Requires **Npcap** on Windows for capture devices.
+Freehand sketch dogfood for `Novolis.Avalonia.Controls` `SketchControl`. Clipboard export only (transparent PNG or SVG text).
 
 ```bash
-dotnet run --project apps/WireFishViewer
+dotnet run --project apps/avalonia/SketchLab -p:NovolisUseProjectReferences=true
+```
+
+## Calypso CAD
+
+Hand-ported Rev G deckplans → `.cadjson` / `.cadshapejson` / `.cadlayers.json`, with two-sided walls and interior views.
+
+```bash
+dotnet run --project apps/cad/CalypsoCad
+dotnet run --project apps/cad/CalypsoCad -- --generate-only
 ```
 
 ## SilkTwoDHello

@@ -1,5 +1,5 @@
 <Project>
-<PropertyGroup>
+  <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
   </PropertyGroup>
@@ -10,6 +10,8 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
     <PackageVersion Include="Hex1b" Version="0.154.0" />
+    <PackageVersion Include="Optris.Icons.Avalonia" Version="12.0.6" />
+    <PackageVersion Include="Optris.Icons.Avalonia.FontAwesome" Version="12.0.6" />
     <PackageVersion Include="Spectre.Console" Version="0.54.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
@@ -45,6 +47,8 @@
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Agent" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Agent.Protocol" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.Session" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Cad" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Git" Version="2026.1.*" />
@@ -86,6 +90,9 @@
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Joints" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Bindings" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Capture" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Runtime" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Game" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Igpu" Version="2026.1.*" />

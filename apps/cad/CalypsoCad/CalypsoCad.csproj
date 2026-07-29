@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>CalypsoCad</RootNamespace>
+    <ApplicationTitle>Calypso CAD</ApplicationTitle>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Novolis.Avalonia.Cad" />
+    <PackageReference Include="Novolis.Avalonia.Raylib" />
+    <PackageReference Include="Novolis.Avalonia.Studio" />
+    <PackageReference Include="Novolis.Raylib" />
+    <PackageReference Include="Novolis.Raylib.Bindings" />
+    <PackageReference Include="Novolis.Raylib.Capture" />
+    <PackageReference Include="Novolis.Raylib.Runtime" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Silk" />
+  </ItemGroup>
+</Project>
