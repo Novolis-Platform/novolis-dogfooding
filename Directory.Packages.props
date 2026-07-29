@@ -29,6 +29,7 @@
     <PackageVersion Include="Novolis.Astro.Plotting" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Astro.Routing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Voice.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Manuscript" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Profiles" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.SherpaOnnx" Version="2026.1.*" />

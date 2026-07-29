@@ -1,11 +1,50 @@
 using System.ComponentModel;
 using ModelContextProtocol.Server;
+using Novolis.Avalonia.Agent.Protocol.Dto;
 
 namespace AvaloniaAgentMcp;
 
 [McpServerToolType]
 public static class AvaloniaAgentMcpTools
 {
+    [McpServerTool]
+    [Description("List known Avalonia agent host endpoints (temp marker + known pipes). Use before ui_connect when multiple apps run.")]
+    public static string UiHosts() =>
+        AvaloniaAgentRuntime.ToJson(new
+        {
+            hosts = AvaloniaAgentRuntime.DiscoverHosts(),
+            activeOverride = AvaloniaAgentRuntime.EndpointOverride
+        });
+
+    [McpServerTool]
+    [Description("Connect to a named-pipe / socket endpoint (e.g. novolis-avalonia-agent-sins). Empty clears override and uses host marker / default.")]
+    public static async Task<string> UiConnect(
+        [Description("Pipe/socket name. Omit or empty to clear override and auto-discover.")]
+        string? endpoint = null,
+        CancellationToken cancellationToken = default)
+    {
+        await AvaloniaAgentRuntime.SetEndpointAsync(endpoint).ConfigureAwait(false);
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.HelloAsync(cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(new
+        {
+            endpoint = AvaloniaAgentRuntime.EndpointOverride ?? "(auto)",
+            response
+        });
+    }
+
+    [McpServerTool]
+    [Description("Drop the cached Avalonia IPC client and handshake again (use after the host app restarts).")]
+    public static async Task<string> UiReconnect(CancellationToken cancellationToken = default)
+    {
+        await AvaloniaAgentRuntime.ForceReconnectAsync().ConfigureAwait(false);
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.HelloAsync(cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(response);
+    }
+
     [McpServerTool]
     [Description("Handshake with the Avalonia agent host: protocol version, app title, process id.")]
     public static async Task<string> UiHello(CancellationToken cancellationToken = default)
@@ -17,7 +56,90 @@ public static class AvaloniaAgentMcpTools
     }
 
     [McpServerTool]
-    [Description("Dump the Avalonia interactive control tree (ids, roles, bounds, text, enabled/focused).")]
+    [Description("Compact multi-get: read text/enabled/visible for many AgentIds in one round-trip (prefer over full ui_tree for desk state).")]
+    public static async Task<string> UiGet(
+        [Description("AgentIds to read, e.g. calypso.voyage,calypso.survival,calypso.continue")]
+        string[] controlIds,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.GetAsync(controlIds ?? Array.Empty<string>(), cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(response);
+    }
+
+    [McpServerTool]
+    [Description("List items in a ListBox, ComboBox, or TabControl (index, text, selected). Use for spot boards / tabs without selecting.")]
+    public static async Task<string> UiItems(
+        [Description("AgentId of the list/combo/tabs control, e.g. calypso.spot")]
+        string controlId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.ItemsAsync(controlId, cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(response);
+    }
+
+    [McpServerTool]
+    [Description("Client-side poll of ui.get until textContains matches (or enabled). Prefer this over ui_wait while the UI sim is busy — does not block the Avalonia UI thread.")]
+    public static async Task<string> UiPoll(
+        [Description("Control AgentId to watch.")]
+        string controlId,
+        [Description("Optional substring the control text must contain.")]
+        string? textContains = null,
+        [Description("Optional required IsEnabled.")]
+        bool? enabled = null,
+        [Description("Timeout in milliseconds (default 60000).")]
+        int timeoutMs = 60000,
+        [Description("Poll interval in milliseconds (default 400).")]
+        int intervalMs = 400,
+        CancellationToken cancellationToken = default)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(Math.Max(0, timeoutMs));
+        UiGetResponseDto? last = null;
+        while (DateTime.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            last = await AvaloniaAgentRuntime.WithClientAsync(
+                c => c.GetAsync(new[] { controlId }, cancellationToken).AsTask(),
+                cancellationToken).ConfigureAwait(false);
+
+            var state = last.Controls.FirstOrDefault();
+            if (state is { Found: true })
+            {
+                var enabledOk = enabled is null || state.IsEnabled == enabled;
+                var textOk = string.IsNullOrEmpty(textContains)
+                             || (state.Text?.Contains(textContains, StringComparison.OrdinalIgnoreCase) ?? false);
+                if (enabledOk && textOk)
+                {
+                    return AvaloniaAgentRuntime.ToJson(new
+                    {
+                        success = true,
+                        timedOut = false,
+                        control = state,
+                        appTitle = last.AppTitle,
+                        processId = last.ProcessId
+                    });
+                }
+            }
+
+            await Task.Delay(Math.Max(50, intervalMs), cancellationToken).ConfigureAwait(false);
+        }
+
+        return AvaloniaAgentRuntime.ToJson(new
+        {
+            success = false,
+            timedOut = true,
+            control = last?.Controls.FirstOrDefault(),
+            appTitle = last?.AppTitle,
+            processId = last?.ProcessId,
+            error = $"Timed out waiting for '{controlId}'."
+        });
+    }
+
+    [McpServerTool]
+    [Description("Dump the Avalonia interactive control tree (ids, roles, bounds, text, enabled/focused). List AgentIds also emit item rows.")]
     public static async Task<string> UiTree(
         [Description("When true (default), only interactive controls and AgentId-tagged controls.")]
         bool interactiveOnly = true,
@@ -111,7 +233,7 @@ public static class AvaloniaAgentMcpTools
     }
 
     [McpServerTool]
-    [Description("Wait until a control id appears and optional enabled/text conditions match.")]
+    [Description("Host-side wait until a control id matches (blocks Avalonia UI thread). Prefer ui_poll when the app is simulating.")]
     public static async Task<string> UiWait(
         [Description("Control AgentId to wait for.")]
         string controlId,

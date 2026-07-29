@@ -4,6 +4,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Novolis.Audio.Core" />
+    <PackageReference Include="Novolis.Audio.Effects" />
+    <PackageReference Include="Novolis.Audio.Voice" />
+    <PackageReference Include="Novolis.Audio.Voice.Abstractions" />
+    <PackageReference Include="Novolis.Audio.Voice.Design" />
+    <PackageReference Include="Novolis.Audio.Voice.Profiles" />
     <PackageReference Include="TUnit" />
   </ItemGroup>
   <ItemGroup>
