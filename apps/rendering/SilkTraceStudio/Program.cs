@@ -1,8 +1,9 @@
 using System.Numerics;
 using Novolis.Rendering.PathTrace.Demos;
 using Novolis.Rendering.Presentation.Silk;
+using Novolis.Simulation.View;
 using Novolis.Rendering.Runtime;
-using Silk.NET.Input;
+using Novolis.Rendering.Presentation;
 
 namespace SilkTraceStudio;
 
@@ -20,7 +21,7 @@ internal static class Program
         var display = new PathTraceDisplayBuffer();
         using var worker = new PathTraceBackgroundWorker(session.Backend, display);
         var fps = new SilkSmoothedFps();
-        var orbit = new SilkOrbitCamera { Target = ShowcaseScenes.OrbitTarget, Distance = 2.6f };
+        var orbit = new OrbitCameraRig { Target = ShowcaseScenes.OrbitTarget, Distance = 2.6f };
         var sample = 0;
         var frameWidth = 0;
         var frameHeight = 0;

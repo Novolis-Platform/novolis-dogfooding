@@ -1,10 +1,14 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Logging;
 using Avalonia.Media;
+using Avalonia.Win32;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Novolis.Agent.Surface;
+using Novolis.Avalonia._3D;
+using Novolis.Avalonia._3D.Services;
 using Novolis.Avalonia._3D.Session;
 using Novolis.Avalonia._3D.Ui;
 using Novolis.Modeling.Scene;
@@ -15,28 +19,21 @@ internal static class Program
 {
     internal static IHost ApplicationHost { get; private set; } = null!;
     internal static AgentSurface? SceneSurface { get; private set; }
+    internal static SceneViewportBackendKind ViewportBackend { get; private set; } = SceneViewportBackendKind.OpenGl;
+    internal static bool CompareBackends { get; private set; }
 
     [STAThread]
     public static void Main(string[] args)
     {
+        ViewportBackend = ParseBackend(args);
+        CompareBackends = args.Any(a => a.Equals("--compare", StringComparison.OrdinalIgnoreCase));
+
         ApplicationHost = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
                 services.AddSingleton(_ =>
                 {
-                    var sample = args.Any(a => a.Equals("--cloner", StringComparison.OrdinalIgnoreCase))
-                        ? SceneDocument.CreateClonerRow()
-                        : args.Any(a => a.Equals("--boole", StringComparison.OrdinalIgnoreCase))
-                            ? SceneDocument.CreateBooleCut()
-                            : args.Any(a => a.Equals("--look", StringComparison.OrdinalIgnoreCase))
-                                ? SceneDocument.CreateLookSetup()
-                                : args.Any(a => a.Equals("--edit", StringComparison.OrdinalIgnoreCase))
-                                    ? SceneDocument.CreateEditBox()
-                                    : args.Any(a => a.Equals("--gallery", StringComparison.OrdinalIgnoreCase))
-                                        ? SceneDocument.CreatePrimitiveGallery()
-                                        : args.Any(a => a.Equals("--corvette", StringComparison.OrdinalIgnoreCase))
-                                            ? LoadCorvetteOrFallback()
-                                            : SceneDocument.CreatePrimitiveStage("SceneLab");
+                    var sample = ResolveStartupDocument(args);
                     return new SceneSessionService(sample) { AppId = "scenelab" };
                 });
                 services.AddTransient<MainWindow>();
@@ -59,50 +56,199 @@ internal static class Program
         }
     }
 
-    private static SceneDocument LoadCorvetteOrFallback()
+    private static SceneViewportBackendKind ParseBackend(string[] args)
     {
-        foreach (var candidate in CorvetteSampleCandidates())
+        for (var i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a.Equals("--renderer", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                return MapBackend(args[++i]);
+            if (a.StartsWith("--renderer=", StringComparison.OrdinalIgnoreCase))
+                return MapBackend(a["--renderer=".Length..]);
+            if (a.Equals("--opengl", StringComparison.OrdinalIgnoreCase) || a.Equals("--gl", StringComparison.OrdinalIgnoreCase))
+                return SceneViewportBackendKind.OpenGl;
+            if (a.Equals("--cpu", StringComparison.OrdinalIgnoreCase))
+                return SceneViewportBackendKind.Cpu;
+            if (a.Equals("--raylib", StringComparison.OrdinalIgnoreCase))
+                return SceneViewportBackendKind.Raylib;
+            if (a.Equals("--vulkan", StringComparison.OrdinalIgnoreCase) || a.Equals("--vk", StringComparison.OrdinalIgnoreCase))
+                return SceneViewportBackendKind.Vulkan;
+        }
+
+        var env = Environment.GetEnvironmentVariable("SCENELAB_RENDERER");
+        return string.IsNullOrWhiteSpace(env) ? SceneViewportBackendKind.OpenGl : MapBackend(env);
+    }
+
+    private static SceneViewportBackendKind MapBackend(string raw) =>
+        raw.Trim().ToLowerInvariant() switch
+        {
+            "cpu" or "rgba" or "software" => SceneViewportBackendKind.Cpu,
+            "raylib" or "rl" => SceneViewportBackendKind.Raylib,
+            "vulkan" or "vk" => SceneViewportBackendKind.Vulkan,
+            _ => SceneViewportBackendKind.OpenGl,
+        };
+
+    private static SceneDocument ResolveStartupDocument(string[] args)
+    {
+        if (Has(args, "--array", "--cloner"))
+            return SceneDocument.CreateClonerRow();
+        if (Has(args, "--boolean", "--boole"))
+            return SceneDocument.CreateBooleCut();
+        if (Has(args, "--lights", "--look"))
+            return SceneDocument.CreateLookSetup();
+        if (Has(args, "--edit"))
+            return SceneDocument.CreateEditBox();
+        if (Has(args, "--gallery"))
+            return SceneDocument.CreatePrimitiveGallery();
+        if (Has(args, "--sample", "--keel", "--corvette") || CompareBackends)
+            return LoadDemoSampleOrFallback();
+        return SceneDocument.CreatePrimitiveStage("Untitled");
+    }
+
+    private static bool Has(string[] args, params string[] flags) =>
+        flags.Any(f => args.Any(a => a.Equals(f, StringComparison.OrdinalIgnoreCase)));
+
+    private static SceneDocument LoadDemoSampleOrFallback()
+    {
+        foreach (var candidate in DemoSampleCandidates())
         {
             if (File.Exists(candidate))
                 return SceneSerializer.Load(candidate);
         }
 
-        return SceneDocument.CreatePrimitiveStage("Troop Corvette (missing sample — run TroopCorvetteBuilder)");
+        return SceneDocument.CreatePrimitiveStage("Untitled");
     }
 
-    private static IEnumerable<string> CorvetteSampleCandidates()
+    private static IEnumerable<string> DemoSampleCandidates()
     {
-        yield return Path.Combine(AppContext.BaseDirectory, "samples", "troop-corvette.nov3djson");
-        yield return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "samples", "troop-corvette.nov3djson"));
+        yield return Path.Combine(AppContext.BaseDirectory, "samples", "keel-transport.nov3djson");
+        yield return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "samples", "keel-transport.nov3djson"));
         yield return Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "apps", "avalonia", "SceneLab", "samples", "troop-corvette.nov3djson"));
-        // Workspace checkout
+            AppContext.BaseDirectory, "..", "..", "..", "..", "apps", "avalonia", "SceneLab", "samples", "keel-transport.nov3djson"));
         var cwd = Directory.GetCurrentDirectory();
-        yield return Path.Combine(cwd, "apps", "avalonia", "SceneLab", "samples", "troop-corvette.nov3djson");
-        yield return Path.Combine(cwd, "samples", "troop-corvette.nov3djson");
-        yield return @"D:\novolis\novolis-dogfooding\apps\avalonia\SceneLab\samples\troop-corvette.nov3djson";
+        yield return Path.Combine(cwd, "apps", "avalonia", "SceneLab", "samples", "keel-transport.nov3djson");
+        yield return Path.Combine(cwd, "samples", "keel-transport.nov3djson");
+        yield return @"D:\novolis\novolis-dogfooding\apps\avalonia\SceneLab\samples\keel-transport.nov3djson";
     }
 
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .LogToTrace();
+            .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Wgl] })
+            .LogToTrace(Avalonia.Logging.LogEventLevel.Warning);
 }
 
 internal sealed class MainWindow : Window
 {
     public MainWindow(SceneSessionService session)
     {
-        Title = "Novolis SceneLab — mesh modeller";
-        Width = 1600;
-        Height = 920;
+        Title = Program.CompareBackends
+            ? "SceneLab - renderer compare (OpenGL | CPU | Vulkan | Raylib)"
+            : $"SceneLab - {Program.ViewportBackend}";
+        Width = Program.CompareBackends ? 1800 : 1600;
+        Height = Program.CompareBackends ? 1000 : 920;
         MinWidth = 1100;
         MinHeight = 640;
         Background = new SolidColorBrush(Color.FromRgb(14, 20, 28));
 
-        // Factory: surface builds chrome; host docks into C4D-ish layout.
-        var surface = new SceneEditorSurface(session, composeDefaultLayout: false);
+        if (Program.CompareBackends)
+        {
+            Content = BuildCompareLayout(session);
+            return;
+        }
 
+        var surface = new SceneEditorSurface(session, composeDefaultLayout: false, backend: Program.ViewportBackend);
+        Content = BuildEditorLayout(surface);
+        Opened += (_, _) => surface.StartPresenting();
+        Closed += (_, _) => surface.StopPresenting();
+    }
+
+    private Control BuildCompareLayout(SceneSessionService session)
+    {
+        session.Document.ActiveCameraId = null;
+        var shared = new SceneViewportCamera(session) { FollowDocumentCamera = false };
+        var gl = new SceneViewportControl(session, SceneViewportBackendKind.OpenGl, shared);
+        var cpu = new SceneViewportControl(session, SceneViewportBackendKind.Cpu, shared);
+        var vk = new SceneViewportControl(session, SceneViewportBackendKind.Vulkan, shared);
+        var rl = new SceneViewportControl(session, SceneViewportBackendKind.Raylib, shared);
+        shared.Changed += () =>
+        {
+            gl.RequestPresent();
+            cpu.RequestPresent();
+            vk.RequestPresent();
+            rl.RequestPresent();
+        };
+
+        var w0 = Wrap("OpenGL (Silk)", gl);
+        var w1 = Wrap("CPU RGBA", cpu);
+        var w2 = Wrap("Vulkan wire", vk);
+        var w3 = Wrap("Raylib stream", rl);
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            RowDefinitions = new RowDefinitions("*,*"),
+            Margin = new Thickness(6),
+        };
+        Grid.SetColumn(w0, 0); Grid.SetRow(w0, 0);
+        Grid.SetColumn(w1, 1); Grid.SetRow(w1, 0);
+        Grid.SetColumn(w2, 0); Grid.SetRow(w2, 1);
+        Grid.SetColumn(w3, 1); Grid.SetRow(w3, 1);
+        grid.Children.Add(w0);
+        grid.Children.Add(w1);
+        grid.Children.Add(w2);
+        grid.Children.Add(w3);
+
+        Opened += (_, _) =>
+        {
+            gl.Start();
+            cpu.Start();
+            vk.Start();
+            rl.Start();
+        };
+        Closed += (_, _) =>
+        {
+            gl.Stop();
+            cpu.Stop();
+            vk.Stop();
+            rl.Stop();
+        };
+
+        return new DockPanel
+        {
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "OpenGL is the CAD presenter. Other panes are compare-only (Vulkan wire = graphics + CPU readback; path-trace is separate).",
+                    Margin = new Thickness(10, 8),
+                    Foreground = Brushes.WhiteSmoke,
+                    [DockPanel.DockProperty] = Dock.Top,
+                },
+                grid,
+            },
+        };
+    }
+
+    private static Control Wrap(string title, Control child) =>
+        new DockPanel
+        {
+            Margin = new Thickness(4),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = title,
+                    Margin = new Thickness(4),
+                    FontSize = 13,
+                    Foreground = Brushes.LightGray,
+                    [DockPanel.DockProperty] = Dock.Top,
+                },
+                child,
+            },
+        };
+
+    private Control BuildEditorLayout(SceneEditorSurface surface)
+    {
         var topTools = new StackPanel
         {
             Children =
@@ -143,8 +289,8 @@ internal sealed class MainWindow : Window
             Opacity = 0.75,
             Foreground = Brushes.WhiteSmoke,
             Text = Program.SceneSurface?.HttpBaseUrl is { } url
-                ? $"Session HTTP {url}  TCP :{Program.SceneSurface.TcpPort}"
-                : "Session not attached (set NOVOLIS_SCENE_SESSION=1).",
+                ? $"Session HTTP {url}  TCP :{Program.SceneSurface.TcpPort}  renderer={Program.ViewportBackend}"
+                : $"Session off · renderer={Program.ViewportBackend}",
         };
 
         var bottom = new StackPanel
@@ -162,14 +308,11 @@ internal sealed class MainWindow : Window
             [DockPanel.DockProperty] = Dock.Top,
         };
 
-        Content = new DockPanel
+        return new DockPanel
         {
             Background = new SolidColorBrush(Color.FromRgb(14, 20, 28)),
             Children = { chrome, bottom, center },
         };
-
-        Opened += (_, _) => surface.StartPresenting();
-        Closed += (_, _) => surface.StopPresenting();
     }
 
     private static Border Row(params Control[] children)

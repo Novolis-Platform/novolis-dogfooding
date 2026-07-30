@@ -8,6 +8,10 @@
     <PackageReference Include="Novolis.Rendering.Backends.Igpu" />
     <PackageReference Include="Novolis.Rendering.Backends.Vulkan" />
     <PackageReference Include="Novolis.Rendering.PathTrace.Demos" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Abstractions" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Abstractions" />
     <PackageReference Include="Novolis.Rendering.Presentation.Silk" />
+    <PackageReference Include="Novolis.Rendering.Runtime" />
+    <PackageReference Include="Novolis.Simulation.View" />
   </ItemGroup>
 </Project>

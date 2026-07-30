@@ -100,14 +100,14 @@ internal static class CorvetteStages
     {
         var doc = new SceneDocument
         {
-            Name = $"Troop Corvette — {label}",
+            Name = $"Scene — {label}",
             CreatedAt = DateTimeOffset.UtcNow,
             ModifiedAt = DateTimeOffset.UtcNow,
         };
-        var root = new GroupNode { Name = "Shipyard" };
+        var root = new GroupNode { Name = "Root" };
         var cam = new CameraNode
         {
-            Name = "Shipyard Cam",
+            Name = "Camera",
             ParentId = root.Id,
             Transform = new SceneTransform { Position = [14f, 6f, 12f] },
             Target = [0, 0.6f, 0],
@@ -115,7 +115,7 @@ internal static class CorvetteStages
         };
         var mesh = new MeshNode
         {
-            Name = "Troop Corvette",
+            Name = "Mesh",
             ParentId = root.Id,
             Primitive = MeshPrimitiveKind.Box,
         };
@@ -124,7 +124,7 @@ internal static class CorvetteStages
             root, cam, mesh,
             new LightNode
             {
-                Name = "Bay Key",
+                Name = "Key Light",
                 ParentId = root.Id,
                 LightKind = LightKind.Spot,
                 Intensity = 3.4f,
@@ -132,16 +132,16 @@ internal static class CorvetteStages
             },
             new LightNode
             {
-                Name = "Engine Glow",
+                Name = "Fill Light",
                 ParentId = root.Id,
                 LightKind = LightKind.Omni,
                 Intensity = 2.6f,
-                Color = [0.35f, 0.8f, 1f],
+                Color = [0.85f, 0.9f, 1f],
                 Transform = new SceneTransform { Position = [0, 0.2f, -9.6f] },
             },
             new LightNode
             {
-                Name = "Rim",
+                Name = "Sun",
                 ParentId = root.Id,
                 LightKind = LightKind.Infinite,
                 Intensity = 0.45f,

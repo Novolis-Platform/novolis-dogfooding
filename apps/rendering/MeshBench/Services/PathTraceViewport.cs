@@ -1,7 +1,7 @@
 using System.Numerics;
 using Novolis.Rendering.PathTrace.Demos;
 using Novolis.Rendering.Presentation.Abstractions;
-using Novolis.Rendering.Presentation.Silk;
+using Novolis.Simulation.View;
 using Novolis.Rendering.Runtime;
 
 namespace MeshBench.Services;
@@ -11,7 +11,7 @@ internal sealed class PathTraceViewport : IDisposable
     public const int MaxAccumulatedSamples = 96;
 
     private readonly PathTraceDisplayBuffer _display = new();
-    private readonly SilkOrbitCamera _orbit = new() { Target = new Vector3(0f, 0.45f, 0f), Distance = 4.5f };
+    private readonly OrbitCameraRig _orbit = new() { Target = new Vector3(0f, 0.45f, 0f), Distance = 4.5f };
     private readonly object _resizeGate = new();
 
     private PathTraceSession? _session;
@@ -30,7 +30,7 @@ internal sealed class PathTraceViewport : IDisposable
 
     public string BackendLabel => _session?.Backend.BackendLabel ?? "path trace";
 
-    public SilkOrbitCamera Orbit => _orbit;
+    public OrbitCameraRig Orbit => _orbit;
 
     public int DisplayedSamples => _display.DisplayedSampleCount;
 

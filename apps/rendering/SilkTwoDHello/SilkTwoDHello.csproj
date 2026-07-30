@@ -6,5 +6,8 @@
   <ItemGroup>
     <PackageReference Include="Novolis.Rendering.TwoD" />
     <PackageReference Include="Novolis.Rendering.Backends.TwoD.Silk" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Abstractions" />
+    <PackageReference Include="Novolis.Math.Geometry" />
+    <PackageReference Include="Novolis.Math.Topology" />
   </ItemGroup>
 </Project>

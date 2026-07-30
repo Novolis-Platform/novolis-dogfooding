@@ -11,11 +11,15 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="Novolis.Avalonia.Raylib" />
     <PackageReference Include="Novolis.Avalonia.Rendering" />
     <PackageReference Include="Novolis.Avalonia.Studio" />
     <PackageReference Include="Novolis.Avalonia.Timeline" />
     <PackageReference Include="Novolis.Raylib" />
+    <PackageReference Include="Novolis.Raylib.Abstractions" />
+    <PackageReference Include="Novolis.Raylib.Bindings" />
+    <PackageReference Include="Novolis.Raylib.Runtime" />
     <PackageReference Include="Novolis.Audio.Core" />
     <PackageReference Include="Novolis.Audio.Playback" />
     <PackageReference Include="Novolis.Audio.Output.NAudio" />
@@ -24,9 +28,11 @@
     <PackageReference Include="Novolis.Rendering.DependencyInjection" />
     <PackageReference Include="Novolis.Rendering.Materials" />
     <PackageReference Include="Novolis.Rendering.PathTrace.Demos" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Abstractions" />
     <PackageReference Include="Novolis.Rendering.Presentation.Silk" />
     <PackageReference Include="Novolis.Rendering.Runtime" />
     <PackageReference Include="Novolis.Rendering.Scene" />
+    <PackageReference Include="Novolis.Simulation.View" />
     <PackageReference Include="Novolis.Snapshots.Abstractions" />
     <PackageReference Include="Novolis.Timeline.Abstractions" />
     <PackageReference Include="Novolis.Timeline.FileSystem" />

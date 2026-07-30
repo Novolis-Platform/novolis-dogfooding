@@ -9,10 +9,10 @@
     <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
-    <PackageVersion Include="Hex1b" Version="0.154.0" />
     <PackageVersion Include="Optris.Icons.Avalonia" Version="12.0.6" />
     <PackageVersion Include="Optris.Icons.Avalonia.FontAwesome" Version="12.0.6" />
     <PackageVersion Include="Spectre.Console" Version="0.54.0" />
+    <PackageVersion Include="System.IO.Abstractions" Version="22.1.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
@@ -47,8 +47,9 @@
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Agent" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Agent.Protocol" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Game.Session" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Agent.Session" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Cad" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Cad.Primitives" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.3D" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Agent.Surface" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Modeling.Scene" Version="2026.1.*" />
@@ -87,7 +88,9 @@
     <PackageVersion Include="Novolis.MachineLearning.Neural" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Math.Topology" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Messaging.Channels" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Physics.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Astro" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Ballistics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="2026.1.*" />
@@ -119,7 +122,11 @@
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.LocalIpc" Version="2026.1.*" />
-    <PackageVersion Include="PacketDotNet" Version="1.4.7" />
+    <!-- ProjectRef is non-transitive for NuGet graphs: CAD hosts that ProjectRef Avalonia.3D / Backends.Vulkan must pin Silk natives explicitly. -->
+    <PackageVersion Include="Silk.NET.OpenGL" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Vulkan" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Shaderc" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Shaderc.Native" Version="2.22.0" />
     <PackageVersion Include="TUnit" Version="1.44.39" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using MeshBench.Models;
 using Novolis.Avalonia.Raylib;
-using Novolis.Rendering.Presentation.Silk;
+using Novolis.Simulation.View;
 
 namespace MeshBench.Services;
 
@@ -20,7 +20,7 @@ internal sealed class ViewportModeCoordinator
     private int _raylibHostIndex = -1;
     private readonly RaylibSceneRenderer _raylibRenderer = new();
     private readonly SceneUpdateScheduler _qualityScheduler = new();
-    private readonly SilkOrbitCamera _orbit = new() { Target = new System.Numerics.Vector3(0f, 0.45f, 0f), Distance = 4.5f };
+    private readonly OrbitCameraRig _orbit = new() { Target = new System.Numerics.Vector3(0f, 0.45f, 0f), Distance = 4.5f };
 
     private Func<MeshSceneDocument> _getScene = () => new();
     private ViewportDisplayMode _mode = ViewportDisplayMode.FastPreview;
@@ -33,7 +33,7 @@ internal sealed class ViewportModeCoordinator
 
     public bool QualityPinned => _qualityPinned;
 
-    public SilkOrbitCamera Orbit => _orbit;
+    public OrbitCameraRig Orbit => _orbit;
 
     public PathTraceViewport PathTrace => _pathTrace;
 

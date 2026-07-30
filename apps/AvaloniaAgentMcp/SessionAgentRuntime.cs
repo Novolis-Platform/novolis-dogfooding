@@ -1,4 +1,4 @@
-using Novolis.Game.Session;
+using Novolis.Agent.Session;
 using Novolis.Transports.LocalIpc;
 
 namespace AvaloniaAgentMcp;
@@ -202,7 +202,7 @@ internal static class SessionAgentRuntime
         }
 
         results.Add(new { source = "known", transport = "http", endpoint = $"http://127.0.0.1:{SessionEndpoints.DefaultHttpPort}" });
-        results.Add(new { source = "known", transport = "local-ipc", endpoint = SessionEndpoints.SinsPipeName });
+        results.Add(new { source = "known", transport = "local-ipc", endpoint = "novolis-game-session-sins" });
         return results;
     }
 
@@ -263,7 +263,7 @@ internal static class SessionAgentRuntime
             }
         }
 
-        address = string.IsNullOrWhiteSpace(address) ? SessionEndpoints.SinsPipeName : address;
+        address = string.IsNullOrWhiteSpace(address) ? "novolis-game-session-sins" : address;
         var endpoint = OperatingSystem.IsWindows()
             ? new LocalIpcEndpoint(address, LocalIpcTransportKind.NamedPipe)
             : new LocalIpcEndpoint(

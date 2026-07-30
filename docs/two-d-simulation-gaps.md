@@ -53,7 +53,7 @@ static Vector3 SideToPlanar(Vector3 side) => new(side.X, 0f, side.Y);
 
 ### Gaps (no new Math/Physics types)
 
-1. **No side-view camera in Simulation.View** — `ViewPose` targets perspective 3D. Orthographic 2D uses `TwoDCamera` in Rendering at compose time. Optional future: document-only “side rig” recipe in dogfood, not a new Simulation type.
+1. **No side-view camera in Simulation.View** — `ViewPose` targets perspective 3D. Orthographic 2D uses `TwoDViewport` in Rendering at compose time. Optional future: document-only “side rig” recipe in dogfood, not a new Simulation type.
 2. **Duplicate collision paths** — `PlanarOccupancy` (Simulation) vs `TwoDCollisionWorld` (Rendering). Apps should pick one per game: PlatformerTwoD uses Simulation for motion; SilkTwoDHello uses Rendering collision only.
 3. **No Simulation → TwoD scene builder** — tile grids are app-wired (`AddPlatform` per cell). A shared **dogfood helper** (not a platform package) could emit platforms from `DenseGrid<byte>` if more 2D apps appear.
 4. **ViewPose bridge** — still app-only for path tracing ([simulation-viewpose-to-rendering-bridge](../../novolis-governance/docs/imports-todo/internal-novolis-audit/simulation-viewpose-to-rendering-bridge.md)); irrelevant for orthographic TwoD.

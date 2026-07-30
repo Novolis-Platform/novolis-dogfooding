@@ -2,6 +2,7 @@ using System.Diagnostics;
 using NearSolPolity;
 using Novolis.Economy;
 using Novolis.Economy.Agents;
+using Novolis.Economy.Finance;
 using Novolis.Economy.Logistics;
 using Novolis.Economy.Markets;
 using Novolis.Economy.Simulation;
@@ -19,7 +20,7 @@ if (!headless && (Console.IsOutputRedirected || Console.IsInputRedirected))
 
 var (sim, ids) = PolityWorld.Create();
 var agents = NearSolAgents.Create(sim, ids);
-var credits = new CreditCirculation(sim);
+var credits = new CreditCirculation(new EconomySimulationCreditSource(sim));
 credits.SetFirmNames(ids.Firms);
 credits.SetSkuIds(ids.Ore, ids.Parts, ids.Goods, ids.Fuel);
 var log = new Queue<string>();

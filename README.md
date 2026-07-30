@@ -43,6 +43,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `NovolisVoiceStudio` | `audio/` | Voice.Design + Avalonia.Voice — preset editor, preview, C# export |
 | `StudioChromeLab` | `avalonia/` | Controls dialogs/lists/jobs + Studio focus/dirty chrome |
 | `SketchLab` | `avalonia/` | SketchControl freehand canvas + PNG/SVG clipboard export |
+| `ViewportBench` | `avalonia/` | Shared-camera CAD wireframe bench (OpenGL/CPU/Vulkan/Raylib + present ms HUD) |
 | `AstroSmoke` | `astro/` | Astro catalog/routing/assessment/overlay/plotting + Physics.Astro units |
 | `StarMapLab` | `astro/` | Avalonia.StarMap + Astro route planner (pan/zoom lab) |
 | `EconomyBoard` | `economy/` | Economy kernel — Avalonia Raw→Mid→Fin board |

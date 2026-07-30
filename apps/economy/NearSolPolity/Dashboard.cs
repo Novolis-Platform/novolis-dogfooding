@@ -1,5 +1,7 @@
+using Novolis.Astro.Assessment;
 using Novolis.Economy;
 using Novolis.Economy.Accounting;
+using Novolis.Economy.Finance;
 using Novolis.Economy.Logistics;
 using Novolis.Economy.Markets;
 using Novolis.Economy.Production;

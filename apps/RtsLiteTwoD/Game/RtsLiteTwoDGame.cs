@@ -4,7 +4,7 @@ using Novolis.Math.Geometry;
 using Novolis.Rendering.Backends.TwoD.Silk;
 using Novolis.Rendering.TwoD;
 using RtsLite.Game;
-using Silk.NET.Input;
+using Novolis.Rendering.Presentation;
 
 namespace RtsLiteTwoD.Game;
 
@@ -171,10 +171,9 @@ internal sealed class RtsLiteTwoDGame
         _selection.Update(_units, p => ScreenToGround(ctx.Scene.Camera, p), leftPressed, leftDown, rightPressed, mouse);
     }
 
-    private static Vector2 ReadMouse(SilkTwoDGameContext ctx) =>
-        new(ctx.MousePosition.X, ctx.MousePosition.Y);
+    private static Vector2 ReadMouse(SilkTwoDGameContext ctx) => ctx.MousePosition;
 
-    private static Vector3 ScreenToGround(TwoDCamera camera, Vector2 screen) =>
+    private static Vector3 ScreenToGround(TwoDViewport camera, Vector2 screen) =>
         camera.ScreenToWorld(screen.X, screen.Y);
 
     private void SpawnForces()

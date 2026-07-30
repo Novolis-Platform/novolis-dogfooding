@@ -1,3 +1,4 @@
+using Novolis.Astro.Assessment;
 using Novolis.Economy;
 using Novolis.Economy.Agents;
 using Novolis.Economy.Markets;

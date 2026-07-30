@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using ModelContextProtocol.Server;
-using Novolis.Game.Session;
+using Novolis.Agent.Session;
 
 namespace AvaloniaAgentMcp;
 
@@ -91,13 +91,10 @@ public static class SessionAgentMcpTools
         CancellationToken cancellationToken = default)
     {
         var response = await SessionAgentRuntime.CommandAsync(
-            new SessionCommandDto
-            {
-                ActionId = actionId,
-                DestSystemId = destSystemId,
-                Index = index,
-                Sku = sku,
-            },
+            new SessionCommandDto { ActionId = actionId }
+                .With(SessionCommandKeys.DestSystemId, destSystemId)
+                .With(SessionCommandKeys.Index, index?.ToString())
+                .With(SessionCommandKeys.Sku, sku),
             cancellationToken).ConfigureAwait(false);
         return AvaloniaAgentRuntime.ToJson(response);
     }

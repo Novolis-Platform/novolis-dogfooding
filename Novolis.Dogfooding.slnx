@@ -54,6 +54,7 @@
   <Folder Name="/avalonia/">
     <Project Path="apps/avalonia/StudioChromeLab/StudioChromeLab.csproj" />
     <Project Path="apps/avalonia/SketchLab/SketchLab.csproj" />
+    <Project Path="apps/avalonia/ViewportBench/ViewportBench.csproj" />
   </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />

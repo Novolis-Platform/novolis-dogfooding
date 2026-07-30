@@ -10,6 +10,6 @@
     <PackageReference Include="MessagePack" />
     <PackageReference Include="Novolis.Avalonia.Agent.Protocol" />
     <PackageReference Include="Novolis.Transports.LocalIpc" />
-    <PackageReference Include="Novolis.Game.Session" />
+    <PackageReference Include="Novolis.Agent.Session" />
   </ItemGroup>
 </Project>

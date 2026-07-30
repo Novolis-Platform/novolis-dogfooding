@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Novolis.Astro.Assessment;
 using Novolis.Astro.Catalog;
 using Novolis.Economy;
 using Novolis.Economy.Logistics;

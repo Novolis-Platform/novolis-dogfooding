@@ -2,7 +2,7 @@ using System.Numerics;
 using Novolis.Math.Geometry;
 using Novolis.Rendering.Backends.TwoD.Silk;
 using Novolis.Rendering.TwoD;
-using Silk.NET.Input;
+using Novolis.Rendering.Presentation;
 
 namespace SilkTwoDHello;
 

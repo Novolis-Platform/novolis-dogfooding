@@ -12,7 +12,7 @@ public sealed class OrthoPanCamera
     public float MinWorldUnitsPerPixel { get; set; } = 1f / 48f;
     public float MaxWorldUnitsPerPixel { get; set; } = 1f / 12f;
 
-    public void ApplyTo(TwoDCamera camera, int viewportWidth, int viewportHeight)
+    public void ApplyTo(TwoDViewport camera, int viewportWidth, int viewportHeight)
     {
         camera.Position = Center;
         camera.WorldUnitsPerPixel = WorldUnitsPerPixel;
@@ -38,6 +38,6 @@ public sealed class OrthoPanCamera
 
     public Vector3 ViewCenterWorld() => Center;
 
-    public Vector3 ScreenToWorld(TwoDCamera camera, float screenX, float screenY) =>
+    public Vector3 ScreenToWorld(TwoDViewport camera, float screenX, float screenY) =>
         camera.ScreenToWorld(screenX, screenY);
 }

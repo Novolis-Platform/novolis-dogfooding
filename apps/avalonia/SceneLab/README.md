@@ -1,34 +1,49 @@
 # SceneLab
 
-Dogfood host for **Novolis.Avalonia.3D** — C4D-inspired mesh modeller (Object Manager, primitives, wireframe poly edit, Array/Boole, Look).
+Dogfood host for **Novolis.Avalonia.3D** — CAD 3D editor / renderer (scene hierarchy, primitives, mesh edit, array/boolean, lights, cameras).
 
 ## Run
 
 ```powershell
 dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true
-dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --corvette
 dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --edit
 dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --gallery
-dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --cloner
-dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --boole
-dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --look
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --array
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --boolean
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --lights
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --sample
 ```
 
-Same-repo sample (ProjectReference): `novolis-avalonia/samples/SceneLab`.
+### Viewport renderer
 
-When using `-p:NovolisUseProjectReferences=true`, SceneLab also PackageReferences Raylib runtime packages explicitly (ProjectRef mode is non-transitive for NuGet graphs — same pattern as CalypsoCad).
+**OpenGL is the CAD / 3D default** (Avalonia `OpenGlControlBase` + Silk). Use it for authoring.
 
-## Troop Corvette (shipyard sample)
-
-One hard-surface mesh built keel → bow → mid → truss array → stern → Boole cuts → engines → greeble arrays.
+CPU / Vulkan / Raylib exist for `ViewportBench` and `--compare` only — not recommended for daily CAD:
 
 ```powershell
-dotnet run --project apps/avalonia/SceneLab/tools/TroopCorvetteBuilder -p:NovolisUseProjectReferences=true -- `
-  apps/avalonia/SceneLab/samples/corvette-stages `
-  apps/avalonia/SceneLab/samples/troop-corvette.nov3djson
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --gallery
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --cpu --gallery
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --vulkan --gallery
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --raylib --gallery
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --compare --gallery
 ```
 
-Stages: `samples/corvette-stages/corvette-stage-01..08.nov3djson`. Final: `samples/troop-corvette.nov3djson`.
+Also: `--renderer gl|cpu|vulkan|raylib` or env `SCENELAB_RENDERER` (default `gl`). Path-trace Vulkan remains a separate compute backend; SceneLab’s Vulkan option is graphics wire + readback.
+Same-repo sample (ProjectReference): `novolis-avalonia/samples/SceneLab`.
+
+When using `-p:NovolisUseProjectReferences=true`, SceneLab PackageReferences Raylib/Silk natives explicitly (ProjectRef mode is non-transitive for NuGet graphs).
+
+## Demo mesh sample (optional)
+
+Procedural bake tool for a dense interior/exterior mesh used as a viewport stress sample:
+
+```powershell
+dotnet run --project apps/avalonia/SceneLab/tools/KeelTransportBuilder -p:NovolisUseProjectReferences=true -- `
+  apps/avalonia/SceneLab/samples/keel-stages `
+  apps/avalonia/SceneLab/samples/keel-transport.nov3djson
+```
+
+`--sample` / `--keel` opens the denser OpenGL-tuned `keel-transport.nov3djson` (~150k tris: soft shells, dishes, radiators, clamps, engine bells).
 
 ## Modeling
 
@@ -38,14 +53,14 @@ Stages: `samples/corvette-stages/corvette-stage-01..08.nov3djson`. Final: `sampl
 - **Primitives:** Box, Sphere, Cylinder, Cone, Plane, Capsule, Torus, Pyramid, Disc, Tube, Platonics, Landscape
 - **Mesh tools:** Extrude, Inset, Bevel, Bridge, Dissolve, Knife, Weld, Optimize, Subdiv
 
-## LLM session
+## Session
 
 HTTP **18785** + TCP JSONL **18786**.
 
 ```bash
 curl http://127.0.0.1:18785/session/hello
 curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
-  -d "{\"actionId\":\"open\",\"path\":\"D:/novolis/novolis-dogfooding/apps/avalonia/SceneLab/samples/troop-corvette.nov3djson\"}"
+  -d "{\"actionId\":\"open\",\"path\":\"D:/novolis/novolis-dogfooding/apps/avalonia/SceneLab/samples/keel-transport.nov3djson\"}"
 ```
 
 MCP (AvaloniaAgentMcp): `scene_hello`, `scene_snapshot`, `scene_actions`, `scene_command`, `scene_definition`, `scene_hosts`, `scene_http_connect`.

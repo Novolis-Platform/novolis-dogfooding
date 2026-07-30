@@ -5,7 +5,7 @@
     <RootNamespace>WireFishViewer.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="PacketDotNet" />
+    <PackageReference Include="Novolis.Avalonia.Layout" />
     <PackageReference Include="TUnit" />
     <ProjectReference Include="..\WireFishViewer\WireFishViewer.csproj" />
   </ItemGroup>

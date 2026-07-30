@@ -1,6 +1,7 @@
 using Novolis.Astro.Assessment;
 using Novolis.Astro.Catalog;
 using Novolis.Astro.Routing;
+using Novolis.Economy.Logistics;
 
 namespace NearSolPolity;
 

@@ -4,7 +4,8 @@ using MeshBench.Models;
 using Novolis.Raylib.Abstractions;
 using Novolis.Raylib.Colors;
 using Novolis.Raylib.Rendering;
-using Novolis.Rendering.Presentation.Silk;
+using Novolis.Simulation.View;
+using RayCamera = Novolis.Raylib.Rendering.Camera;
 
 namespace MeshBench.Services;
 
@@ -16,9 +17,9 @@ internal sealed class RaylibSceneRenderer : IRaylibFrameRenderer
     private static readonly Color HudColor = Color.FromArgb(255, 180, 180, 190);
 
     private Func<MeshSceneDocument> _getScene = () => new();
-    private Func<SilkOrbitCamera> _getOrbit = () => new();
+    private Func<OrbitCameraRig> _getOrbit = () => new();
 
-    public void Bind(Func<MeshSceneDocument> getScene, Func<SilkOrbitCamera> getOrbit)
+    public void Bind(Func<MeshSceneDocument> getScene, Func<OrbitCameraRig> getOrbit)
     {
         _getScene = getScene;
         _getOrbit = getOrbit;
@@ -34,7 +35,7 @@ internal sealed class RaylibSceneRenderer : IRaylibFrameRenderer
         var eye = orbit.BuildEyePosition();
 
         Graphics.ClearBackground(PreviewBackground);
-        var camera = Camera.Perspective(eye, orbit.Target, Vector3.UnitY, orbit.FieldOfViewDegrees);
+        var camera = RayCamera.Perspective(eye, orbit.Target, Vector3.UnitY, orbit.FieldOfViewDegrees);
         World.Begin(camera);
 
         World.DrawGrid(16, 1.2f);

@@ -1,10 +1,11 @@
 using System.Drawing;
 using System.Numerics;
-using CalypsoCad.Models;
 using Novolis.Avalonia.Raylib;
+using Novolis.Cad.Primitives;
 using Novolis.Raylib.Colors;
 using Novolis.Raylib.Rendering;
-using Novolis.Rendering.Presentation.Silk;
+using Novolis.Simulation.View;
+using RayCamera = Novolis.Raylib.Rendering.Camera;
 
 namespace CalypsoCad.Services;
 
@@ -25,7 +26,7 @@ internal sealed class CalypsoRenderer
     private static readonly Vector3 LightDir = Vector3.Normalize(new Vector3(-0.25f, 0.85f, 0.35f));
 
     private readonly CalypsoSession _session;
-    private readonly SilkOrbitCamera _orbit = new()
+    private readonly OrbitCameraRig _orbit = new()
     {
         Target = new Vector3(0f, 4f, 0f),
         Distance = 90f,
@@ -43,7 +44,7 @@ internal sealed class CalypsoRenderer
 
     public CalypsoRenderer(CalypsoSession session) => _session = session;
 
-    public SilkOrbitCamera Orbit => _orbit;
+    public OrbitCameraRig Orbit => _orbit;
 
     public void Bind(RaylibHostControl host) =>
         host.FrameRendering += (_, e) => DrawFrame(e.DeltaSeconds, e.ScreenWidth, e.ScreenHeight);
@@ -476,21 +477,21 @@ internal sealed class CalypsoRenderer
         _ = screenHeight;
         Graphics.ClearBackground(Background);
 
-        Camera camera;
+        RayCamera camera;
         if (_session.ViewMode == CalypsoViewMode.Plan)
         {
             var eye = new Vector3(0f, 120f, 0.01f);
             var target = new Vector3(0f, 0f, 0f);
-            camera = Camera.Perspective(eye, target, new Vector3(0, 0, -1), 35f);
+            camera = RayCamera.Perspective(eye, target, new Vector3(0, 0, -1), 35f);
         }
         else if (_session.ViewMode == CalypsoViewMode.Interior)
         {
-            camera = Camera.Perspective(_interiorEye, _interiorTarget, Vector3.UnitY, InteriorFovDegrees());
+            camera = RayCamera.Perspective(_interiorEye, _interiorTarget, Vector3.UnitY, InteriorFovDegrees());
         }
         else
         {
             var eye = _orbit.BuildEyePosition();
-            camera = Camera.Perspective(eye, _orbit.Target, Vector3.UnitY, _orbit.FieldOfViewDegrees);
+            camera = RayCamera.Perspective(eye, _orbit.Target, Vector3.UnitY, _orbit.FieldOfViewDegrees);
         }
 
         _openingsByDeck = _session.Document.Entities

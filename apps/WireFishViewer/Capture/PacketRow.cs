@@ -1,5 +1,3 @@
-using PacketDotNet;
-
 namespace WireFishViewer.Capture;
 
 public sealed class PacketRow
@@ -20,7 +18,8 @@ public sealed class PacketRow
 
     public required byte[] RawBytes { get; init; }
 
-    public required LinkLayers LinkLayerType { get; init; }
+    /// <summary>Link-layer type integer (e.g. <see cref="Novolis.Transports.WireFish.PacketPresentation.LinkLayerEthernet"/>).</summary>
+    public required int LinkLayerType { get; init; }
 
     public required string DeviceName { get; init; }
 }

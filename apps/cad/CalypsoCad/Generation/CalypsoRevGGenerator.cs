@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text.Json;
 using CalypsoCad.Models;
 using CalypsoCad.Services;
+using Novolis.Cad.Primitives;
 
 namespace CalypsoCad.Generation;
 
@@ -199,6 +200,7 @@ internal static class CalypsoRevGGenerator
         return new CadDocument
         {
             Name = "Calypso — RevE / RevG",
+            Generator = new CadGenerator { Name = "CalypsoCad", Version = "2026.1.0" },
             CreatedAt = stamp,
             ModifiedAt = stamp,
             LayersDocument = "calypso.cadlayers.json",
@@ -237,7 +239,7 @@ internal static class CalypsoRevGGenerator
     }
 
     private static CadLayer DocLayer(Guid id, string name, float[] color) =>
-        new() { Id = id, Name = name, CatalogId = id, Color = color };
+        new() { Id = id, Name = name, Color = color };
 
     private static float DeckY(int deck) => (deck + 1) * DeckSpacing;
 

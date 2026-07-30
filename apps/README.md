@@ -14,6 +14,15 @@ Freehand sketch dogfood for `Novolis.Avalonia.Controls` `SketchControl`. Clipboa
 dotnet run --project apps/avalonia/SketchLab -p:NovolisUseProjectReferences=true
 ```
 
+## ViewportBench
+
+Same CAD wireframe on OpenGL / CPU / Vulkan / Raylib with one shared orbit camera and present-time HUD (idle + orbit motion).
+
+```bash
+dotnet run --project apps/avalonia/ViewportBench -p:NovolisUseProjectReferences=true
+dotnet run --project apps/avalonia/ViewportBench -p:NovolisUseProjectReferences=true -- --lights
+```
+
 ## Calypso CAD
 
 Hand-ported Rev G deckplans → `.cadjson` / `.cadshapejson` / `.cadlayers.json`, with two-sided walls and interior views.
