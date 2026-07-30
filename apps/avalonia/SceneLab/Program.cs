@@ -33,8 +33,11 @@ internal static class Program
             {
                 services.AddSingleton(_ =>
                 {
-                    var sample = ResolveStartupDocument(args);
-                    return new SceneSessionService(sample) { AppId = "scenelab" };
+                    var (doc, path) = ResolveStartup(args);
+                    var session = new SceneSessionService();
+                    session.ReplaceDocument(doc, path);
+                    session.AppId = "scenelab";
+                    return session;
                 });
                 services.AddTransient<MainWindow>();
             })
@@ -88,35 +91,35 @@ internal static class Program
             _ => SceneViewportBackendKind.OpenGl,
         };
 
-    private static SceneDocument ResolveStartupDocument(string[] args)
+    private static (SceneDocument Doc, string? Path) ResolveStartup(string[] args)
     {
         if (Has(args, "--array", "--cloner"))
-            return SceneDocument.CreateClonerRow();
+            return (SceneDocument.CreateClonerRow(), null);
         if (Has(args, "--boolean", "--boole"))
-            return SceneDocument.CreateBooleCut();
+            return (SceneDocument.CreateBooleCut(), null);
         if (Has(args, "--lights", "--look"))
-            return SceneDocument.CreateLookSetup();
+            return (SceneDocument.CreateLookSetup(), null);
         if (Has(args, "--edit"))
-            return SceneDocument.CreateEditBox();
+            return (SceneDocument.CreateEditBox(), null);
         if (Has(args, "--gallery"))
-            return SceneDocument.CreatePrimitiveGallery();
+            return (SceneDocument.CreatePrimitiveGallery(), null);
         if (Has(args, "--sample", "--keel", "--corvette") || CompareBackends)
             return LoadDemoSampleOrFallback();
-        return SceneDocument.CreatePrimitiveStage("Untitled");
+        return (SceneDocument.CreatePrimitiveStage("Untitled"), null);
     }
 
     private static bool Has(string[] args, params string[] flags) =>
         flags.Any(f => args.Any(a => a.Equals(f, StringComparison.OrdinalIgnoreCase)));
 
-    private static SceneDocument LoadDemoSampleOrFallback()
+    private static (SceneDocument Doc, string? Path) LoadDemoSampleOrFallback()
     {
         foreach (var candidate in DemoSampleCandidates())
         {
             if (File.Exists(candidate))
-                return SceneSerializer.Load(candidate);
+                return (SceneSerializer.Load(candidate), candidate);
         }
 
-        return SceneDocument.CreatePrimitiveStage("Untitled");
+        return (SceneDocument.CreatePrimitiveStage("Untitled"), null);
     }
 
     private static IEnumerable<string> DemoSampleCandidates()
@@ -140,8 +143,18 @@ internal static class Program
 
 internal sealed class MainWindow : Window
 {
+    private readonly SceneSessionService _session;
+    private readonly SceneArtifactDumper _artifacts;
+    private SceneEditorSurface? _surface;
+    private bool _dumpBusy;
+
     public MainWindow(SceneSessionService session)
     {
+        _session = session;
+        _artifacts = new SceneArtifactDumper(
+            session,
+            Path.Combine(AppContext.BaseDirectory, "dumps"));
+
         Title = Program.CompareBackends
             ? "SceneLab - renderer compare (OpenGL | CPU | Vulkan | Raylib)"
             : $"SceneLab - {Program.ViewportBackend}";
@@ -158,9 +171,42 @@ internal sealed class MainWindow : Window
         }
 
         var surface = new SceneEditorSurface(session, composeDefaultLayout: false, backend: Program.ViewportBackend);
+        _surface = surface;
         Content = BuildEditorLayout(surface);
+        session.DumpArtifactsRequested += payload => _ = OnDumpAsync(payload);
         Opened += (_, _) => surface.StartPresenting();
         Closed += (_, _) => surface.StopPresenting();
+    }
+
+    private async Task OnDumpAsync(string payload)
+    {
+        if (_dumpBusy || _surface is null)
+            return;
+        _dumpBusy = true;
+        try
+        {
+            var kind = payload;
+            var root = _artifacts.DataRoot;
+            var pipe = payload.IndexOf('|');
+            if (pipe >= 0)
+            {
+                kind = payload[..pipe];
+                var overrideRoot = payload[(pipe + 1)..].Trim();
+                if (!string.IsNullOrWhiteSpace(overrideRoot))
+                    root = overrideRoot;
+            }
+
+            var dumper = string.Equals(root, _artifacts.DataRoot, StringComparison.OrdinalIgnoreCase)
+                ? _artifacts
+                : new SceneArtifactDumper(_session, root);
+
+            var result = await dumper.DumpAsync(kind, this, _surface.Viewport).ConfigureAwait(true);
+            Title = $"SceneLab - {Program.ViewportBackend} · dumped {result.Kind} → {result.ManifestPath}";
+        }
+        finally
+        {
+            _dumpBusy = false;
+        }
     }
 
     private Control BuildCompareLayout(SceneSessionService session)
@@ -253,6 +299,8 @@ internal sealed class MainWindow : Window
         {
             Children =
             {
+                Row(surface.ToolStrip),
+                Row(DumpBar(surface)),
                 Row(surface.EditModeBar, surface.DisplayModeBar, surface.TransformHud),
                 Row(surface.PrimitivePalette),
                 Row(surface.GeneratorTools, surface.MeshEditTools),
@@ -313,6 +361,41 @@ internal sealed class MainWindow : Window
             Background = new SolidColorBrush(Color.FromRgb(14, 20, 28)),
             Children = { chrome, bottom, center },
         };
+    }
+
+    private Control DumpBar(SceneEditorSurface _)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(8, 4) };
+        void Add(string label, string action) =>
+            row.Children.Add(DumpBtn(label, () => _session.Execute(new AgentCommandDto { ActionId = action })));
+        Add("Dump all", SceneSessionActionIds.Dump);
+        Add("Viewport PNG", SceneSessionActionIds.DumpViewport);
+        Add("Window PNG", SceneSessionActionIds.DumpWindow);
+        Add("Scene JSON", SceneSessionActionIds.DumpScene);
+        Add("Mesh OBJ", SceneSessionActionIds.DumpMesh);
+        row.Children.Add(new TextBlock
+        {
+            Text = $"→ {_artifacts.DumpsDirectory}",
+            Margin = new Thickness(10, 6, 0, 0),
+            FontSize = 11,
+            Opacity = 0.7,
+            Foreground = Brushes.WhiteSmoke,
+        });
+        return row;
+    }
+
+    private static Button DumpBtn(string label, Action onClick)
+    {
+        var b = new Button
+        {
+            Content = label,
+            Padding = new Thickness(8, 4),
+            Background = new SolidColorBrush(Color.FromRgb(28, 72, 78)),
+            Foreground = Brushes.WhiteSmoke,
+            FontSize = 12,
+        };
+        b.Click += (_, _) => onClick();
+        return b;
     }
 
     private static Border Row(params Control[] children)

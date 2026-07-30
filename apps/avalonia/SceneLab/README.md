@@ -43,7 +43,24 @@ dotnet run --project apps/avalonia/SceneLab/tools/KeelTransportBuilder -p:Novoli
   apps/avalonia/SceneLab/samples/keel-transport.nov3djson
 ```
 
-`--sample` / `--keel` opens the denser OpenGL-tuned `keel-transport.nov3djson` (~150k tris: soft shells, dishes, radiators, clamps, engine bells).
+`--sample` / `--keel` opens denser OpenGL-tuned `keel-transport.nov3djson` (soft shells, dishes, radiators, clamps, engine bells, RCS, gantries).
+
+## Dumps / exports
+
+Toolbar **Dump all** (or agent `dump` / `dumpall`) writes under `bin/.../dumps/`:
+
+| Artifact | Action |
+|---|---|
+| Viewport PNG (GL readback) | `dumpviewport` |
+| Window UI PNG | `dumpwindow` |
+| Scene `.nov3djson` copy | `dumpscene` |
+| Mesh `.obj` + stats JSON | `dumpmesh` |
+| Manifest `last-artifact.json` | always |
+
+```bash
+curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
+  -d "{\"actionId\":\"dump\"}"
+```
 
 ## Modeling
 

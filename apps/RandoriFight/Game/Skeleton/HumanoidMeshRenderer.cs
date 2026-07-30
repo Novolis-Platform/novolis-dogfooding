@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using Novolis.Raylib.Game;
+using Novolis.Simulation.Humanoid;
 
 namespace RandoriFight.Game.Skeleton;
 
@@ -37,7 +38,7 @@ internal static class HumanoidMeshRenderer
         var root = s.BladeRoot;
         var tip = s.BladeTip;
         ctx.DrawBolt(root, tip, Blade);
-        var tsuba = Vector3.Lerp(root, s[HumanoidBoneId.RightHand], 0.32f);
+        var tsuba = Vector3.Lerp(root, s[HumanoidBone.RightHand], 0.32f);
         ctx.DrawGlowSphere(tsuba, 0.048f, Tsuba);
         ctx.DrawGlowSphere(root, 0.035f, Sageo);
         ctx.DrawGlowSphere(tip, 0.032f, BladeEdge);

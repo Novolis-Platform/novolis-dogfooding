@@ -225,6 +225,61 @@ internal static class KeelStages
         ventralPods.Transform(ShipYard.Xf(0, 0.35f, -5.5f));
         ship = ShipYard.Union(ship, ventralPods);
 
+        // Utility conduits along keel tunnel
+        var conduit = ShipYard.ConduitRun(20f, 0.055f, 8);
+        conduit.Transform(ShipYard.Xf(-0.55f, 1.55f, 0));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(conduit));
+        var conduitLow = ShipYard.ConduitRun(18f, 0.045f, 8);
+        conduitLow.Transform(ShipYard.Xf(-0.35f, 0.75f, 0.2f));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(conduitLow));
+
+        // RCS thruster clusters (bow / mid / aft)
+        foreach (var (x, y, z) in new[]
+                 {
+                     (-1.4f, 0.4f, 9.2f), (1.4f, 0.4f, 9.2f),
+                     (-5.1f, 2.0f, 1.2f), (5.1f, 2.0f, 1.2f),
+                     (-2.0f, 1.6f, -12.2f), (2.0f, 1.6f, -12.2f),
+                     (0f, 3.6f, -8.5f),
+                 })
+        {
+            var rcs = ShipYard.ThrusterCluster(0.28f, 8);
+            rcs.Transform(ShipYard.Xf(x, y, z));
+            ship = ShipYard.Union(ship, rcs);
+        }
+
+        // Aft stabilizer fins
+        var fin = ShipYard.StabilizerFin(1.9f, 1.5f, 0.1f);
+        fin.Transform(ShipYard.Xf(-1.9f, 2.2f, -13.2f, 0, 0, -8));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(fin));
+        var finV = ShipYard.StabilizerFin(1.4f, 1.1f, 0.09f);
+        finV.Transform(ShipYard.Xf(0, 3.1f, -13.0f, 0, 0, 0));
+        ship = ShipYard.Union(ship, finV);
+
+        // Mid cargo gantries (reads as overhead crane in wireframe)
+        var gantry = ShipYard.CargoGantry(3.0f, 0.85f);
+        gantry.Transform(ShipYard.Xf(-2.9f, 2.55f, -0.6f));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(gantry));
+        var gantry2 = ShipYard.CargoGantry(2.6f, 0.75f);
+        gantry2.Transform(ShipYard.Xf(-2.9f, 2.55f, 1.4f));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(gantry2));
+
+        // Hangar mouths over bay cuts
+        var mouth = ShipYard.HangarMouth(1.35f, 1.55f, 14);
+        mouth.Transform(ShipYard.Xf(-4.55f, 0.9f, -0.8f));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(mouth));
+
+        // Solar / radiator sail panels aft of mid (extra lattice silhouette)
+        var sail = ShipYard.RadiatorPanel(3.4f, 2.2f, 10);
+        sail.Transform(ShipYard.Xf(-5.6f, 2.4f, -3.2f, 0, 15, 25));
+        ship = ShipYard.Union(ship, ShipArray.SymmetricX(sail));
+
+        // Extra engine centerline thruster (third bell)
+        var centerBell = ShipYard.EngineBell(0.42f, 0.95f, 14);
+        centerBell.Transform(ShipYard.Xf(0, 0.55f, -14.6f));
+        ship = ShipYard.Union(ship, centerBell);
+        ship = ShipYard.Union(ship,
+            ShipYard.Prim(MeshPrimitiveKind.Capsule, 0.7f, 1.8f, 0.7f, ShipYard.Xf(0, 0.55f, -13.5f, 90, 0, 0), 14));
+
         Write(stageDir, 8, "cuts-skin", ship);
 
         File.Copy(Path.Combine(stageDir, "keel-stage-08.nov3djson"), finalPath, overwrite: true);

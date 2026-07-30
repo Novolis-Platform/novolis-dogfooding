@@ -7,6 +7,9 @@
     <PackageReference Include="Novolis.Raylib">
       <ExcludeAssets>buildTransitive</ExcludeAssets>
     </PackageReference>
+    <PackageReference Include="Novolis.Raylib.Game" />
+    <PackageReference Include="Novolis.Raylib.Bindings" />
     <PackageReference Include="Novolis.Simulation.View" />
+    <PackageReference Include="Novolis.Simulation.Humanoid" />
   </ItemGroup>
 </Project>

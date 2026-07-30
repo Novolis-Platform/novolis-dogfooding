@@ -1,9 +1,10 @@
 using System.Numerics;
+using Novolis.Simulation.Humanoid;
 using RandoriFight.Game;
 
 namespace RandoriFight.Game.Skeleton;
 
-/// <summary>Builds a full posable skeleton from katana pose landmarks (two-bone IK limbs + spine chain).</summary>
+/// <summary>Builds a posable skeleton from katana pose landmarks using platform two-bone IK.</summary>
 internal static class HumanoidSkeleton
 {
     private const float UpperLeg = 0.44f;
@@ -21,43 +22,40 @@ internal static class HumanoidSkeleton
         var rFoot = World(worldRoot, facing, pose.RightFoot);
         var lHand = World(worldRoot, facing, pose.LeftHand);
         var rHand = World(worldRoot, facing, pose.RightHand);
-        var bladeRoot = World(worldRoot, facing, pose.BladeRoot);
-        var bladeTip = World(worldRoot, facing, pose.BladeTip);
 
-        frame.Set(HumanoidBoneId.Pelvis, pelvis);
-        frame.Set(HumanoidBoneId.SpineLower, Vector3.Lerp(pelvis, chest, 0.33f));
-        frame.Set(HumanoidBoneId.SpineMid, Vector3.Lerp(pelvis, chest, 0.66f));
-        frame.Set(HumanoidBoneId.Chest, chest);
-        frame.Set(HumanoidBoneId.Neck, Vector3.Lerp(chest, head, 0.38f));
-        frame.Set(HumanoidBoneId.Head, head);
+        frame.Set(HumanoidBone.Hips, pelvis);
+        frame.Set(HumanoidBone.Spine, Vector3.Lerp(pelvis, chest, 0.33f));
+        frame.Set(HumanoidBone.Spine1, Vector3.Lerp(pelvis, chest, 0.66f));
+        frame.Set(HumanoidBone.Spine2, chest);
+        frame.Set(HumanoidBone.Neck, Vector3.Lerp(chest, head, 0.38f));
+        frame.Set(HumanoidBone.Head, head);
 
-        SolveLeg(frame, HumanoidBoneId.LeftHip, HumanoidBoneId.LeftKnee, HumanoidBoneId.LeftAnkle, HumanoidBoneId.LeftToe,
+        SolveLeg(frame, HumanoidBone.LeftUpLeg, HumanoidBone.LeftLeg, HumanoidBone.LeftFoot, HumanoidBone.LeftToeBase,
             pelvis, lFoot, hipSocket: new(-0.13f, 0.02f, 0.06f), facing, bendSign: 1f);
-        SolveLeg(frame, HumanoidBoneId.RightHip, HumanoidBoneId.RightKnee, HumanoidBoneId.RightAnkle, HumanoidBoneId.RightToe,
+        SolveLeg(frame, HumanoidBone.RightUpLeg, HumanoidBone.RightLeg, HumanoidBone.RightFoot, HumanoidBone.RightToeBase,
             pelvis, rFoot, hipSocket: new(0.1f, 0.01f, -0.05f), facing, bendSign: -1f);
 
         var lClav = chest + Local(facing, new(-0.15f, 0.12f, 0.02f));
         var rClav = chest + Local(facing, new(0.15f, 0.12f, 0.02f));
-        frame.Set(HumanoidBoneId.LeftClavicle, lClav);
-        frame.Set(HumanoidBoneId.RightClavicle, rClav);
+        frame.Set(HumanoidBone.LeftShoulder, lClav);
+        frame.Set(HumanoidBone.RightShoulder, rClav);
 
-        SolveArm(frame, HumanoidBoneId.LeftShoulder, HumanoidBoneId.LeftElbow, HumanoidBoneId.LeftWrist, HumanoidBoneId.LeftHand,
+        SolveArm(frame, HumanoidBone.LeftArm, HumanoidBone.LeftForeArm, HumanoidBone.LeftHand,
             lClav, lHand, facing, bendSign: -1f);
-        SolveArm(frame, HumanoidBoneId.RightShoulder, HumanoidBoneId.RightElbow, HumanoidBoneId.RightWrist, HumanoidBoneId.RightHand,
+        SolveArm(frame, HumanoidBone.RightArm, HumanoidBone.RightForeArm, HumanoidBone.RightHand,
             rClav, rHand, facing, bendSign: 1f);
 
-        frame.Set(HumanoidBoneId.BladeRoot, bladeRoot);
-        frame.Set(HumanoidBoneId.BladeTip, bladeTip);
-
+        frame.BladeRoot = World(worldRoot, facing, pose.BladeRoot);
+        frame.BladeTip = World(worldRoot, facing, pose.BladeTip);
         return frame;
     }
 
     private static void SolveLeg(
         SkeletonFrame frame,
-        HumanoidBoneId hipId,
-        HumanoidBoneId kneeId,
-        HumanoidBoneId ankleId,
-        HumanoidBoneId toeId,
+        HumanoidBone hipId,
+        HumanoidBone kneeId,
+        HumanoidBone ankleId,
+        HumanoidBone toeId,
         Vector3 pelvis,
         Vector3 foot,
         Vector3 hipSocket,
@@ -65,7 +63,7 @@ internal static class HumanoidSkeleton
         float bendSign)
     {
         var hip = pelvis + Local(facing, hipSocket);
-        var knee = TwoBoneJoint(hip, foot, UpperLeg, LowerLeg, new Vector3(0f, 0f, bendSign * 0.85f));
+        var knee = TwoBoneIk.SolveMid(hip, foot, UpperLeg, LowerLeg, new Vector3(0f, 0f, bendSign * 0.85f));
         var ankle = foot + new Vector3(0f, 0.06f, 0f);
         var toe = foot + Local(facing, new(0.06f, 0f, 0.1f));
 
@@ -77,54 +75,20 @@ internal static class HumanoidSkeleton
 
     private static void SolveArm(
         SkeletonFrame frame,
-        HumanoidBoneId shoulderId,
-        HumanoidBoneId elbowId,
-        HumanoidBoneId wristId,
-        HumanoidBoneId handId,
+        HumanoidBone shoulderId,
+        HumanoidBone elbowId,
+        HumanoidBone handId,
         Vector3 shoulderRoot,
         Vector3 handTarget,
         int facing,
         float bendSign)
     {
         var shoulder = shoulderRoot + Local(facing, new(0f, -0.02f, 0f));
-        var elbow = TwoBoneJoint(shoulder, handTarget, UpperArm, LowerArm, new Vector3(0f, 0f, bendSign * 0.7f));
-        var wrist = Vector3.Lerp(elbow, handTarget, 0.58f);
+        var elbow = TwoBoneIk.SolveMid(shoulder, handTarget, UpperArm, LowerArm, new Vector3(0f, 0f, bendSign * 0.7f));
 
         frame.Set(shoulderId, shoulder);
         frame.Set(elbowId, elbow);
-        frame.Set(wristId, wrist);
         frame.Set(handId, handTarget);
-    }
-
-    private static Vector3 TwoBoneJoint(Vector3 root, Vector3 target, float upperLen, float lowerLen, Vector3 bendHint)
-    {
-        var toTarget = target - root;
-        var dist = toTarget.Length();
-        if (dist < 1e-5f)
-            return root + new Vector3(0f, -upperLen, 0f);
-
-        var dir = toTarget / dist;
-        var maxReach = upperLen + lowerLen - 0.01f;
-        dist = Math.Min(dist, maxReach);
-
-        var cosAngle = (upperLen * upperLen + dist * dist - lowerLen * lowerLen) / (2f * upperLen * dist);
-        cosAngle = Math.Clamp(cosAngle, -1f, 1f);
-        var angle = MathF.Acos(cosAngle);
-
-        var axis = Vector3.Cross(dir, bendHint);
-        if (axis.LengthSquared() < 1e-6f)
-            axis = Vector3.Cross(dir, Vector3.UnitY);
-        axis = Vector3.Normalize(axis);
-
-        var upperDir = Rotate(dir, axis, MathF.PI - angle);
-        return root + upperDir * upperLen;
-    }
-
-    private static Vector3 Rotate(Vector3 v, Vector3 axis, float angle)
-    {
-        var c = MathF.Cos(angle);
-        var s = MathF.Sin(angle);
-        return v * c + Vector3.Cross(axis, v) * s + axis * Vector3.Dot(axis, v) * (1f - c);
     }
 
     private static Vector3 World(Vector3 root, int facing, Vector3 local) =>

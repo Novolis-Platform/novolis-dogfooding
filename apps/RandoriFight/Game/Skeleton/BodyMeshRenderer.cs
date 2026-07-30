@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using Novolis.Raylib.Game;
+using Novolis.Simulation.Humanoid;
 
 namespace RandoriFight.Game.Skeleton;
 
@@ -22,38 +23,38 @@ internal static class BodyMeshRenderer
         var joint = Color.FromArgb(255, 52, 48, 56);
 
         DrawTorso(ctx, s, torso);
-        DrawHead(ctx, s[HumanoidBoneId.Head], head);
+        DrawHead(ctx, s[HumanoidBone.Head], head);
 
-        DrawLimb(ctx, s[HumanoidBoneId.LeftShoulder], s[HumanoidBoneId.LeftElbow], 0.068f, limb);
-        DrawLimb(ctx, s[HumanoidBoneId.LeftElbow], s[HumanoidBoneId.LeftHand], 0.058f, limb);
-        DrawLimb(ctx, s[HumanoidBoneId.RightShoulder], s[HumanoidBoneId.RightElbow], 0.068f, limb);
-        DrawLimb(ctx, s[HumanoidBoneId.RightElbow], s[HumanoidBoneId.RightHand], 0.058f, limb);
+        DrawLimb(ctx, s[HumanoidBone.LeftArm], s[HumanoidBone.LeftForeArm], 0.068f, limb);
+        DrawLimb(ctx, s[HumanoidBone.LeftForeArm], s[HumanoidBone.LeftHand], 0.058f, limb);
+        DrawLimb(ctx, s[HumanoidBone.RightArm], s[HumanoidBone.RightForeArm], 0.068f, limb);
+        DrawLimb(ctx, s[HumanoidBone.RightForeArm], s[HumanoidBone.RightHand], 0.058f, limb);
 
-        DrawLimb(ctx, s[HumanoidBoneId.LeftHip], s[HumanoidBoneId.LeftKnee], 0.082f, limb);
-        DrawLimb(ctx, s[HumanoidBoneId.LeftKnee], s[HumanoidBoneId.LeftAnkle], 0.072f, limb);
-        DrawLimb(ctx, s[HumanoidBoneId.RightHip], s[HumanoidBoneId.RightKnee], 0.082f, limb);
-        DrawLimb(ctx, s[HumanoidBoneId.RightKnee], s[HumanoidBoneId.RightAnkle], 0.072f, limb);
+        DrawLimb(ctx, s[HumanoidBone.LeftUpLeg], s[HumanoidBone.LeftLeg], 0.082f, limb);
+        DrawLimb(ctx, s[HumanoidBone.LeftLeg], s[HumanoidBone.LeftFoot], 0.072f, limb);
+        DrawLimb(ctx, s[HumanoidBone.RightUpLeg], s[HumanoidBone.RightLeg], 0.082f, limb);
+        DrawLimb(ctx, s[HumanoidBone.RightLeg], s[HumanoidBone.RightFoot], 0.072f, limb);
 
-        DrawJoint(ctx, s[HumanoidBoneId.LeftShoulder], 0.05f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.RightShoulder], 0.05f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.LeftHip], 0.055f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.RightHip], 0.055f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.LeftKnee], 0.045f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.RightKnee], 0.045f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.LeftElbow], 0.04f, joint);
-        DrawJoint(ctx, s[HumanoidBoneId.RightElbow], 0.04f, joint);
+        DrawJoint(ctx, s[HumanoidBone.LeftArm], 0.05f, joint);
+        DrawJoint(ctx, s[HumanoidBone.RightArm], 0.05f, joint);
+        DrawJoint(ctx, s[HumanoidBone.LeftUpLeg], 0.055f, joint);
+        DrawJoint(ctx, s[HumanoidBone.RightUpLeg], 0.055f, joint);
+        DrawJoint(ctx, s[HumanoidBone.LeftLeg], 0.045f, joint);
+        DrawJoint(ctx, s[HumanoidBone.RightLeg], 0.045f, joint);
+        DrawJoint(ctx, s[HumanoidBone.LeftForeArm], 0.04f, joint);
+        DrawJoint(ctx, s[HumanoidBone.RightForeArm], 0.04f, joint);
 
-        DrawFoot(ctx, s[HumanoidBoneId.LeftAnkle], s[HumanoidBoneId.LeftToe], foot);
-        DrawFoot(ctx, s[HumanoidBoneId.RightAnkle], s[HumanoidBoneId.RightToe], foot);
-        DrawHand(ctx, s[HumanoidBoneId.LeftHand], limb);
-        DrawHand(ctx, s[HumanoidBoneId.RightHand], limb);
+        DrawFoot(ctx, s[HumanoidBone.LeftFoot], s[HumanoidBone.LeftToeBase], foot);
+        DrawFoot(ctx, s[HumanoidBone.RightFoot], s[HumanoidBone.RightToeBase], foot);
+        DrawHand(ctx, s[HumanoidBone.LeftHand], limb);
+        DrawHand(ctx, s[HumanoidBone.RightHand], limb);
     }
 
     private static void DrawTorso(RayGameContext ctx, SkeletonFrame s, Color color)
     {
-        var pelvis = s[HumanoidBoneId.Pelvis];
-        var neck = s[HumanoidBoneId.Neck];
-        var top = Vector3.Lerp(neck, s[HumanoidBoneId.Head], 0.15f);
+        var pelvis = s[HumanoidBone.Hips];
+        var neck = s[HumanoidBone.Neck];
+        var top = Vector3.Lerp(neck, s[HumanoidBone.Head], 0.15f);
         var center = (pelvis + top) * 0.5f;
         var height = Vector3.Distance(pelvis, top) + 0.08f;
         ctx.DrawShipBox(center, new Vector3(0.22f, height, 0.14f), color);

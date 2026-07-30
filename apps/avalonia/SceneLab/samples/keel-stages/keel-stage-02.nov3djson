@@ -2,13 +2,13 @@
   "format": "novolis.scene",
   "schemaVersion": 1,
   "name": "Keel Transport \u2014 module-shells",
-  "createdAt": "2026-07-30T00:33:51.077437+00:00",
-  "modifiedAt": "2026-07-30T00:33:51.0779157+00:00",
+  "createdAt": "2026-07-30T00:44:54.0030947+00:00",
+  "modifiedAt": "2026-07-30T00:44:54.0035141+00:00",
   "unitScaleMeters": 1,
   "nodes": [
     {
       "kind": "group",
-      "id": "1ebff64a-6955-47de-ac21-8cf56fe60423",
+      "id": "ee4274f9-3c20-4336-aa5c-9069cc230a36",
       "name": "Root",
       "transform": {
         "position": [
@@ -42,9 +42,9 @@
         1.8,
         -1
       ],
-      "id": "05e5ae72-7f74-4868-9833-e794def489d8",
+      "id": "e0058148-c265-4954-948a-e0385a9bde98",
       "name": "Camera",
-      "parentId": "1ebff64a-6955-47de-ac21-8cf56fe60423",
+      "parentId": "ee4274f9-3c20-4336-aa5c-9069cc230a36",
       "transform": {
         "position": [
           22,
@@ -171998,9 +171998,9 @@
         21253,
         21252
       ],
-      "id": "9c7820f0-9de1-4679-b997-59d81a37e7a7",
+      "id": "0ccba1e7-07e4-428b-965f-2c9e09a56d57",
       "name": "Keel Transport",
-      "parentId": "1ebff64a-6955-47de-ac21-8cf56fe60423",
+      "parentId": "ee4274f9-3c20-4336-aa5c-9069cc230a36",
       "transform": {
         "position": [
           0,
@@ -172040,9 +172040,9 @@
       ],
       "castShadows": true,
       "enabled": true,
-      "id": "794acaac-3852-45a7-8c9c-5d7557291aa1",
+      "id": "7c0f2c75-a9c4-4d40-822b-529e19b35e10",
       "name": "Key Light",
-      "parentId": "1ebff64a-6955-47de-ac21-8cf56fe60423",
+      "parentId": "ee4274f9-3c20-4336-aa5c-9069cc230a36",
       "transform": {
         "position": [
           10,
@@ -172082,9 +172082,9 @@
       ],
       "castShadows": true,
       "enabled": true,
-      "id": "3806647b-5ce6-4f72-bcaf-5e6b0873baa6",
+      "id": "1365ec98-5379-4bbc-9b59-19857a479c47",
       "name": "Fill Light",
-      "parentId": "1ebff64a-6955-47de-ac21-8cf56fe60423",
+      "parentId": "ee4274f9-3c20-4336-aa5c-9069cc230a36",
       "transform": {
         "position": [
           0,
@@ -172124,9 +172124,9 @@
       ],
       "castShadows": true,
       "enabled": true,
-      "id": "eaeb3ba4-cb22-46bb-b98f-8b2234e405ab",
+      "id": "83f49712-0e2f-4058-912c-aeb04486d8d4",
       "name": "Sun",
-      "parentId": "1ebff64a-6955-47de-ac21-8cf56fe60423",
+      "parentId": "ee4274f9-3c20-4336-aa5c-9069cc230a36",
       "transform": {
         "position": [
           0,
@@ -172150,5 +172150,5 @@
       "visible": true
     }
   ],
-  "selectionId": "9c7820f0-9de1-4679-b997-59d81a37e7a7"
+  "selectionId": "0ccba1e7-07e4-428b-965f-2c9e09a56d57"
 }

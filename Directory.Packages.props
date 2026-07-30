@@ -118,6 +118,7 @@
     <PackageVersion Include="Novolis.Simulation.Kinematics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Racing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.View" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.Humanoid" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />

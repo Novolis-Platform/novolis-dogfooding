@@ -1,18 +1,24 @@
 using System.Numerics;
+using Novolis.Simulation.Humanoid;
 
 namespace RandoriFight.Game.Skeleton;
 
-/// <summary>World-space joint positions for one solved humanoid pose.</summary>
+/// <summary>World-space joints for one solved humanoid pose (platform <see cref="HumanoidBone"/> + katana tips).</summary>
 internal sealed class SkeletonFrame
 {
-    private readonly Vector3[] _joints = new Vector3[(int)HumanoidBoneId.Count];
+    private readonly HumanoidWorldPose _world = new();
 
-    public ReadOnlySpan<Vector3> Joints => _joints;
+    /// <summary>Platform world pose.</summary>
+    public HumanoidWorldPose World => _world;
 
-    public Vector3 this[HumanoidBoneId bone] => _joints[(int)bone];
+    /// <summary>Katana blade root (app prop, not a Mixamo bone).</summary>
+    public Vector3 BladeRoot { get; set; }
 
-    public void Set(HumanoidBoneId bone, Vector3 world) => _joints[(int)bone] = world;
+    /// <summary>Katana blade tip.</summary>
+    public Vector3 BladeTip { get; set; }
 
-    public Vector3 BladeRoot => this[HumanoidBoneId.BladeRoot];
-    public Vector3 BladeTip => this[HumanoidBoneId.BladeTip];
+    public Vector3 this[HumanoidBone bone] => _world.Position(bone);
+
+    public void Set(HumanoidBone bone, Vector3 world) =>
+        _world.Set(bone, world, Quaternion.Identity);
 }

@@ -230,4 +230,56 @@ internal static class ShipYard
     /// <summary>Running-light / marker pod.</summary>
     public static EditableMesh MarkerPod(float size = 0.18f) =>
         Prim(MeshPrimitiveKind.Sphere, size, size, size, Matrix4x4.Identity, 10);
+
+    /// <summary>RCS thruster cluster (cross of short cones + hub).</summary>
+    public static EditableMesh ThrusterCluster(float scale = 0.35f, int segments = 10)
+    {
+        var hub = Prim(MeshPrimitiveKind.Sphere, scale * 0.55f, scale * 0.55f, scale * 0.55f, Matrix4x4.Identity, segments);
+        EditableMesh cluster = hub;
+        foreach (var (rx, ry, rz) in new[]
+                 {
+                     (90f, 0f, 0f), (-90f, 0f, 0f), (0f, 0f, 90f), (0f, 0f, -90f), (0f, 90f, 0f), (0f, -90f, 0f),
+                 })
+        {
+            var nozzle = Prim(MeshPrimitiveKind.Cone, scale * 0.45f, scale * 0.7f, scale * 0.45f,
+                Xf(0, 0, scale * 0.55f, rx, ry, rz), segments);
+            cluster = Union(cluster, nozzle);
+        }
+
+        return cluster;
+    }
+
+    /// <summary>Vertical stabilizer / fin plate with soft leading edge.</summary>
+    public static EditableMesh StabilizerFin(float height = 1.8f, float chord = 1.4f, float thickness = 0.12f)
+    {
+        var plate = Prim(MeshPrimitiveKind.Box, thickness, height, chord, Matrix4x4.Identity);
+        var leading = Prim(MeshPrimitiveKind.Capsule, thickness * 1.4f, height * 0.95f, thickness * 1.4f,
+            Xf(0, 0, chord * 0.48f), 10);
+        return Union(plate, leading);
+    }
+
+    /// <summary>Pipe / conduit run (capsule segments) for keel utility lines.</summary>
+    public static EditableMesh ConduitRun(float length, float radius = 0.06f, int segments = 8) =>
+        SoftStringer(length, radius, segments);
+
+    /// <summary>Overhead cargo gantry: rail + trolley + hook.</summary>
+    public static EditableMesh CargoGantry(float span = 3.2f, float height = 0.9f)
+    {
+        var rail = Prim(MeshPrimitiveKind.Box, span, 0.08f, 0.12f, Matrix4x4.Identity);
+        var uprightL = Prim(MeshPrimitiveKind.Capsule, 0.1f, height, 0.1f, Xf(-span * 0.45f, -height * 0.5f, 0), 8);
+        var uprightR = Prim(MeshPrimitiveKind.Capsule, 0.1f, height, 0.1f, Xf(span * 0.45f, -height * 0.5f, 0), 8);
+        var trolley = Prim(MeshPrimitiveKind.Box, 0.35f, 0.22f, 0.28f, Xf(0, -0.05f, 0));
+        var hook = Prim(MeshPrimitiveKind.Capsule, 0.08f, 0.55f, 0.08f, Xf(0, -0.45f, 0), 8);
+        return Union(Union(Union(Union(rail, uprightL), uprightR), trolley), hook);
+    }
+
+    /// <summary>Hangar mouth frame: torus lip + side posts.</summary>
+    public static EditableMesh HangarMouth(float width = 1.4f, float height = 1.6f, int segments = 14)
+    {
+        var lip = Prim(MeshPrimitiveKind.Torus, width, 0.08f, height * 0.55f, Xf(0, 0, 0, 0, 90, 0), segments);
+        var postL = Prim(MeshPrimitiveKind.Capsule, 0.1f, height, 0.1f, Xf(-width * 0.55f, 0, 0), 8);
+        var postR = Prim(MeshPrimitiveKind.Capsule, 0.1f, height, 0.1f, Xf(width * 0.55f, 0, 0), 8);
+        var lintel = Prim(MeshPrimitiveKind.Box, width * 1.15f, 0.1f, 0.12f, Xf(0, height * 0.48f, 0));
+        return Union(Union(Union(lip, postL), postR), lintel);
+    }
 }
