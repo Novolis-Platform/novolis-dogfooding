@@ -18,6 +18,8 @@ dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true 
 
 **OpenGL is the CAD / 3D default** (Avalonia `OpenGlControlBase` + Silk). Use it for authoring.
 
+**Render group** (main chrome): **Render…** opens a shaded preview pop-up (Lambert + scene lights, ambient, exposure, clear color). **Save PNG…** writes the preview; **Studio** ensures Key/Fill/Rim lights.
+
 CPU / Vulkan / Raylib exist for `ViewportBench` and `--compare` only — not recommended for daily CAD:
 
 ```powershell
