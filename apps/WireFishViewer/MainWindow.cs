@@ -15,7 +15,7 @@ internal sealed class MainWindow : Window
 {
     private readonly IPacketStore _store;
     private readonly CaptureSessionService _capture;
-    private readonly PacketTableView _packetTable;
+    private readonly PacketListView _packetList;
     private readonly TreeDetailsView _treeDetails;
     private readonly HexDumpView _hexDump;
     private readonly AnalyzerWorkspace _workspace;
@@ -31,11 +31,11 @@ internal sealed class MainWindow : Window
     {
         _store = store;
         _capture = capture;
-        _packetTable = CreatePacketTable();
+        _packetList = new PacketListView();
         _treeDetails = new TreeDetailsView();
         _hexDump = new HexDumpView();
         _workspace = new AnalyzerWorkspace(
-            _packetTable,
+            _packetList,
             WrapPane("Packet Details", _treeDetails),
             WrapPane("Hex Dump", _hexDump));
 
@@ -56,7 +56,7 @@ internal sealed class MainWindow : Window
         _startButton.Click += OnStartClicked;
         _stopButton.Click += OnStopClicked;
         _startNpcapButton.Click += OnStartNpcapClicked;
-        _packetTable.SelectionChanged += OnPacketSelectionChanged;
+        _packetList.SelectionChanged += OnPacketSelectionChanged;
         _workspace.FilterBar.ApplyRequested += OnFilterApplyRequested;
 
         _workspace.Toolbar.AddAction(_startButton);
@@ -75,7 +75,7 @@ internal sealed class MainWindow : Window
         root.Children.Add(_workspace);
         Content = root;
 
-        _packetTable.ItemsSource = _store.Packets;
+        _packetList.ItemsSource = _store.Packets;
     }
 
     private static Control WrapPane(string title, Control content)
@@ -101,27 +101,6 @@ internal sealed class MainWindow : Window
         panel.Children.Add(header);
         panel.Children.Add(border);
         return panel;
-    }
-
-    private static PacketTableView CreatePacketTable()
-    {
-        var table = new PacketTableView
-        {
-            CanUserSortColumns = false,
-            SelectionMode = DataGridSelectionMode.Single,
-            GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
-        };
-        table.SetColumns(
-        [
-            PacketTableView.TextColumn("#", nameof(PacketRow.Number), 48),
-            PacketTableView.TextColumn("Time", nameof(PacketRow.Time), 120),
-            PacketTableView.TextColumn("Source", nameof(PacketRow.Source), 140),
-            PacketTableView.TextColumn("Destination", nameof(PacketRow.Destination), 140),
-            PacketTableView.TextColumn("Protocol", nameof(PacketRow.Protocol), 72),
-            PacketTableView.TextColumn("Length", nameof(PacketRow.Length), 64),
-            PacketTableView.TextColumn("Info", nameof(PacketRow.Info), 320),
-        ]);
-        return table;
     }
 
     private void ConfigureWindow()
@@ -262,7 +241,7 @@ internal sealed class MainWindow : Window
 
     private void OnPacketSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (_packetTable.SelectedItem is not PacketRow row)
+        if (_packetList.SelectedItem is not PacketRow row)
         {
             ShowEmptyDetails();
             return;
