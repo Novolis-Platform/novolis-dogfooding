@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using ModelContextProtocol.Server;
-using Novolis.Agent.Session;
+using Novolis.Agent.Core;
 
 namespace AvaloniaAgentMcp;
 
@@ -30,8 +30,8 @@ public static class SessionAgentMcpTools
         {
             transport = "http",
             endpoint = SessionAgentRuntime.HttpUrlOverride
-                        ?? SessionEndpoints.TryReadHttpBaseUrl()
-                        ?? $"(auto {SessionEndpoints.DefaultHttpPort})",
+                        ?? SinsAgentSurfaceContract.Definition.TryReadHttpBaseUrl()
+                        ?? $"(auto {SinsAgentSurfaceContract.Definition.DefaultHttpPort})",
             hello,
         });
     }
@@ -91,10 +91,10 @@ public static class SessionAgentMcpTools
         CancellationToken cancellationToken = default)
     {
         var response = await SessionAgentRuntime.CommandAsync(
-            new SessionCommandDto { ActionId = actionId }
-                .With(SessionCommandKeys.DestSystemId, destSystemId)
-                .With(SessionCommandKeys.Index, index?.ToString())
-                .With(SessionCommandKeys.Sku, sku),
+            new AgentCommand { ActionId = actionId }
+                .With(AgentCommandKeys.DestSystemId, destSystemId)
+                .With(AgentCommandKeys.Index, index?.ToString())
+                .With(AgentCommandKeys.Sku, sku),
             cancellationToken).ConfigureAwait(false);
         return AvaloniaAgentRuntime.ToJson(response);
     }
@@ -125,7 +125,7 @@ public static class SessionAgentMcpTools
             var events = SessionAgentRuntime.DrainEvents();
             var snapPoll = await SessionAgentRuntime.SnapshotAsync(cancellationToken).ConfigureAwait(false);
             var pause = snapPoll.GetType().GetProperty("PauseReason")?.GetValue(snapPoll)?.ToString()
-                        ?? (snapPoll as SessionSnapshotDto)?.PauseReason;
+                        ?? (snapPoll as AgentSnapshot)?.PauseReason;
             if (string.Equals(pause, "AwaitingDecision", StringComparison.OrdinalIgnoreCase))
             {
                 return AvaloniaAgentRuntime.ToJson(new

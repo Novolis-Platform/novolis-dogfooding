@@ -3,6 +3,8 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>WireFishViewer</RootNamespace>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Description>Avalonia WireShark-style dogfood for Novolis.Transports.WireFish (elevated for Npcap).</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />

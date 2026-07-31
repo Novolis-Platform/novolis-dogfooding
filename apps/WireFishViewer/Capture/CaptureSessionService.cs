@@ -41,7 +41,8 @@ public sealed class CaptureSessionService(
                             options.CaptureAllDevices = false;
                             options.DeviceNames.Add(deviceCaptureKey);
                             options.BpfFilter = string.IsNullOrWhiteSpace(bpfFilter) ? null : bpfFilter.Trim();
-                            options.AllowNoCaptureDevices = true;
+                            // Explicit Start must fail loudly if the NIC cannot be opened.
+                            options.AllowNoCaptureDevices = false;
                             options.PromiscuousMode = true;
                         });
                 })

@@ -11,6 +11,8 @@ public interface IPacketStore
 
     void Add(PacketRow row);
 
+    void AddRange(IReadOnlyList<PacketRow> rows);
+
     void Clear();
 
     int Count { get; }

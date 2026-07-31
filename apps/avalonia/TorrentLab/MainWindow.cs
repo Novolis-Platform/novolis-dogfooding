@@ -9,48 +9,75 @@ namespace TorrentLab;
 internal sealed class MainWindow : Window
 {
     readonly TorrentSessionPanel _session = new();
-    readonly TextBlock _hint;
+    readonly TextBlock _subtitle;
 
     public MainWindow()
     {
         Title = "Novolis Torrent Lab";
-        Width = 720;
-        Height = 560;
-        MinWidth = 520;
-        MinHeight = 420;
+        Width = 960;
+        Height = 640;
+        MinWidth = 720;
+        MinHeight = 480;
+        Background = new SolidColorBrush(Color.Parse("#0E141B"));
 
-        _hint = new TextBlock
+        _subtitle = new TextBlock
         {
-            Text =
-                "Dogfood for Novolis.Transports.Torrent + Avalonia torrent controls. " +
-                "Sample: Tiny Core Linux Core-current.iso (~18 MB). Run once with --smoke to create the .torrent and verify local transfer.",
+            Text = "Tiny Core sample ready — Start to check local data, or Add torrent… for another file.",
+            FontSize = 12,
+            Opacity = 0.75,
             TextWrapping = TextWrapping.Wrap,
-            Opacity = 0.8,
-            Margin = new Thickness(0, 0, 0, 8)
+            Margin = new Thickness(0, 2, 0, 0)
         };
 
         var sampleBtn = new Button
         {
-            Content = "Load Core sample…",
-            Padding = new Thickness(10, 4),
-            HorizontalAlignment = HorizontalAlignment.Left
+            Content = "Load Core sample",
+            Padding = new Thickness(12, 6),
+            MinHeight = 30
         };
         sampleBtn.Click += (_, _) => TryLoadSample();
 
-        Content = new Border
+        var header = new Border
         {
-            Padding = new Thickness(16),
-            Background = new SolidColorBrush(Color.Parse("#121212")),
-            Child = new StackPanel
+            Background = new SolidColorBrush(Color.Parse("#182230")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#2E3A4A")),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Padding = new Thickness(16, 12),
+            Child = new Grid
             {
-                Spacing = 8,
-                Children = { _hint, sampleBtn, _session }
+                ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+                Children =
+                {
+                    new StackPanel
+                    {
+                        Spacing = 2,
+                        Children =
+                        {
+                            new TextBlock
+                            {
+                                Text = "Transfers",
+                                FontSize = 18,
+                                FontWeight = FontWeight.SemiBold
+                            },
+                            _subtitle
+                        }
+                    },
+                    Col(sampleBtn, 1)
+                }
+            }
+        };
+
+        Content = new DockPanel
+        {
+            LastChildFill = true,
+            Children =
+            {
+                DockTop(header),
+                _session
             }
         };
 
         Closed += (_, _) => _session.Dispose();
-
-        // Auto-offer sample if present next to the app or under samples/
         TryLoadSample(quiet: true);
     }
 
@@ -69,12 +96,25 @@ internal sealed class MainWindow : Window
             if (!File.Exists(path)) continue;
             if (_session.TryLoadTorrent(path))
             {
-                _hint.Text = $"Sample loaded: {path}";
+                _subtitle.Text = $"Sample loaded · {Path.GetFileName(path)} — press Start to begin.";
                 return;
             }
         }
 
         if (!quiet)
-            _hint.Text = "Sample torrent not found. Run with --smoke once to create Core-current.iso.torrent, or Open .torrent…";
+            _subtitle.Text = "Sample torrent not found. Run with --smoke once, or Add torrent…";
+    }
+
+    static Control DockTop(Control control)
+    {
+        DockPanel.SetDock(control, Dock.Top);
+        return control;
+    }
+
+    static Control Col(Control c, int column)
+    {
+        Grid.SetColumn(c, column);
+        c.VerticalAlignment = VerticalAlignment.Center;
+        return c;
     }
 }

@@ -10,4 +10,6 @@ public static class CaptureDeviceCatalog
             .ToList();
 
     public static bool HasCaptureDevices => WireFishCaptureDevices.Any();
+
+    public static WireFishCaptureHealth DriverHealth => WireFishCaptureHealthChecks.Check();
 }

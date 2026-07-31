@@ -1,4 +1,5 @@
-using Novolis.Agent.Session;
+using Novolis.Agent.Core;
+using Novolis.Agent.Surface;
 using Novolis.Transports.LocalIpc;
 
 namespace AvaloniaAgentMcp;
@@ -6,11 +7,13 @@ namespace AvaloniaAgentMcp;
 internal static class SessionAgentRuntime
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
-    private static SessionClient? _ipcClient;
-    private static SessionHttpClient? _httpClient;
+    private static AgentLocalIpcClient? _ipcClient;
+    private static AgentHttpClient? _httpClient;
     private static string? _endpointOverride;
     private static string? _httpUrlOverride;
     private static readonly List<object> RecentEvents = new();
+
+    private static AgentSurfaceDefinition Definition => SinsAgentSurfaceContract.Definition;
 
     public static string? EndpointOverride => _endpointOverride;
 
@@ -112,7 +115,7 @@ internal static class SessionAgentRuntime
         }
     }
 
-    public static async Task<object> CommandAsync(SessionCommandDto command, CancellationToken cancellationToken)
+    public static async Task<object> CommandAsync(AgentCommand command, CancellationToken cancellationToken)
     {
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -129,7 +132,7 @@ internal static class SessionAgentRuntime
     }
 
     /// <summary>Legacy LocalIpc-only helper used by older call sites.</summary>
-    public static async Task<T> WithClientAsync<T>(Func<SessionClient, Task<T>> action, CancellationToken cancellationToken)
+    public static async Task<T> WithClientAsync<T>(Func<AgentLocalIpcClient, Task<T>> action, CancellationToken cancellationToken)
     {
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -156,11 +159,11 @@ internal static class SessionAgentRuntime
     public static IReadOnlyList<object> DiscoverHosts()
     {
         var results = new List<object>();
-        var httpUrl = SessionEndpoints.TryReadHttpBaseUrl();
+        var httpUrl = Definition.TryReadHttpBaseUrl();
         if (!string.IsNullOrWhiteSpace(httpUrl))
             results.Add(new { source = "http-marker", transport = "http", endpoint = httpUrl });
 
-        var marker = SessionEndpoints.HostMarkerPath;
+        var marker = Definition.IpcMarkerPath;
         if (File.Exists(marker))
         {
             try
@@ -181,7 +184,7 @@ internal static class SessionAgentRuntime
             }
         }
 
-        var tcpMarker = SessionEndpoints.TcpMarkerPath;
+        var tcpMarker = Definition.TcpMarkerPath;
         if (File.Exists(tcpMarker))
         {
             try
@@ -201,12 +204,12 @@ internal static class SessionAgentRuntime
             }
         }
 
-        results.Add(new { source = "known", transport = "http", endpoint = $"http://127.0.0.1:{SessionEndpoints.DefaultHttpPort}" });
+        results.Add(new { source = "known", transport = "http", endpoint = $"http://127.0.0.1:{Definition.DefaultHttpPort}" });
         results.Add(new { source = "known", transport = "local-ipc", endpoint = "novolis-game-session-sins" });
         return results;
     }
 
-    private static async Task<SessionHttpClient?> EnsureHttpAsync(CancellationToken cancellationToken)
+    private static async Task<AgentHttpClient?> EnsureHttpAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
         if (_httpClient is not null)
@@ -216,17 +219,17 @@ internal static class SessionAgentRuntime
         if (string.IsNullOrWhiteSpace(url))
             url = Environment.GetEnvironmentVariable("NOVOLIS_GAME_SESSION_HTTP_URL");
         if (string.IsNullOrWhiteSpace(url))
-            url = SessionEndpoints.TryReadHttpBaseUrl();
+            url = Definition.TryReadHttpBaseUrl();
 
         // Prefer HTTP when available (wide agent surface). Skip if caller forced LocalIpc pipe.
         if (string.IsNullOrWhiteSpace(url) || !string.IsNullOrWhiteSpace(_endpointOverride))
             return null;
 
-        _httpClient = new SessionHttpClient(url);
+        _httpClient = new AgentHttpClient(url);
         return _httpClient;
     }
 
-    private static async Task<SessionClient> EnsureIpcAsync(CancellationToken cancellationToken)
+    private static async Task<AgentLocalIpcClient> EnsureIpcAsync(CancellationToken cancellationToken)
     {
         if (_ipcClient is not null)
             return _ipcClient;
@@ -250,12 +253,12 @@ internal static class SessionAgentRuntime
         throw last ?? new InvalidOperationException("Game session LocalIpc connect failed.");
     }
 
-    private static async Task<SessionClient> ConnectIpcAsync(CancellationToken cancellationToken)
+    private static async Task<AgentLocalIpcClient> ConnectIpcAsync(CancellationToken cancellationToken)
     {
         var address = _endpointOverride;
         if (string.IsNullOrWhiteSpace(address))
         {
-            var marker = SessionEndpoints.HostMarkerPath;
+            var marker = Definition.IpcMarkerPath;
             if (File.Exists(marker))
             {
                 var lines = await File.ReadAllLinesAsync(marker, cancellationToken).ConfigureAwait(false);
@@ -270,14 +273,14 @@ internal static class SessionAgentRuntime
                 Path.IsPathRooted(address) ? address : Path.Combine(Path.GetTempPath(), address + ".sock"),
                 LocalIpcTransportKind.UnixDomainSocket);
 
-        var client = await SessionClient.ConnectAsync(endpoint, cancellationToken).ConfigureAwait(false);
+        var client = await AgentLocalIpcClient.ConnectAsync(endpoint, cancellationToken).ConfigureAwait(false);
         client.EventReceived += (name, payload) =>
         {
             object decoded = name switch
             {
-                SessionMethodNames.Decision => SessionProtocolCodec.Deserialize<SessionDecisionEventDto>(payload),
-                SessionMethodNames.Changed => SessionProtocolCodec.Deserialize<SessionChangedEventDto>(payload),
-                SessionMethodNames.ActionResult => SessionProtocolCodec.Deserialize<SessionActionResultEventDto>(payload),
+                AgentMethodNames.Decision => AgentProtocolCodec.Deserialize<AgentDecisionEvent>(payload),
+                AgentMethodNames.Changed => AgentProtocolCodec.Deserialize<AgentChangedEvent>(payload),
+                AgentMethodNames.ActionResult => AgentProtocolCodec.Deserialize<AgentActionResultEvent>(payload),
                 _ => new { name, bytes = payload.Length },
             };
             lock (RecentEvents)

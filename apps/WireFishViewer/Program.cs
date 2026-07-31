@@ -1,6 +1,7 @@
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Novolis.Transports.WireFish;
 using WireFishViewer.Capture;
 
 namespace WireFishViewer;
@@ -12,6 +13,12 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Manifest is asInvoker so `dotnet run` can spawn us; then we UAC-relaunch ourselves.
+        if (WindowsElevation.TryRelaunchElevatedAndExit(args))
+            return;
+
+        _ = WireFishCaptureHealthChecks.TryEnsureCaptureDriver();
+
         ApplicationHost = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
             {
