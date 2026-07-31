@@ -59,12 +59,18 @@ internal static class LocalTransferSmoke
             leecher.AddPeer(torrent.InfoHash, new IPEndPoint(IPAddress.Loopback, seedPort));
             Console.WriteLine("Leecher AddPeer(127.0.0.1) — waiting up to 120s…");
 
+            var lastLog = -1;
             var done = SpinWait.SpinUntil(() =>
             {
                 var p = leecher.GetProgressInfo(torrent.InfoHash);
                 if (p is null) return false;
-                if (Environment.TickCount64 / 500 % 4 == 0)
+                var bucket = (int)(p.CompletedPercentage / 5m);
+                if (bucket != lastLog)
+                {
+                    lastLog = bucket;
                     Console.WriteLine($"  leech {p.CompletedPercentage:0.0}% ↓{p.DownloadSpeed:0} B/s seeders={p.SeederCount}");
+                }
+
                 return p.CompletedPercentage >= 99.9m;
             }, TimeSpan.FromSeconds(120));
 
