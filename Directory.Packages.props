@@ -4,6 +4,7 @@
     <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="AssimpNet" Version="4.1.0" />
     <PackageVersion Include="Avalonia" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Controls.DataGrid" Version="12.0.0" />
     <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
@@ -53,6 +54,7 @@
     <PackageVersion Include="Novolis.Avalonia.3D" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Agent.Surface" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Modeling.Scene" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Modeling.Import" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Git" Version="2026.1.*" />
@@ -119,6 +121,9 @@
     <PackageVersion Include="Novolis.Simulation.Racing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.View" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Humanoid" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.Humanoid.Physics" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.Humanoid.Skinning" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.Humanoid" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />

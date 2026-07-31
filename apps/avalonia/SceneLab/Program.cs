@@ -153,7 +153,7 @@ internal sealed class MainWindow : Window
         _session = session;
         _artifacts = new SceneArtifactDumper(
             session,
-            Path.Combine(AppContext.BaseDirectory, "dumps"));
+            AppContext.BaseDirectory);
 
         Title = Program.CompareBackends
             ? "SceneLab - renderer compare (OpenGL | CPU | Vulkan | Raylib)"
@@ -174,8 +174,54 @@ internal sealed class MainWindow : Window
         _surface = surface;
         Content = BuildEditorLayout(surface);
         session.DumpArtifactsRequested += payload => _ = OnDumpAsync(payload);
+        session.DocumentChanged += RefreshTitle;
+        RefreshTitle();
+        KeyDown += OnFileHotkeys;
         Opened += (_, _) => surface.StartPresenting();
         Closed += (_, _) => surface.StopPresenting();
+    }
+
+    private void OnFileHotkeys(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (_surface is null)
+            return;
+        var ctrl = e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control);
+        if (!ctrl)
+            return;
+
+        void Notice(string m) => _surface!.StatusBar.SetNotice(m);
+
+        if (e.Key == Avalonia.Input.Key.O)
+        {
+            SceneFileActions.Open(_surface, _session, Notice);
+            e.Handled = true;
+        }
+        else if (e.Key == Avalonia.Input.Key.I)
+        {
+            SceneFileActions.ImportMesh(_surface, _session, Notice);
+            e.Handled = true;
+        }
+        else if (e.Key == Avalonia.Input.Key.S && e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift))
+        {
+            SceneFileActions.SaveAs(_surface, _session, Notice);
+            e.Handled = true;
+        }
+        else if (e.Key == Avalonia.Input.Key.S)
+        {
+            SceneFileActions.Save(_surface, _session, Notice);
+            e.Handled = true;
+        }
+    }
+
+    private void RefreshTitle()
+    {
+        var path = _session.DocumentPath;
+        var name = string.IsNullOrWhiteSpace(path)
+            ? _session.Document.Name
+            : Path.GetFileName(path);
+        Title = Program.CompareBackends
+            ? $"SceneLab - renderer compare · {name}"
+            : $"SceneLab - {Program.ViewportBackend} · {name}";
     }
 
     private async Task OnDumpAsync(string payload)
@@ -201,7 +247,8 @@ internal sealed class MainWindow : Window
                 : new SceneArtifactDumper(_session, root);
 
             var result = await dumper.DumpAsync(kind, this, _surface.Viewport).ConfigureAwait(true);
-            Title = $"SceneLab - {Program.ViewportBackend} · dumped {result.Kind} → {result.ManifestPath}";
+            Title = $"SceneLab - {Program.ViewportBackend} · dumped";
+            _surface.StatusBar.SetNotice($"dumped {result.Kind} → {result.ManifestPath}");
         }
         finally
         {
@@ -295,19 +342,6 @@ internal sealed class MainWindow : Window
 
     private Control BuildEditorLayout(SceneEditorSurface surface)
     {
-        var topTools = new StackPanel
-        {
-            Children =
-            {
-                Row(surface.ToolStrip),
-                Row(DumpBar(surface)),
-                Row(surface.EditModeBar, surface.DisplayModeBar, surface.TransformHud),
-                Row(surface.PrimitivePalette),
-                Row(surface.GeneratorTools, surface.MeshEditTools),
-                Row(surface.LookTools),
-            },
-        };
-
         var rightRail = new ScrollViewer
         {
             Width = 300,
@@ -352,7 +386,7 @@ internal sealed class MainWindow : Window
             Background = new SolidColorBrush(Color.FromRgb(22, 32, 42)),
             BorderBrush = new SolidColorBrush(Color.FromRgb(40, 60, 75)),
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Child = topTools,
+            Child = surface.CreateChrome(_artifacts.DumpsDirectory),
             [DockPanel.DockProperty] = Dock.Top,
         };
 
@@ -360,54 +394,6 @@ internal sealed class MainWindow : Window
         {
             Background = new SolidColorBrush(Color.FromRgb(14, 20, 28)),
             Children = { chrome, bottom, center },
-        };
-    }
-
-    private Control DumpBar(SceneEditorSurface _)
-    {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(8, 4) };
-        void Add(string label, string action) =>
-            row.Children.Add(DumpBtn(label, () => _session.Execute(new AgentCommandDto { ActionId = action })));
-        Add("Dump all", SceneSessionActionIds.Dump);
-        Add("Viewport PNG", SceneSessionActionIds.DumpViewport);
-        Add("Window PNG", SceneSessionActionIds.DumpWindow);
-        Add("Scene JSON", SceneSessionActionIds.DumpScene);
-        Add("Mesh OBJ", SceneSessionActionIds.DumpMesh);
-        row.Children.Add(new TextBlock
-        {
-            Text = $"→ {_artifacts.DumpsDirectory}",
-            Margin = new Thickness(10, 6, 0, 0),
-            FontSize = 11,
-            Opacity = 0.7,
-            Foreground = Brushes.WhiteSmoke,
-        });
-        return row;
-    }
-
-    private static Button DumpBtn(string label, Action onClick)
-    {
-        var b = new Button
-        {
-            Content = label,
-            Padding = new Thickness(8, 4),
-            Background = new SolidColorBrush(Color.FromRgb(28, 72, 78)),
-            Foreground = Brushes.WhiteSmoke,
-            FontSize = 12,
-        };
-        b.Click += (_, _) => onClick();
-        return b;
-    }
-
-    private static Border Row(params Control[] children)
-    {
-        var row = new StackPanel { Orientation = Orientation.Horizontal };
-        foreach (var child in children)
-            row.Children.Add(child);
-        return new Border
-        {
-            BorderBrush = new SolidColorBrush(Color.FromRgb(40, 60, 75)),
-            BorderThickness = new Thickness(0, 0, 0, 1),
-            Child = row,
         };
     }
 }
