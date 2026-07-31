@@ -4,9 +4,13 @@ Interactive dogfood for economic transport — independent tramp on a starport h
 
 Consumes published `Novolis.Economy.Core` + ops packages from GitHub Packages (`2026.1.*`). PackageId `Novolis.Economy` is retired. Requires hubs/corridors/`PlanShipment` on the feed.
 
+## Run
+
 ```powershell
 dotnet run --project apps/economy/TrampFreighterPlay
 ```
+
+## Controls
 
 | Key | Action |
 |-----|--------|
@@ -18,3 +22,11 @@ dotnet run --project apps/economy/TrampFreighterPlay
 | `B` | Procure bunker fuel at Waystation |
 | `S` | Post ore retail ask at Core + run sales |
 | `Q` | Quit |
+
+## Related
+
+| App | Role |
+|-----|------|
+| [TrampFreighterSim](TrampFreighterSim/) | Autopilot observer with variable speed |
+| [EconomyBoard](EconomyBoard/) | Avalonia commodity-chain board |
+| [NearSolPolity](NearSolPolity/) | Astro-backed hub network |

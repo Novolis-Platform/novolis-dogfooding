@@ -1,6 +1,6 @@
 # Torrent Lab
 
-Dogfood for `Novolis.Transports.Torrent` and `TorrentSessionPanel` / `TorrentProgressView`.
+Avalonia dogfood for `Novolis.Transports.Torrent` and `TorrentSessionPanel` / `TorrentProgressView`.
 
 ## Sample payload
 
@@ -17,3 +17,17 @@ dotnet run --project novolis-dogfooding/apps/avalonia/TorrentLab/TorrentLab.cspr
 ```
 
 Then **Load Core sample…** → **Start**.
+
+## What it exercises
+
+| Component | Role |
+|-----------|------|
+| `Novolis.Transports.Torrent` | BitTorrent session engine |
+| `TorrentSessionPanel` | Session controls in Avalonia |
+| `TorrentProgressView` | Transfer progress UI |
+
+## Related
+
+| Package | Role |
+|---------|------|
+| `Novolis.Avalonia.Controls` | Torrent UI controls |

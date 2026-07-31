@@ -64,8 +64,13 @@ Pseudo-3D C&amp;C-style camera + building sprites — kept for Raylib/billboard 
 dotnet run --project apps/RtsLite
 ```
 
-## DoomLite3D
+## IoSmoke / AdbLab
 
 ```bash
-dotnet run --project apps/DoomLite3D
+dotnet run --project apps/io/IoSmoke
+dotnet run --project apps/io/AdbLab -p:NovolisUseProjectReferences=true
+dotnet run --project apps/io/AdbLab -p:NovolisUseProjectReferences=true -- --smoke
 ```
+
+- `IoSmoke` — Paths, Recovery, Watching, Processes, Git (`apps/io/IoSmoke/README.md`)
+- `AdbLab` — Mobile.Android protocol/stats/install (`apps/io/AdbLab/README.md`)

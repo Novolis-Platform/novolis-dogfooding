@@ -4,10 +4,24 @@ Avalonia dogfood board for the vertically integrated commodity chain (Raw → Mi
 
 Consumes published `Novolis.Economy.Core` + ops packages from GitHub Packages (`2026.1.*`). PackageId `Novolis.Economy` is retired.
 
+## Run
+
 ```powershell
 dotnet run --project apps/economy/EconomyBoard
 ```
 
-- **+1 hour / +24 hours** — step the deterministic kernel  
-- **Run / Pause** — machine-speed playback  
-- Live inventory bars, ledger roles, restock shipments, recent events  
+## UI
+
+| Control | Behavior |
+|---------|----------|
+| **+1 hour / +24 hours** | Step the deterministic economy kernel |
+| **Run / Pause** | Machine-speed playback |
+| Live panels | Inventory bars, ledger roles, restock shipments, recent events |
+
+## Related
+
+| App | Role |
+|-----|------|
+| [TrampFreighterPlay](../economy/TrampFreighterPlay/) | Interactive Spectre tramp freighter |
+| [TrampFreighterSim](../economy/TrampFreighterSim/) | Autopilot observer |
+| [NearSolPolity](../economy/NearSolPolity/) | Astro catalog → economy hubs |

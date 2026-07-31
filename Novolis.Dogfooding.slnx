@@ -74,6 +74,7 @@
   </Folder>
   <Folder Name="/io/">
     <Project Path="apps/io/IoSmoke/IoSmoke.csproj" />
+    <Project Path="apps/io/AdbLab/AdbLab.csproj" />
   </Folder>
   <Folder Name="/manuscript/">
     <Project Path="apps/manuscript/ManuscriptSmoke/ManuscriptSmoke.csproj" />

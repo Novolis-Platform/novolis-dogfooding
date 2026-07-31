@@ -4,6 +4,8 @@ Integration workspace that **consumes published Novolis packages** from [GitHub 
 
 This repo does not publish packages and has **no GitHub Actions CI**. Library repos validate and publish via their own `merge.yml` / `release.yml` workflows; dogfooding is for local integration against what is already on the feed.
 
+Per-app READMEs live under `apps/<name>/README.md` (see also [apps/README.md](apps/README.md) for a short index).
+
 ## Quick start
 
 ```powershell
@@ -24,35 +26,58 @@ Novolis package versions use floating `2026.1.*` in `Directory.Packages.props`. 
 
 If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live in `%APPDATA%\NuGet\NuGet.Config`).
 
+**Local iteration:** open `Novolis.Platform.slnx` or pass `-p:NovolisUseProjectReferences=true` when building/running apps against sibling checkouts. Committed consumers use GitHub Packages only.
+
 ## Apps
 
 | App | Folder | Novolis packages exercised |
 |-----|--------|---------------------------|
-| `MathGridDemo` | `math/` | Math.Arrays |
-| `RaylibHello` | `raylib/` | Raylib |
-| `XFighter` | `raylib/` | Raylib (3D cockpit demo; moved from `novolis-raylib/samples`) |
-| `RaytraceHello` | `rendering/` | Raylib.Game, Rendering (ILGPU + DI + Presentation.Raylib) |
-| `SilkTraceHello` | `rendering/` | Rendering (env backend + PathTrace.Demos + Presentation.Silk) |
-| `SilkTraceStudio` | `rendering/` | Studio showcase: mouse orbit, backend hotkeys, status strip, glass/emissive scene |
-| `MeshBench` (Mesh Studio) | `rendering/` | Workspaces + Timeline + Snapshots + Rendering + Audio (inspector, move tool, fit view, path-traced viewport) |
-| `DoomLite3D` | `simulation/` | Raylib, Math, Simulation |
-| `BouncingBall` | `simulation/` | Raylib, Simulation, Physics.Collision |
-| `ArtillerySimulator` | `simulation/` | Raylib, Physics, Simulation |
-| `RagdollPlay` | `simulation/` | Raylib, Physics.Joints, Simulation |
-| `VoiceSmoke` | `audio/` | Audio.Voice, Voice.Atc (Sherpa Piper TTS, phraseology) |
-| `NovolisVoiceStudio` | `audio/` | Voice.Design + Avalonia.Voice — preset editor, preview, C# export |
-| `StudioChromeLab` | `avalonia/` | Controls dialogs/lists/jobs + Studio focus/dirty chrome |
-| `SketchLab` | `avalonia/` | SketchControl freehand canvas + PNG/SVG clipboard export |
-| `ViewportBench` | `avalonia/` | Shared-camera CAD wireframe bench (OpenGL/CPU/Vulkan/Raylib + present ms HUD) |
-| `HumanoidLab` | `avalonia/` | Simulation.Humanoid walk + Humanoid.Physics ragdoll + bow IK (three panes) |
-| `AstroSmoke` | `astro/` | Astro catalog/routing/assessment/overlay/plotting + Physics.Astro units |
-| `StarMapLab` | `astro/` | Avalonia.StarMap + Astro route planner (pan/zoom lab) |
-| `EconomyBoard` | `economy/` | Economy kernel — Avalonia Raw→Mid→Fin board |
-| `TrampFreighterPlay` | `economy/` | Economy logistics — Spectre tramp freighter (interactive) |
-| `TrampFreighterSim` | `economy/` | Economy logistics — Spectre tramp observer (variable speed + autopilot) |
-| `NearSolPolity` | `economy/` | Near-Sol polity — Astro catalog bridged to Economy production & tramp |
-| `IoSmoke` | `io/` | IO.Paths, Recovery, Watching, Processes, Git status |
-| `ManuscriptSmoke` | `manuscript/` | Markup.Manuscript metadata + Voice.Manuscript SpeechPlanner dry-run |
-| `BridgeCommander` | `commands/` | Spectre bridge + voiced patrol exchange; `--interactive` / `--no-voice` |
-| `WireFishViewer` | `transports/` | Avalonia, Transports.WireFish, Messaging.Channels |
-| `NeuralRacing` | `machine-learning/` | Simulation.Racing + MachineLearning.Neural (evolution demo; glue in app, not a library package) |
+| `MathGridDemo` | `apps/MathGridDemo` | Math.Arrays |
+| `RaylibHello` | `apps/RaylibHello` | Raylib |
+| `XFighter` | `apps/raylib/XFighter` | Raylib, Audio (Core, Effects, Playback, Voice) |
+| `ArtillerySimulator` | `apps/ArtillerySimulator` | Raylib, Physics.Ballistics, Physics.Collision, Simulation |
+| `BouncingBall` | `apps/BouncingBall` | Raylib, Math.Arrays, Simulation, Physics.Collision |
+| `DoomLite3D` | `apps/DoomLite3D` | Raylib, Math, Simulation (World, View, Kinematics) |
+| `RagdollPlay` | `apps/RagdollPlay` | Raylib, Simulation, Physics.Joints, Physics.Collision |
+| `RandoriFight` | `apps/RandoriFight` | Raylib, Simulation.View, Simulation.Humanoid |
+| `PlatformerHop` | `apps/PlatformerHop` | Raylib, Simulation.Kinematics, Simulation.View |
+| `PlatformerTwoD` | `apps/PlatformerTwoD` | Rendering.TwoD, Backends.TwoD.Silk, Simulation |
+| `RtsLite` | `apps/RtsLite` | Raylib, Simulation (Kinematics, View, World) |
+| `RtsLiteTwoD` | `apps/RtsLiteTwoD` | Rendering.TwoD, Backends.TwoD.Silk, Simulation.Kinematics |
+| `RaytraceHello` | `apps/rendering/RaytraceHello` | Raylib.Game, Rendering (ILGPU + DI + Presentation.Raylib) |
+| `SilkTraceHello` | `apps/rendering/SilkTraceHello` | Rendering (env backend + PathTrace.Demos + Presentation.Silk) |
+| `SilkTraceStudio` | `apps/rendering/SilkTraceStudio` | Rendering backends + PathTrace.Demos + Presentation.Silk |
+| `SilkTwoDHello` | `apps/rendering/SilkTwoDHello` | Rendering.TwoD, Backends.TwoD.Silk |
+| `MeshBench` (Mesh Studio) | `apps/rendering/MeshBench` | Workspaces, Timeline, Snapshots, Rendering, Audio |
+| `GamingSmoke` | `apps/gaming/GamingSmoke` | Game.Identity, Game.MenuFlows, Game.Multiplayer.Abstractions |
+| `TopDownDoom` | `apps/gaming/TopDownDoom` | Rendering.TwoD, Game flows |
+| `NeuralRacing` | `apps/NeuralRacing` | Simulation.Racing, MachineLearning.Neural |
+| `VoiceSmoke` | `apps/audio/VoiceSmoke` | Audio.Voice, Voice.Atc (Sherpa Piper TTS) |
+| `NovolisVoiceStudio` | `apps/audio/NovolisVoiceStudio` | Voice.Design + Avalonia.Voice |
+| `StudioChromeLab` | `apps/avalonia/StudioChromeLab` | Controls dialogs/lists/jobs + Studio focus/dirty chrome |
+| `AvaloniaAgentMcp` | `apps/AvaloniaAgentMcp` | Avalonia.Agent.Protocol, Transports.LocalIpc, Agent.Core/Surface |
+| `SketchLab` | `apps/avalonia/SketchLab` | SketchControl freehand canvas + PNG/SVG export |
+| `ViewportBench` | `apps/avalonia/ViewportBench` | Shared-camera CAD wireframe (OpenGL/CPU/Vulkan/Raylib) |
+| `SceneLab` | `apps/avalonia/SceneLab` | Avalonia 3D scene lab |
+| `TorrentLab` | `apps/avalonia/TorrentLab` | Avalonia torrent session UI |
+| `HumanoidLab` | `apps/avalonia/HumanoidLab` | Simulation.Humanoid, Humanoid.Physics |
+| `CalypsoCad` | `apps/cad/CalypsoCad` | CAD deckplan generation |
+| `AstroSmoke` | `apps/astro/AstroSmoke` | Astro catalog/routing/assessment/overlay/plotting |
+| `StarMapLab` | `apps/astro/StarMapLab` | Avalonia.StarMap + Astro route planner |
+| `EconomyBoard` | `apps/economy/EconomyBoard` | Economy kernel — Avalonia board |
+| `TrampFreighterPlay` | `apps/economy/TrampFreighterPlay` | Economy logistics — interactive Spectre |
+| `TrampFreighterSim` | `apps/economy/TrampFreighterSim` | Economy logistics — observer Spectre |
+| `NearSolPolity` | `apps/economy/NearSolPolity` | Astro catalog bridged to Economy |
+| `IoSmoke` | `apps/io/IoSmoke` | IO.Paths, Recovery, Watching, Processes, Git |
+| `AdbLab` | `apps/io/AdbLab` | IO.Mobile.Android — ADB protocol |
+| `ManuscriptSmoke` | `apps/manuscript/ManuscriptSmoke` | Markup.Manuscript, Voice.Manuscript |
+| `BridgeCommander` | `apps/BridgeCommander` | Commands + Audio.Voice (Spectre console) |
+| `WireFishViewer` | `apps/WireFishViewer` | Avalonia, Transports.WireFish, Messaging.Channels |
+
+## Shared in-repo libraries
+
+| Library | Folder | Purpose |
+|---------|--------|---------|
+| `Novolis.Dogfooding.Compose` | `apps/shared/Novolis.Dogfooding.Compose` | ViewPose → rendering camera bridge |
+| `Novolis.Dogfooding.TwoD` | `apps/shared/Novolis.Dogfooding.TwoD` | TwoD platform/camera helpers |
+| `Novolis.Dogfooding.Voice` | `apps/shared/Novolis.Dogfooding.Voice` | ATC voice DI for demos |
