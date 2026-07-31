@@ -25,6 +25,12 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args.Any(a => string.Equals(a, "--spatial-smoke", StringComparison.OrdinalIgnoreCase)))
+        {
+            Environment.ExitCode = SpatialSmoke.Run();
+            return;
+        }
+
         ViewportBackend = ParseBackend(args);
         CompareBackends = args.Any(a => a.Equals("--compare", StringComparison.OrdinalIgnoreCase));
 

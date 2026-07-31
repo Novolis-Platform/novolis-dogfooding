@@ -15,21 +15,32 @@ public sealed class CaptureSessionService(
 
     public bool IsCapturing => _captureHost is not null;
 
-    public async Task<CaptureStartResult> StartAsync(string? deviceCaptureKey, string? bpfFilter, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Starts capture. Must be called on the Avalonia UI thread (packet store is UI-bound).
+    /// </summary>
+    public async Task<CaptureStartOutcome> StartAsync(
+        string? deviceCaptureKey,
+        string? bpfFilter,
+        CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken);
         try
         {
             if (_captureHost is not null)
-                return CaptureStartResult.AlreadyRunning;
+                return CaptureStartOutcome.AlreadyRunning();
 
             if (string.IsNullOrWhiteSpace(deviceCaptureKey))
-                return CaptureStartResult.NoDeviceSelected;
+                return CaptureStartOutcome.NoDeviceSelected();
 
             store.Clear();
             uiHandler.ResetSequence();
 
             _captureHost = Host.CreateDefaultBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddDebug();
+                })
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton(store);
@@ -41,7 +52,6 @@ public sealed class CaptureSessionService(
                             options.CaptureAllDevices = false;
                             options.DeviceNames.Add(deviceCaptureKey);
                             options.BpfFilter = string.IsNullOrWhiteSpace(bpfFilter) ? null : bpfFilter.Trim();
-                            // Explicit Start must fail loudly if the NIC cannot be opened.
                             options.AllowNoCaptureDevices = false;
                             options.PromiscuousMode = true;
                         });
@@ -50,13 +60,13 @@ public sealed class CaptureSessionService(
 
             await _captureHost.StartAsync(cancellationToken);
             logger.LogInformation("WireFish capture session started on {Device}", deviceCaptureKey);
-            return CaptureStartResult.Started;
+            return CaptureStartOutcome.Started();
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to start WireFish capture");
             await DisposeCaptureHostAsync();
-            return CaptureStartResult.Failed;
+            return CaptureStartOutcome.Failed(ex.GetBaseException().Message);
         }
         finally
         {
@@ -116,4 +126,12 @@ public enum CaptureStartResult
     AlreadyRunning,
     NoDeviceSelected,
     Failed,
+}
+
+public readonly record struct CaptureStartOutcome(CaptureStartResult Result, string? Error = null)
+{
+    public static CaptureStartOutcome Started() => new(CaptureStartResult.Started);
+    public static CaptureStartOutcome AlreadyRunning() => new(CaptureStartResult.AlreadyRunning);
+    public static CaptureStartOutcome NoDeviceSelected() => new(CaptureStartResult.NoDeviceSelected);
+    public static CaptureStartOutcome Failed(string error) => new(CaptureStartResult.Failed, error);
 }

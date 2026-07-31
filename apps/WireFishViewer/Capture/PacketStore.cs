@@ -1,10 +1,11 @@
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace WireFishViewer.Capture;
 
-/// <summary>Observable list that supports bulk add with a single Reset notification.</summary>
+/// <summary>Observable list that supports bulk append without Reset (keeps DataGrid selection).</summary>
 internal sealed class PacketRowCollection : ObservableCollection<PacketRow>
 {
     private bool _suppress;
@@ -14,6 +15,7 @@ internal sealed class PacketRowCollection : ObservableCollection<PacketRow>
         if (rows.Count == 0)
             return;
 
+        var startIndex = Items.Count;
         _suppress = true;
         try
         {
@@ -27,18 +29,22 @@ internal sealed class PacketRowCollection : ObservableCollection<PacketRow>
 
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
         OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        // Add (not Reset) so selection/scroll survive live capture.
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(
+            NotifyCollectionChangedAction.Add,
+            (IList)(rows as IList ?? rows.ToList()),
+            startIndex));
     }
 
-    public void TrimTo(int maxCount)
+    public void TrimFrontTo(int maxCount)
     {
         if (Count <= maxCount)
             return;
 
+        var remove = Count - maxCount;
         _suppress = true;
         try
         {
-            var remove = Count - maxCount;
             for (var i = 0; i < remove; i++)
                 Items.RemoveAt(0);
         }
@@ -47,6 +53,7 @@ internal sealed class PacketRowCollection : ObservableCollection<PacketRow>
             _suppress = false;
         }
 
+        // Trim is rare at the cap; Reset is acceptable here.
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
         OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
@@ -92,7 +99,7 @@ public sealed class PacketStore : IPacketStore
 
         _packets.AddRange(rows);
         if (_packets.Count > MaxPackets)
-            _packets.TrimTo(MaxPackets);
+            _packets.TrimFrontTo(MaxPackets);
     }
 
     public void Clear() => _packets.Clear();

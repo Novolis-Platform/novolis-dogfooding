@@ -67,9 +67,10 @@ public static class SceneAgentMcpTools
     }
 
     [McpServerTool]
-    [Description("session.command — mutate the scene (addlight, addcamera, setlight, settransform, …).")]
+    [Description(
+        "session.command — mutate/query the scene (describescene, groundphrase, importmesh, importtriangles, dumpviewport, …).")]
     public static async Task<string> SceneCommand(
-        [Description("Action id, e.g. addlight, addcamera, settransform, delete.")]
+        [Description("Action id, e.g. describescene, groundphrase, dumpviewport, importtriangles.")]
         string actionId,
         [Description("Light kind: omni, spot, infinite, area.")]
         string? lightKind = null,
@@ -87,12 +88,35 @@ public static class SceneAgentMcpTools
         float? y = null,
         [Description("Position Z")]
         float? z = null,
-        [Description("File path for open/save.")]
+        [Description("File path for open/save/import/dump.")]
         string? path = null,
         [Description("Generator kind: cloner, symmetry, extrude.")]
         string? generatorKind = null,
         [Description("Modifier kind: weld, subdivision, optimize.")]
         string? modifierKind = null,
+        [Description("groundphrase: text to match against node name/id.")]
+        string? phrase = null,
+        [Description("setsceneprops: property key (description|caption|source|…).")]
+        string? key = null,
+        [Description("setsceneprops: value; omit/empty to clear.")]
+        string? value = null,
+        [Description("groundphrase: select best match (default true).")]
+        bool? select = null,
+        [Description("importmesh/importtriangles framing length meters; matchviewport FOV.")]
+        float? distance = null,
+        [Description("importtriangles: inline xyz floats as JSON array string.")]
+        string? vertices = null,
+        [Description("importtriangles / selectcomponents: indices as JSON array string.")]
+        string? indices = null,
+        [Description("Mesh primitive for addmesh.")]
+        string? primitive = null,
+        [Description("Boolean kind for addboole/setboole.")]
+        string? booleanKind = null,
+        [Description("Source / target / cutter / input ids for generators/modifiers.")]
+        string? sourceId = null,
+        string? targetId = null,
+        string? cutterId = null,
+        string? inputId = null,
         CancellationToken cancellationToken = default)
     {
         var response = await SceneAgentRuntime.CommandAsync(
@@ -110,6 +134,19 @@ public static class SceneAgentMcpTools
                 path,
                 generatorKind,
                 modifierKind,
+                phrase,
+                key,
+                value,
+                select,
+                distance,
+                vertices,
+                indices,
+                primitive,
+                booleanKind,
+                sourceId,
+                targetId,
+                cutterId,
+                inputId,
             },
             cancellationToken).ConfigureAwait(false);
         return AvaloniaAgentRuntime.ToJson(response);

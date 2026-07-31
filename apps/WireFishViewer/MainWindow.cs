@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Novolis.Avalonia.Controls;
 using Novolis.Avalonia.Layout;
@@ -32,7 +34,10 @@ internal sealed class MainWindow : Window
         _packetTable = CreatePacketTable();
         _treeDetails = new TreeDetailsView();
         _hexDump = new HexDumpView();
-        _workspace = new AnalyzerWorkspace(_packetTable, _treeDetails, _hexDump);
+        _workspace = new AnalyzerWorkspace(
+            _packetTable,
+            WrapPane("Packet Details", _treeDetails),
+            WrapPane("Hex Dump", _hexDump));
 
         _interfaceCombo = new ComboBox { MinWidth = 280, PlaceholderText = "Select interface" };
         _startButton = new Button { Content = "Start" };
@@ -41,8 +46,8 @@ internal sealed class MainWindow : Window
         _warningBanner = new TextBlock
         {
             IsVisible = false,
-            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-            Margin = new Avalonia.Thickness(8, 0, 8, 4),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(8, 0, 8, 4),
         };
 
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
@@ -62,6 +67,7 @@ internal sealed class MainWindow : Window
         ConfigureWindow();
         PopulateInterfaces(preferBestDevice: true);
         UpdateStatus();
+        ShowEmptyDetails();
 
         var root = new DockPanel();
         DockPanel.SetDock(_warningBanner, Dock.Top);
@@ -72,11 +78,39 @@ internal sealed class MainWindow : Window
         _packetTable.ItemsSource = _store.Packets;
     }
 
+    private static Control WrapPane(string title, Control content)
+    {
+        var header = new TextBlock
+        {
+            Text = title,
+            FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(8, 6, 8, 4),
+        };
+        DockPanel.SetDock(header, Dock.Top);
+
+        var border = new Border
+        {
+            BorderBrush = Brushes.Gray,
+            BorderThickness = new Thickness(1),
+            Margin = new Thickness(4),
+            Padding = new Thickness(4),
+            Child = content,
+        };
+
+        var panel = new DockPanel();
+        panel.Children.Add(header);
+        panel.Children.Add(border);
+        return panel;
+    }
+
     private static PacketTableView CreatePacketTable()
     {
-        var table = new PacketTableView();
-        // Sorting while capturing forces full re-binds; keep columns fixed for live capture.
-        table.CanUserSortColumns = false;
+        var table = new PacketTableView
+        {
+            CanUserSortColumns = false,
+            SelectionMode = DataGridSelectionMode.Single,
+            GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
+        };
         table.SetColumns(
         [
             PacketTableView.TextColumn("#", nameof(PacketRow.Number), 48),
@@ -176,8 +210,8 @@ internal sealed class MainWindow : Window
         _startButton.IsEnabled = false;
         var device = _interfaceCombo.SelectedItem as CaptureDeviceInfo;
         var filter = _workspace.FilterBar.FilterText;
-        var result = await Task.Run(async () => await _capture.StartAsync(device?.CaptureKey, filter));
-        switch (result)
+        var outcome = await _capture.StartAsync(device?.CaptureKey, filter);
+        switch (outcome.Result)
         {
             case CaptureStartResult.Started:
                 _warningBanner.IsVisible = false;
@@ -193,10 +227,9 @@ internal sealed class MainWindow : Window
                 break;
             case CaptureStartResult.Failed:
                 _warningBanner.IsVisible = true;
-                var health = CaptureDeviceCatalog.DriverHealth;
-                _npcapOk = health.IsReady;
-                _warningBanner.Text = health.Message
-                    ?? "Capture failed to start. Check Npcap installation (Start Npcap button or Start-Service npcap) and interface permissions.";
+                _warningBanner.Text = string.IsNullOrWhiteSpace(outcome.Error)
+                    ? "Capture failed to start."
+                    : outcome.Error;
                 _startButton.IsEnabled = CaptureDeviceCatalog.HasCaptureDevices;
                 break;
             default:
@@ -211,7 +244,7 @@ internal sealed class MainWindow : Window
     {
         _stopButton.IsEnabled = false;
         _statusTimer.Stop();
-        await Task.Run(async () => await _capture.StopAsync());
+        await _capture.StopAsync();
         _interfaceCombo.IsEnabled = true;
         PopulateInterfaces();
         UpdateStatus();
@@ -231,13 +264,18 @@ internal sealed class MainWindow : Window
     {
         if (_packetTable.SelectedItem is not PacketRow row)
         {
-            _treeDetails.Clear();
-            _hexDump.Clear();
+            ShowEmptyDetails();
             return;
         }
 
         _treeDetails.SetRoot(PacketDetailBuilder.Build(row));
         _hexDump.SetBytes(row.RawBytes);
+    }
+
+    private void ShowEmptyDetails()
+    {
+        _treeDetails.SetRoot(new DetailTreeNode("No packet selected", "Click a row in the packet list."));
+        _hexDump.SetText("Select a packet to view bytes.");
     }
 
     private void UpdateStatus()

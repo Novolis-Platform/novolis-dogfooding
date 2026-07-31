@@ -12,6 +12,7 @@ dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true 
 dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --boolean
 dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --lights
 dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --sample
+dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true -- --spatial-smoke
 ```
 
 ### Viewport renderer
@@ -72,10 +73,25 @@ Toolbar **Dump** (or agent `dump` / `dumpall`) writes under `bin/.../dumps/` (to
 | Mesh `.obj` + stats JSON | `dumpmesh` |
 | Manifest `last-artifact.json` | always |
 
+**VLM multimodal context:** call `dumpviewport` (optional `path`), then read the PNG path from the command result / `dumps/last-artifact.json` and pass that image to an external vision model. Do not embed CLIP/LERF in Rendering packages.
+
 ```bash
 curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
-  -d "{\"actionId\":\"dump\"}"
+  -d "{\"actionId\":\"dumpviewport\"}"
 ```
+
+Spatial helpers (deterministic document tools — not LLM calls):
+
+```bash
+curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
+  -d "{\"actionId\":\"describescene\"}"
+curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
+  -d "{\"actionId\":\"groundphrase\",\"phrase\":\"Beacon\"}"
+curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
+  -d "{\"actionId\":\"importtriangles\",\"path\":\"…/samples/triangle-soup.json\"}"
+```
+
+Radar: `novolis-governance/docs/research-radar/awesome-llm-3d.md`.
 
 ## Modeling
 

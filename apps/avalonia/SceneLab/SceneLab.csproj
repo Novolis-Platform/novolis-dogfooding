@@ -32,4 +32,8 @@
     <PackageReference Include="Silk.NET.Shaderc" />
     <PackageReference Include="Silk.NET.Shaderc.Native" />
   </ItemGroup>
-</Project>
+    <ItemGroup>
+      <None Include="samples\spatial-smoke.nov3djson" CopyToOutputDirectory="PreserveNewest" Link="samples\spatial-smoke.nov3djson" />
+      <None Include="samples\triangle-soup.json" CopyToOutputDirectory="PreserveNewest" Link="samples\triangle-soup.json" />
+    </ItemGroup>
+  </Project>
