@@ -18,8 +18,32 @@ internal static class ExternalMeshImport
             PreTransformVertices = true,
         });
 
-    public static void WriteScene(EditableMesh mesh, string outPath, string displayName)
+    public static void WriteScene(EditableMesh mesh, string outPath, string displayName) =>
+        WriteComposed(outPath, displayName, ("Exterior", mesh));
+
+    /// <summary>
+    /// Exterior FBX + procedural interior as sibling mesh nodes (no CSG against the hull).
+    /// </summary>
+    public static void WriteExteriorWithInterior(
+        EditableMesh exterior,
+        EditableMesh interior,
+        string outPath,
+        string displayName = "YT-1300 (CGTrader exterior + procedural interior)")
     {
+        WriteComposed(outPath, displayName,
+            ("Exterior (CGTrader)", exterior),
+            ("Interior (procedural)", interior));
+    }
+
+    public static void WriteComposed(
+        string outPath,
+        string displayName,
+        params (string Name, EditableMesh Mesh)[] parts)
+    {
+        ArgumentNullException.ThrowIfNull(parts);
+        if (parts.Length == 0)
+            throw new ArgumentException("At least one mesh part is required.", nameof(parts));
+
         var doc = new SceneDocument
         {
             Name = displayName,
@@ -35,15 +59,30 @@ internal static class ExternalMeshImport
             Target = [0, 0.2f, 2f],
             FovDeg = 36f,
         };
-        var meshNode = new MeshNode
+
+        doc.Nodes.Add(root);
+        doc.Nodes.Add(cam);
+
+        MeshNode? firstMesh = null;
+        var totalVerts = 0;
+        var totalTris = 0;
+        foreach (var (name, mesh) in parts)
         {
-            Name = displayName,
-            ParentId = root.Id,
-            Primitive = MeshPrimitiveKind.Box,
-        };
-        MeshEditBake.WriteBaked(meshNode, mesh);
+            var meshNode = new MeshNode
+            {
+                Name = name,
+                ParentId = root.Id,
+                Primitive = MeshPrimitiveKind.Box,
+            };
+            MeshEditBake.WriteBaked(meshNode, mesh);
+            doc.Nodes.Add(meshNode);
+            firstMesh ??= meshNode;
+            totalVerts += mesh.VertexCount;
+            totalTris += mesh.TriangleCount;
+            Console.WriteLine($"  part|{name}|verts={mesh.VertexCount}|tris={mesh.TriangleCount}");
+        }
+
         doc.Nodes.AddRange([
-            root, cam, meshNode,
             new LightNode
             {
                 Name = "Key",
@@ -71,9 +110,9 @@ internal static class ExternalMeshImport
             },
         ]);
         doc.ActiveCameraId = null;
-        doc.SelectionId = meshNode.Id;
+        doc.SelectionId = firstMesh?.Id;
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath))!);
         SceneSerializer.Save(doc, outPath);
-        Console.WriteLine($"IMPORT|{outPath}|verts={mesh.VertexCount}|tris={mesh.TriangleCount}");
+        Console.WriteLine($"COMPOSE|{outPath}|parts={parts.Length}|verts={totalVerts}|tris={totalTris}");
     }
 }

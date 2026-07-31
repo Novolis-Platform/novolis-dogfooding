@@ -127,6 +127,7 @@
     <PackageVersion Include="Novolis.Simulation.World" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.World.Builders" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Transports.Torrent" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.LocalIpc" Version="2026.1.*" />
     <!-- ProjectRef is non-transitive for NuGet graphs: CAD hosts that ProjectRef Avalonia.3D / Backends.Vulkan must pin Silk natives explicitly. -->
     <PackageVersion Include="Silk.NET.OpenGL" Version="2.22.0" />

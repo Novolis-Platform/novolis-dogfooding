@@ -8,3 +8,6 @@ artifacts/
 
 # Legacy local library clones (not used by the build)
 submodules/
+
+# Generated SceneLab meshes over GitHub's 100MB hard limit — bake with CorellianFreighterBuilder
+apps/avalonia/SceneLab/samples/corellian-freighter.nov3djson

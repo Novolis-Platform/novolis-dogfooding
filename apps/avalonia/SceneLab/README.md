@@ -43,11 +43,24 @@ dotnet run --project apps/avalonia/SceneLab/tools/KeelTransportBuilder -p:Novoli
   apps/avalonia/SceneLab/samples/keel-transport.nov3djson
 ```
 
-`--sample` / `--keel` opens denser OpenGL-tuned `keel-transport.nov3djson` (soft shells, dishes, radiators, clamps, engine bells, RCS, gantries).
+`--sample` / `--keel` opens `keel-transport.nov3djson`. Prefer the wireframe-friendly **Chisel Corvette** (Expanse-style chisel + drive cup, original design):
+
+```powershell
+dotnet run --project apps/avalonia/SceneLab/tools/ChiselCorvetteBuilder -p:NovolisUseProjectReferences=true -- `
+  apps/avalonia/SceneLab/samples/chisel-stages `
+  apps/avalonia/SceneLab/samples/chisel-corvette.nov3djson
+```
+
+Then open via session HTTP (no app rebuild):
+
+```bash
+curl -X POST http://127.0.0.1:18785/session/command -H "content-type: application/json" \
+  -d "{\"actionId\":\"open\",\"path\":\"D:/novolis/novolis-dogfooding/apps/avalonia/SceneLab/samples/chisel-corvette.nov3djson\"}"
+```
 
 ## Dumps / exports
 
-Toolbar **Dump all** (or agent `dump` / `dumpall`) writes under `bin/.../dumps/`:
+Toolbar **Dump** (or agent `dump` / `dumpall`) writes under `bin/.../dumps/` (tooltip on the Dump control). Use **▾** for viewport / window / scene / mesh only.
 
 | Artifact | Action |
 |---|---|
@@ -66,7 +79,7 @@ curl -X POST http://127.0.0.1:18785/session/command -H "content-type: applicatio
 
 - **Edit modes:** Object / Point / Edge / Polygon (+ Make Editable)
 - **Display:** Wireframe / Points / Isoline
-- **Viewport:** click to pick (Shift multi-select), Alt+LMB or MMB orbit, drag gizmo to translate
+- **Viewport:** click to pick (Shift multi-select), **Alt+LMB or MMB** orbit, wheel zoom, drag gizmo axes to translate
 - **Primitives:** Box, Sphere, Cylinder, Cone, Plane, Capsule, Torus, Pyramid, Disc, Tube, Platonics, Landscape
 - **Mesh tools:** Extrude, Inset, Bevel, Bridge, Dissolve, Knife, Weld, Optimize, Subdiv
 
@@ -81,3 +94,13 @@ curl -X POST http://127.0.0.1:18785/session/command -H "content-type: applicatio
 ```
 
 MCP (AvaloniaAgentMcp): `scene_hello`, `scene_snapshot`, `scene_actions`, `scene_command`, `scene_definition`, `scene_hosts`, `scene_http_connect`.
+
+## Corellian freighter (YT-1300 homage)
+
+Screen-landmark interior+exterior bake keyed to Haynes / Wookieepedia YT-1300 layout (saucer, mandibles, offset cockpit + tube, ring corridor, main hold + game table, engineering/hyperdrive/escape pods, gunwells, sensor dish, boarding ramp). Scale ≈ 1 unit = 1 m (~34.75 m OAL). Original procedural mesh — not a licensed asset; film sets historically exceed exterior volume, so this prioritizes published deck landmarks over literal set measurements.
+
+```powershell
+dotnet run --project apps/avalonia/SceneLab/tools/CorellianFreighterBuilder -p:NovolisUseProjectReferences=true -- `
+  apps/avalonia/SceneLab/samples/freighter-stages `
+  apps/avalonia/SceneLab/samples/corellian-freighter.nov3djson
+```

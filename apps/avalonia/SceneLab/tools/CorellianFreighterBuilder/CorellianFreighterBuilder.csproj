@@ -8,6 +8,7 @@
     <RootNamespace>CorellianFreighterBuilder</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AssimpNet" />
     <PackageReference Include="Novolis.Modeling.Import" />
     <PackageReference Include="Novolis.Modeling.Scene" />
     <PackageReference Include="Novolis.Math.Geometry" />

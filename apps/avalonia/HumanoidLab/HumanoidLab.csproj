@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RootNamespace>HumanoidLab</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>Avalonia dogfood — Simulation.Humanoid walk + Humanoid.Physics ragdoll + bow IK in three panes.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Novolis.Game.Humanoid" />
+    <PackageReference Include="Novolis.Math.Arrays" />
+    <PackageReference Include="Novolis.Math.Geometry" />
+    <PackageReference Include="Novolis.Physics.Collision.Simple" />
+    <PackageReference Include="Novolis.Physics.Joints" />
+    <PackageReference Include="Novolis.Simulation.Humanoid" />
+    <PackageReference Include="Novolis.Simulation.Humanoid.Physics" />
+    <PackageReference Include="Novolis.Simulation.Humanoid.Skinning" />
+    <PackageReference Include="Novolis.Simulation.World" />
+    <PackageReference Include="Novolis.Simulation.World.Builders" />
+  </ItemGroup>
+</Project>

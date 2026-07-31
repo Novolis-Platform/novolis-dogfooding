@@ -233,22 +233,29 @@ internal sealed class MainWindow : Window
         {
             var kind = payload;
             var root = _artifacts.DataRoot;
+            var exactDumpsDir = false;
             var pipe = payload.IndexOf('|');
             if (pipe >= 0)
             {
                 kind = payload[..pipe];
                 var overrideRoot = payload[(pipe + 1)..].Trim();
                 if (!string.IsNullOrWhiteSpace(overrideRoot))
+                {
                     root = overrideRoot;
+                    // UI folder picker passes the destination directory itself (not a data root).
+                    exactDumpsDir = true;
+                }
             }
 
-            var dumper = string.Equals(root, _artifacts.DataRoot, StringComparison.OrdinalIgnoreCase)
+            var dumper = !exactDumpsDir && string.Equals(root, _artifacts.DataRoot, StringComparison.OrdinalIgnoreCase)
                 ? _artifacts
-                : new SceneArtifactDumper(_session, root);
+                : new SceneArtifactDumper(_session, root, dataRootIsDumpsDirectory: exactDumpsDir);
 
             var result = await dumper.DumpAsync(kind, this, _surface.Viewport).ConfigureAwait(true);
             Title = $"SceneLab - {Program.ViewportBackend} · dumped";
             _surface.StatusBar.SetNotice($"dumped {result.Kind} → {result.ManifestPath}");
+            if (exactDumpsDir)
+                SceneFileActions.LastDumpDirectory = root;
         }
         finally
         {
