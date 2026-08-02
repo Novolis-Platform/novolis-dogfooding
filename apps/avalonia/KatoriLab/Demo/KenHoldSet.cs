@@ -61,11 +61,11 @@ internal sealed class KenHoldSet
         var half = lengthMeters * 0.5f;
         const float tsukaLen = 0.28f;
         var tsubaZ = -half + tsukaLen;
-        var leftZ = -half + 0.06f;       // left near kashira
-        var rightZ = tsubaZ - 0.045f;    // right just behind tsuba
+        var leftZ = -half + 0.035f;      // left near kashira
+        var rightZ = tsubaZ - 0.028f;    // right just behind tsuba (~22 cm span)
         return new KenHoldSet(
-            new KenHoldPoint("primary", new Vector3(0.018f, -0.012f, rightZ)),
-            new KenHoldPoint("secondary", new Vector3(-0.018f, 0.012f, leftZ)),
+            new KenHoldPoint("primary", new Vector3(0.022f, -0.014f, rightZ)),
+            new KenHoldPoint("secondary", new Vector3(-0.022f, 0.014f, leftZ)),
             new KenHoldPoint("kashira", new Vector3(0f, 0f, -half * 0.98f)),
             new KenHoldPoint("tsuba", new Vector3(0f, 0f, tsubaZ)),
             new KenHoldPoint("kissaki", new Vector3(0f, 0f, half * 0.98f)));

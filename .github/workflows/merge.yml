@@ -1,0 +1,19 @@
+name: Merge
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'LICENSE'
+      - '.editorconfig'
+  workflow_dispatch:
+jobs:
+  ci:
+    uses: Novolis-Platform/novolis-workflows/.github/workflows/dotnet-pull-request.yml@main
+    secrets: inherit
+    with:
+      solution: Novolis.Dogfooding.slnx
+    permissions:
+      contents: read
+      packages: read

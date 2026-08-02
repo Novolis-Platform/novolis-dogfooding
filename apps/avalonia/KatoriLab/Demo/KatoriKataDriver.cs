@@ -7,7 +7,7 @@ namespace KatoriLab.Demo;
 
 /// <summary>
 /// Continuous ken timeline → spine/stance FK + blade path + <see cref="HumanoidFullBodyIk"/> holds.
-/// No post-IK weapon snap (that fought the path and looked robotic).
+/// Two-hand kamae: fit ken for reach/head clearance, IK lock, then snap tsuka onto the hands.
 /// </summary>
 internal sealed class KatoriKataDriver
 {
@@ -224,10 +224,24 @@ internal sealed class KatoriKataDriver
         if (HoldMode)
         {
             if (sample.TwoHand >= 0.35f)
-                ClampHoldsToArmReach();
-            LockHands(sample);
-            if (sample.TwoHand >= 0.35f)
-                EnsureHandsClearHead(sample);
+            {
+                FitWeaponReachAndClear(sample);
+                LockHands(sample);
+                SnapKenToHands(sample);
+                RelockTwoHands();
+                // Snap can drift tip/hands toward the skull — nudge clear and re-seat grips.
+                if (HeadClearanceDeficit() > 0f)
+                {
+                    FitWeaponReachAndClear(sample);
+                    LockHands(sample);
+                    SnapKenToHands(sample);
+                    RelockTwoHands();
+                }
+            }
+            else
+            {
+                LockHands(sample);
+            }
         }
 
         HumanoidPoseSolver.BakeLocal(_bind, _world, _pose);
@@ -343,71 +357,91 @@ internal sealed class KatoriKataDriver
         HumanoidFullBodyIk.Apply(_world, _bind, targets);
     }
 
-    /// <summary>Pull unreachable grip targets toward the shoulders before IK.</summary>
-    void ClampHoldsToArmReach()
+    /// <summary>Translate the whole ken until grips/tsuba clear the skull and sit in arm reach.</summary>
+    void FitWeaponReachAndClear(KenTimeline.Sample s)
     {
-        var rLen = Vector3.Distance(_bind[HumanoidBone.RightArm], _bind[HumanoidBone.RightHand]) * 0.96f;
-        var lLen = Vector3.Distance(_bind[HumanoidBone.LeftArm], _bind[HumanoidBone.LeftHand]) * 0.96f;
+        var head = _world.Position(HumanoidBone.Head) + new Vector3(0f, 0.06f, 0f);
+        const float clearR = 0.17f;
+        var rLen = Vector3.Distance(_bind[HumanoidBone.RightArm], _bind[HumanoidBone.RightHand]) * 0.94f;
+        var lLen = Vector3.Distance(_bind[HumanoidBone.LeftArm], _bind[HumanoidBone.LeftHand]) * 0.94f;
         var rShoulder = _world.Position(HumanoidBone.RightShoulder);
         var lShoulder = _world.Position(HumanoidBone.LeftShoulder);
-        _holdPrimaryWorld = ClampToReach(rShoulder, _holdPrimaryWorld, rLen);
-        _holdSecondaryWorld = ClampToReach(lShoulder, _holdSecondaryWorld, lLen);
-    }
+        var forward = new Vector3(MathF.Sin(s.SpineYaw), 0f, MathF.Cos(s.SpineYaw));
+        var clearBias = Vector3.Normalize(-forward * 0.85f + Vector3.UnitY * 0.55f);
 
-    static Vector3 ClampToReach(Vector3 root, Vector3 target, float maxLen)
-    {
-        var d = target - root;
-        var len = d.Length();
-        if (len <= maxLen || len < 1e-6f)
-            return target;
-        return root + d * (maxLen / len);
-    }
+        for (var i = 0; i < 14; i++)
+        {
+            RefreshHoldsFromWeapon();
+            var primary = _holdPrimaryWorld;
+            var secondary = _holdSecondaryWorld;
+            var mid = (primary + secondary) * 0.5f;
+            var delta = Vector3.Zero;
 
-    /// <summary>Translate ken so grip mid matches hand mid (keeps authored tip aim).</summary>
-    void CenterKenOnHands()
-    {
-        var midHands = (_world.Position(HumanoidBone.RightHand) + _world.Position(HumanoidBone.LeftHand)) * 0.5f;
-        var midHolds = (_holdPrimaryWorld + _holdSecondaryWorld) * 0.5f;
-        _weaponWorld *= Matrix4x4.CreateTranslation(midHands - midHolds);
+            foreach (var pt in new[] { primary, secondary, mid, _tsuba })
+            {
+                var v = pt - head;
+                var d = v.Length();
+                if (d >= clearR)
+                    continue;
+                var push = d < 1e-5f ? clearBias : Vector3.Normalize(v + clearBias);
+                delta += push * (clearR - d + 0.02f);
+            }
+
+            var rDist = Vector3.Distance(rShoulder, primary);
+            if (rDist > rLen)
+                delta += Vector3.Normalize(rShoulder - primary) * (rDist - rLen);
+            var lDist = Vector3.Distance(lShoulder, secondary);
+            if (lDist > lLen)
+                delta += Vector3.Normalize(lShoulder - secondary) * (lDist - lLen);
+
+            if (delta.LengthSquared() < 1e-8f)
+                break;
+            _weaponWorld *= Matrix4x4.CreateTranslation(delta * 0.55f);
+        }
+
         RefreshHoldsFromWeapon();
     }
 
-    /// <summary>If tsuka/tsuba sits in the head sphere, shift ken up/back and re-lock.</summary>
-    void EnsureHandsClearHead(KenTimeline.Sample s)
+    float HeadClearanceDeficit()
     {
-        if (!HoldMode || s.TwoHand < 0.35f)
-            return;
-
         var head = _world.Position(HumanoidBone.Head) + new Vector3(0f, 0.06f, 0f);
         const float clearR = 0.17f;
-        var yaw = s.SpineYaw;
-        var forward = new Vector3(MathF.Sin(yaw), 0f, MathF.Cos(yaw));
-        var away = Vector3.Normalize(-forward * 0.9f + Vector3.UnitY * 0.5f);
-
-        for (var i = 0; i < 5; i++)
+        var mid = (_holdPrimaryWorld + _holdSecondaryWorld) * 0.5f;
+        var worst = 0f;
+        foreach (var p in new[] { _holdPrimaryWorld, _holdSecondaryWorld, mid, _tsuba })
         {
-            var mid = (_holdPrimaryWorld + _holdSecondaryWorld) * 0.5f;
-            var worst = 0f;
-            foreach (var p in new[] { _holdPrimaryWorld, _holdSecondaryWorld, mid, _tsuba })
-            {
-                var d = Vector3.Distance(p, head);
-                if (d < clearR)
-                    worst = MathF.Max(worst, clearR - d);
-            }
-
-            if (worst <= 0f)
-                break;
-
-            _weaponWorld *= Matrix4x4.CreateTranslation(away * (worst + 0.04f));
-            RefreshHoldsFromWeapon();
-            ClampHoldsToArmReach();
-            RelockTwoHands();
-            CenterKenOnHands();
-            RelockTwoHands();
+            var d = Vector3.Distance(p, head);
+            if (d < clearR)
+                worst = MathF.Max(worst, clearR - d);
         }
 
-        CenterKenOnHands();
-        RelockTwoHands();
+        return worst;
+    }
+
+    /// <summary>Seat ken on the hands: left@kashira grip, right@tsuba grip, blade along the tsuka.</summary>
+    void SnapKenToHands(KenTimeline.Sample s)
+    {
+        var right = _world.Position(HumanoidBone.RightHand);
+        var left = _world.Position(HumanoidBone.LeftHand);
+        var along = right - left;
+        if (along.LengthSquared() < 1e-6f)
+            return;
+
+        var handDir = Vector3.Normalize(along);
+        var intended = Vector3.Normalize(Vector3.Transform(s.TipDir,
+            Quaternion.CreateFromAxisAngle(Vector3.UnitY, s.SpineYaw)));
+        if (Vector3.Dot(handDir, intended) < 0f)
+            handDir = -handDir;
+
+        // Hands own the tsuka axis (near-zero gripΔ); tip follows the same straight ken.
+        var basis = KenBasis(handDir);
+        var secondaryLocal = _holds.SecondaryGrip.LocalPosition;
+        _weaponWorld = basis * Matrix4x4.CreateTranslation(left - Vector3.Transform(secondaryLocal, basis));
+        RefreshHoldsFromWeapon();
+
+        var fix = (right - _holdPrimaryWorld + (left - _holdSecondaryWorld)) * 0.5f;
+        _weaponWorld *= Matrix4x4.CreateTranslation(fix);
+        RefreshHoldsFromWeapon();
     }
 
     void RelockTwoHands()

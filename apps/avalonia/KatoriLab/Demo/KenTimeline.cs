@@ -131,9 +131,9 @@ internal static class KenTimeline
     static Vector3 TipUp => V(0.04f, 0.99f, 0.04f);
     static Vector3 GripChudan => V(0.05f, 0.18f, 0.38f);
     static Vector3 TipChudan => V(0.03f, 0.45f, 0.89f);
-    // Above + well behind the crown so the left hand (kashira) clears the skull.
-    static Vector3 GripJodan => V(0.02f, 0.88f, -0.32f);
-    static Vector3 TipJodan => V(-0.03f, 0.62f, -0.78f);
+    // Above + behind the crown; kept inside arm reach so holds can lock cleanly.
+    static Vector3 GripJodan => V(0.03f, 0.84f, -0.24f);
+    static Vector3 TipJodan => V(-0.02f, 0.58f, -0.82f);
     static Vector3 GripGedan => V(0.06f, 0.06f, 0.30f);
     static Vector3 TipGedan => V(-0.06f, -0.50f, 0.86f);
 
