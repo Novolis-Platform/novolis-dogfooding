@@ -55,6 +55,27 @@ public class HoverRaceSimulationTests
     }
 
     [Test]
+    public async Task Throttle_Moves_Away_From_Start_Along_Track()
+    {
+        var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
+        var player = new PlayerHoverController("T")
+        {
+            Current = new HoverControlDecision(0, 1, 0, 0, false),
+        };
+        var sim = new HoverRaceSimulation(track, [player], targetLaps: 1);
+        var start = sim.State.Craft[0].Position;
+        for (var i = 0; i < 120; i++)
+            sim.Tick();
+
+        var c = sim.State.Craft[0];
+        var moved = Vector3.Distance(c.Position, start);
+        await Assert.That(c.Crashed).IsFalse();
+        await Assert.That(c.Speed).IsGreaterThan(20);
+        await Assert.That(moved).IsGreaterThan(40f);
+        await Assert.That(c.TrackProgress).IsGreaterThan(0.001);
+    }
+
+    [Test]
     public async Task Hover_Tick_Advances_Progress_Without_Immediate_Crash()
     {
         var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
@@ -70,6 +91,7 @@ public class HoverRaceSimulationTests
         await Assert.That(sim.State.Craft[0].Crashed).IsFalse();
         await Assert.That(sim.State.Craft[0].TrackProgress).IsGreaterThan(0);
     }
+
 
     [Test]
     public async Task Weapon_Fire_Consumes_Ammo_And_Spawns_Projectile()

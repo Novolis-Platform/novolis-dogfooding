@@ -62,6 +62,70 @@ public static class MobiusTrackFrames
         return frames;
     }
 
+    public static SurfaceFrame AtLoopT(IReadOnlyList<SurfaceFrame> frames, double loopT)
+    {
+        if (frames.Count == 0)
+            return default;
+        if (frames.Count == 1)
+            return frames[0];
+
+        var t = loopT - Math.Floor(loopT);
+        if (t < 0)
+            t += 1;
+        var f = t * frames.Count;
+        var i0 = (int)f % frames.Count;
+        var i1 = (i0 + 1) % frames.Count;
+        var alpha = (float)(f - Math.Floor(f));
+        var a = frames[i0];
+        var b = frames[i1];
+
+        var pos = Vector3.Lerp(a.Position, b.Position, alpha);
+        var tangent = Vector3.Lerp(a.Tangent, b.Tangent, alpha);
+        if (tangent.LengthSquared() < 1e-8f)
+            tangent = a.Tangent;
+        tangent = Vector3.Normalize(tangent);
+
+        var right = Vector3.Lerp(a.Right, b.Right, alpha);
+        if (right.LengthSquared() < 1e-8f)
+            right = a.Right;
+        right = Vector3.Normalize(right);
+        // Re-orthonormalize after lerp.
+        right = Vector3.Normalize(right - tangent * Vector3.Dot(right, tangent));
+        var up = Vector3.Normalize(Vector3.Cross(tangent, right));
+        var twist = (float)(MathF.PI * HalfTwistsPerLap * t + MathF.Tau * ExtraSwirlsPerLap * t);
+
+        return new SurfaceFrame(pos, tangent, right, up, twist, (float)t);
+    }
+
+    /// <summary>
+    /// Prefer a frame near <paramref name="hintIndex"/> so closed-loop seams don't snap to the wrong lap end.
+    /// </summary>
+    public static (SurfaceFrame Frame, int Index) NearestInWindow(
+        IReadOnlyList<SurfaceFrame> frames,
+        Vector3 world,
+        int hintIndex,
+        int window = 48)
+    {
+        if (frames.Count == 0)
+            return (default, 0);
+
+        hintIndex = ((hintIndex % frames.Count) + frames.Count) % frames.Count;
+        var best = hintIndex;
+        var bestD = float.MaxValue;
+        for (var d = -window; d <= window; d++)
+        {
+            var i = (hintIndex + d + frames.Count * 4) % frames.Count;
+            var dist = Vector3.DistanceSquared(frames[i].Position, world);
+            if (dist < bestD)
+            {
+                bestD = dist;
+                best = i;
+            }
+        }
+
+        return (frames[best], best);
+    }
+
     public static SurfaceFrame Nearest(IReadOnlyList<SurfaceFrame> frames, Vector3 world)
     {
         if (frames.Count == 0)

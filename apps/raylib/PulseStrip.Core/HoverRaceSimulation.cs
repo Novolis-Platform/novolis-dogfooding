@@ -132,13 +132,17 @@ public sealed class HoverRaceSimulation
             if (c.CompletedLaps > lapsBefore)
                 LapCompleted?.Invoke(c);
 
-            var progressAfter = _progress.Resolve(Track, Flat(c.Position), c.Forward);
-            c.TrackProgress = progressAfter.LoopT + c.CompletedLaps;
+            // Keep continuous arc progress from IntegrateMotion; only re-base lap count.
+            var loopT = c.TrackProgress - Math.Floor(c.TrackProgress);
+            if (loopT < 0)
+                loopT += 1;
+            c.TrackProgress = c.CompletedLaps + loopT;
             c.TicksAlive++;
 
             if (c.CompletedLaps >= State.TargetLaps)
                 c.Finished = true;
 
+            var progressAfter = _progress.Resolve(Track, Flat(c.Position), c.Forward);
             AccumulateReward(i, before, c, progressBefore, progressAfter);
         }
 
@@ -171,37 +175,47 @@ public sealed class HoverRaceSimulation
             c.Speed += Acceleration * 0.6 * DeltaTime;
         c.Speed = Math.Clamp(c.Speed, 0, maxSpeed);
 
-        var frame = MobiusTrackFrames.Nearest(_frames, c.Position);
-        var turn = (float)(decision.Steering * MaxTurnRate * DeltaTime * (1.0 - 0.35 * (c.Speed / BoostMaxSpeed)));
-        var turnQ = Quaternion.CreateFromAxisAngle(frame.Up, turn);
-        var steered = Vector3.Transform(c.Forward, turnQ);
-        if (steered.LengthSquared() < 1e-8f)
-            steered = frame.Tangent;
-        // Stay mostly rail-aligned on the Möbius ribbon while allowing player/AI steer.
-        c.Forward = Vector3.Normalize(Vector3.Lerp(Vector3.Normalize(steered), frame.Tangent, 0.12f));
+        var totalArc = Track.ProgressMap.TotalArcLength;
+        if (totalArc < 1 || _frames.Length == 0)
+            return;
 
-        c.Position += c.Forward * (float)(c.Speed * DeltaTime);
+        // Continuous lap fraction — do not reseat from discrete nearest-sample LoopT
+        // (that snapped the craft back to the same point every tick).
+        var loopT = c.TrackProgress - Math.Floor(c.TrackProgress);
+        if (loopT < 0)
+            loopT += 1;
 
-        // Re-seat onto twisted road: lateral offset preserved, height follows surface up.
-        frame = MobiusTrackFrames.Nearest(_frames, c.Position);
-        var toCraft = c.Position - frame.Position;
-        var lateral = Math.Clamp(
-            Vector3.Dot(toCraft, frame.Right),
-            (float)(-Track.Geometry.HalfWidth * 0.95),
-            (float)(Track.Geometry.HalfWidth * 0.95));
+        var frame = MobiusTrackFrames.AtLoopT(_frames, loopT);
+        var lateral = Vector3.Dot(c.Position - frame.Position, frame.Right);
+        // Steering slides across the ribbon; yaw is mostly rail-locked.
+        lateral += (float)(decision.Steering * c.Speed * 0.55 * DeltaTime);
+        var half = (float)(Track.Geometry.HalfWidth * 0.95);
+        lateral = Math.Clamp(lateral, -half, half);
+
+        loopT += (c.Speed * DeltaTime) / totalArc;
+        loopT -= Math.Floor(loopT);
+
+        frame = MobiusTrackFrames.AtLoopT(_frames, loopT);
         var hover = HoverHeight + (boosting ? 0.35f : 0f) + MathF.Sin(State.Tick * 0.08f + c.Id) * 0.05f;
         c.Position = frame.Position + frame.Right * lateral + frame.Up * hover;
-        // Keep nose on the twisted ribbon.
-        c.Forward = Vector3.Normalize(Vector3.Lerp(c.Forward, frame.Tangent, 0.2f));
+        c.Forward = frame.Tangent.LengthSquared() > 1e-8f
+            ? Vector3.Normalize(frame.Tangent)
+            : c.Forward;
         c.Bank = Math.Clamp(frame.TwistRadians / MathF.PI, -2f, 2f);
+        // Keep continuous progress so the next tick doesn't re-snap; lap scorer still owns CompletedLaps.
+        c.TrackProgress = Math.Floor(c.TrackProgress) + loopT;
     }
 
     private void ResolveCollisions(HoverCraftState c)
     {
-        // Continuous road test against centerline half-width (long circuits are not cell-accurate at edges).
-        var frame = MobiusTrackFrames.Nearest(_frames, c.Position);
-        var toCraft = c.Position - frame.Position;
-        var lateral = Vector3.Dot(toCraft, frame.Right);
+        if (_frames.Length == 0)
+            return;
+
+        var loopT = c.TrackProgress - Math.Floor(c.TrackProgress);
+        if (loopT < 0)
+            loopT += 1;
+        var frame = MobiusTrackFrames.AtLoopT(_frames, loopT);
+        var lateral = Vector3.Dot(c.Position - frame.Position, frame.Right);
         var half = Track.Geometry.HalfWidth;
         var wallBand = Math.Max(1.0, half * 0.12);
 
@@ -212,10 +226,7 @@ public sealed class HoverRaceSimulation
         c.Speed *= 0.35;
         var push = (float)(-Math.Sign(lateral) * Math.Max(0.8, wallBand));
         c.Position += frame.Right * push;
-        // Snap back onto twisted road band if still outside.
-        frame = MobiusTrackFrames.Nearest(_frames, c.Position);
-        toCraft = c.Position - frame.Position;
-        lateral = Vector3.Dot(toCraft, frame.Right);
+        lateral = Vector3.Dot(c.Position - frame.Position, frame.Right);
         if (Math.Abs(lateral) > half)
         {
             var snap = (float)(lateral - Math.CopySign(half * 0.92, lateral));
