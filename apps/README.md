@@ -100,3 +100,12 @@ Portrait hotseat tap-tug football (`Rendering.TwoD` + `Game.MenuFlows`), recreat
 ```powershell
 dotnet run --project apps/gaming/TapDuelFootball -p:NovolisUseProjectReferences=true
 ```
+
+## PulseStrip
+
+Anti-grav spline-circuit racer (Wipeout homage): weapons/boost, procedural FX/SFX, evolutionary ML opponents. Windows + Linux; Android deferred (see app README).
+
+```powershell
+dotnet run --project d:\novolis\novolis-dogfooding\apps\raylib\PulseStrip -p:NovolisUseProjectReferences=true
+dotnet run --project d:\novolis\novolis-dogfooding\apps\raylib\PulseStrip -p:NovolisUseProjectReferences=true -- --smoke
+```

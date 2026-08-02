@@ -1,0 +1,49 @@
+name: PulseStrip smoke
+on:
+  pull_request:
+    paths:
+      - 'apps/raylib/PulseStrip/**'
+      - 'apps/raylib/PulseStrip.Core/**'
+      - 'apps/raylib/PulseStrip.Tests/**'
+      - '.github/workflows/pulsestrip-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/raylib/PulseStrip/**'
+      - 'apps/raylib/PulseStrip.Core/**'
+      - 'apps/raylib/PulseStrip.Tests/**'
+      - '.github/workflows/pulsestrip-smoke.yml'
+  workflow_dispatch:
+concurrency:
+  group: pulsestrip-smoke-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Auth GitHub Packages
+        run: |
+          dotnet nuget update source github \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
+            --store-password-in-clear-text \
+          || dotnet nuget add source "https://nuget.pkg.github.com/Novolis-Platform/index.json" \
+            --name github \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
+            --store-password-in-clear-text
+      - name: Test Core
+        run: dotnet test apps/raylib/PulseStrip.Tests/PulseStrip.Tests.csproj --configuration Release
+      - name: Build game
+        run: dotnet build apps/raylib/PulseStrip/PulseStrip.csproj --configuration Release
+      - name: Headless smoke
+        env:
+          NOVOLIS_RAYLIB_HEADLESS: '1'
+        run: dotnet run --project apps/raylib/PulseStrip/PulseStrip.csproj --configuration Release --no-build -- --smoke
