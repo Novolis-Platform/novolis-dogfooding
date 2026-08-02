@@ -82,9 +82,9 @@ internal static class KenTimeline
         new(14.8f, "Chūdan-no-kamae", Root(CenterZ, x: 0.03f, y: -0.04f), 0.20f, 0.05f, -0.05f,
             GripChudan, TipChudan, 1f, 1f, 0f),
 
-        // ——— Jōdan ———
+        // ——— Jōdan (grip mid well above the skull so hands/blade clear the head) ———
         new(15.8f, "To Jōdan", Root(CenterZ, x: 0.01f, y: -0.02f), 0.16f, -0.06f, 0.04f,
-            V(0.02f, 0.55f, 0.08f), V(-0.05f, 0.70f, -0.71f), 1f, 1f, 0f),
+            V(0.02f, 0.82f, -0.06f), V(-0.05f, 0.68f, -0.73f), 1f, 1f, 0f),
         new(17.0f, "Jōdan-no-kamae", Root(CenterZ - 0.01f, y: -0.02f), 0.14f, -0.10f, 0.08f,
             GripJodan, TipJodan, 1f, 1f, 0f),
         new(18.6f, "Jōdan-no-kamae", Root(CenterZ - 0.01f, y: -0.02f), 0.14f, -0.10f, 0.08f,
@@ -92,11 +92,11 @@ internal static class KenTimeline
 
         // ——— Kesagiri ———
         new(19.1f, "Cutting (kesagiri)", Root(CenterZ, x: 0.04f, y: -0.03f), 0.28f, 0.02f, -0.04f,
-            V(0.10f, 0.50f, 0.10f), V(0.55f, 0.45f, 0.70f), 1f, 1f, 0f),
+            V(0.10f, 0.70f, 0.06f), V(0.55f, 0.45f, 0.70f), 1f, 1f, 0f),
         new(19.8f, "Kesagiri", Root(CenterZ, x: 0.08f, y: -0.05f), 0.48f, 0.12f, -0.12f,
-            V(0.10f, 0.20f, 0.22f), V(-0.25f, 0.05f, 0.97f), 1f, 1f, 0f),
+            V(0.10f, 0.28f, 0.22f), V(-0.25f, 0.05f, 0.97f), 1f, 1f, 0f),
         new(20.5f, "Kesagiri", Root(CenterZ, x: 0.10f, y: -0.06f), 0.55f, 0.16f, -0.16f,
-            V(0.12f, 0.08f, 0.24f), V(-0.55f, -0.40f, 0.73f), 1f, 1f, 0f),
+            V(0.12f, 0.12f, 0.24f), V(-0.55f, -0.40f, 0.73f), 1f, 1f, 0f),
 
         // ——— Gedan, recover chūdan ———
         new(22.0f, "Gedan-no-kamae", Root(CenterZ, x: 0.04f, y: -0.04f), 0.24f, 0.08f, -0.06f,
@@ -131,8 +131,9 @@ internal static class KenTimeline
     static Vector3 TipUp => V(0.04f, 0.99f, 0.04f);
     static Vector3 GripChudan => V(0.05f, 0.18f, 0.38f);
     static Vector3 TipChudan => V(0.03f, 0.45f, 0.89f);
-    static Vector3 GripJodan => V(0.0f, 0.72f, -0.04f);
-    static Vector3 TipJodan => V(-0.06f, 0.62f, -0.78f);
+    // Above + well behind the crown so the left hand (kashira) clears the skull.
+    static Vector3 GripJodan => V(0.02f, 0.88f, -0.32f);
+    static Vector3 TipJodan => V(-0.03f, 0.62f, -0.78f);
     static Vector3 GripGedan => V(0.06f, 0.06f, 0.30f);
     static Vector3 TipGedan => V(-0.06f, -0.50f, 0.86f);
 

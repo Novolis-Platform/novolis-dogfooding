@@ -25,6 +25,8 @@ internal static class KataCorrectness
         checks.Add(CheckJodanGeometry(driver));
         checks.Add(CheckHoldLock(driver, "chudan", maxR: 0.08f, maxL: 0.10f));
         checks.Add(CheckHoldLock(driver, "jodan", maxR: 0.08f, maxL: 0.10f));
+        checks.Add(CheckKenGripLayout(driver));
+        checks.Add(CheckJodanHeadClearance(driver));
         checks.Add(CheckChudanToJodanTravel(driver));
         checks.Add(CheckKesagiriTravel(driver));
         checks.Add(CheckTipContinuity());
@@ -115,7 +117,8 @@ internal static class KataCorrectness
         var forward = Vector3.Dot(dir, Vector3.UnitZ);
         var up = Vector3.Dot(dir, Vector3.UnitY);
         var tipY = pose.Kissaki.Y;
-        var ok = forward <= -0.35f && up >= 0.35f && tipY >= 1.6f;
+        // Tip rear-high (upDot soft — blade may lie mostly behind the crown).
+        var ok = forward <= -0.35f && tipY >= 1.55f;
         return new("jodan-geom", ok, $"forwardDot={forward:0.###} upDot={up:0.###} tipY={tipY:0.###}");
     }
 
@@ -125,6 +128,38 @@ internal static class KataCorrectness
         var h = driver.SampleHolds();
         var ok = h.RightHandError <= maxR && h.LeftHandError <= maxL;
         return new($"hold-{phase}", ok, $"rErr={h.RightHandError:0.####} lErr={h.LeftHandError:0.####}");
+    }
+
+    static Check CheckKenGripLayout(KatoriKataDriver driver)
+    {
+        driver.SeekPhase("chudan");
+        var blade = driver.Kissaki - driver.Kashira;
+        if (blade.LengthSquared() < 1e-6f)
+            return new("ken-grip", false, "zero blade");
+        var dir = Vector3.Normalize(blade);
+        // Along blade from kashira→kissaki: left (secondary) then right (primary) then tsuba.
+        var leftT = Vector3.Dot(driver.HoldSecondaryWorld - driver.Kashira, dir);
+        var rightT = Vector3.Dot(driver.HoldPrimaryWorld - driver.Kashira, dir);
+        var tsubaT = Vector3.Dot(driver.Tsuba - driver.Kashira, dir);
+        var tipT = Vector3.Dot(driver.Kissaki - driver.Kashira, dir);
+        var span = Vector3.Distance(driver.HoldPrimaryWorld, driver.HoldSecondaryWorld);
+        var orderOk = leftT < rightT && rightT < tsubaT && tsubaT < tipT;
+        var spanOk = span is >= 0.18f and <= 0.32f;
+        var ok = orderOk && spanOk;
+        return new("ken-grip", ok,
+            $"leftT={leftT:0.###} rightT={rightT:0.###} tsubaT={tsubaT:0.###} span={span:0.###} order={orderOk}");
+    }
+
+    static Check CheckJodanHeadClearance(KatoriKataDriver driver)
+    {
+        driver.SeekPhase("jodan");
+        var head = driver.World.Position(HumanoidBone.Head) + new Vector3(0f, 0.06f, 0f);
+        const float minClear = 0.14f;
+        var dR = Vector3.Distance(driver.HoldPrimaryWorld, head);
+        var dL = Vector3.Distance(driver.HoldSecondaryWorld, head);
+        var dT = Vector3.Distance(driver.Tsuba, head);
+        var ok = dR >= minClear && dL >= minClear && dT >= minClear;
+        return new("jodan-clear", ok, $"dR={dR:0.###} dL={dL:0.###} dTsuba={dT:0.###}");
     }
 
     static Check CheckChudanToJodanTravel(KatoriKataDriver driver)

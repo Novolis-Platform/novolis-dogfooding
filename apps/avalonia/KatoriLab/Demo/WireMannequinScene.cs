@@ -19,6 +19,7 @@ internal sealed class WireMannequinScene
     readonly MeshNode[] _bones;
     readonly MeshNode _head;
     readonly MeshNode _bokken;
+    readonly MeshNode _tsuba;
     readonly MeshNode _holdPrimary;
     readonly MeshNode _holdSecondary;
 
@@ -111,6 +112,14 @@ internal sealed class WireMannequinScene
         };
         doc.Nodes.Add(_bokken);
 
+        _tsuba = new MeshNode
+        {
+            Name = "Tsuba",
+            ParentId = root.Id,
+            Primitive = MeshPrimitiveKind.Cylinder,
+        };
+        doc.Nodes.Add(_tsuba);
+
         _holdPrimary = Marker(doc, root.Id, "Hold.Primary", 0.04f);
         _holdSecondary = Marker(doc, root.Id, "Hold.Secondary", 0.035f);
 
@@ -157,7 +166,8 @@ internal sealed class WireMannequinScene
         if (driver.HoldMode)
         {
             WriteSegment(_bokken, driver.Kashira, driver.Kissaki, 0.016f);
-            PlaceMarker(_holdPrimary, driver.HoldPrimaryWorld, 0.04f);
+            WriteTsuba(_tsuba, driver.Tsuba, driver.Kissaki - driver.Kashira);
+            PlaceMarker(_holdPrimary, driver.HoldPrimaryWorld, 0.035f);
             PlaceMarker(_holdSecondary, driver.HoldSecondaryWorld, 0.035f);
             _holdPrimary.Visible = true;
             _holdSecondary.Visible = true;
@@ -165,13 +175,36 @@ internal sealed class WireMannequinScene
         else
         {
             _bokken.Visible = false;
+            _tsuba.Visible = false;
             _holdPrimary.Visible = false;
             _holdSecondary.Visible = false;
         }
 
         _session.Evaluator.NotifyNodeChanged(_bokken);
+        _session.Evaluator.NotifyNodeChanged(_tsuba);
         _session.Evaluator.NotifyNodeChanged(_holdPrimary);
         _session.Evaluator.NotifyNodeChanged(_holdSecondary);
+    }
+
+    /// <summary>Thin disc (cylinder) perpendicular to the blade at the tsuba.</summary>
+    static void WriteTsuba(MeshNode node, Vector3 center, Vector3 bladeDir)
+    {
+        if (bladeDir.LengthSquared() < 1e-8f)
+        {
+            node.Visible = false;
+            return;
+        }
+
+        bladeDir = Vector3.Normalize(bladeDir);
+        const float radius = 0.075f;
+        const float thickness = 0.018f;
+        // PrimitiveMesher.Cylinder is Y-up; align Y with blade so the disc faces along the blade.
+        var mesh = PrimitiveMesher.Cylinder(radius, thickness, 16);
+        var q = QuatFromTo(Vector3.UnitY, bladeDir);
+        mesh.Transform(Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(center));
+        MeshEditBake.WriteBaked(node, mesh);
+        node.Transform = new SceneTransform();
+        node.Visible = true;
     }
 
     /// <summary>

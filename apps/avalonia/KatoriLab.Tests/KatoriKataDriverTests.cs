@@ -73,4 +73,31 @@ public sealed class KatoriKataDriverTests
         await Assert.That(t).IsEqualTo(0f);
         await Assert.That(z).IsEqualTo(KenTimeline.DoorZ);
     }
+
+    [Test]
+    public async Task Ken_grip_is_left_kashira_right_tsuba_with_span()
+    {
+        var driver = new KatoriKataDriver { HoldMode = true };
+        driver.SeekPhase("chudan");
+        var dir = System.Numerics.Vector3.Normalize(driver.Kissaki - driver.Kashira);
+        var leftT = System.Numerics.Vector3.Dot(driver.HoldSecondaryWorld - driver.Kashira, dir);
+        var rightT = System.Numerics.Vector3.Dot(driver.HoldPrimaryWorld - driver.Kashira, dir);
+        var tsubaT = System.Numerics.Vector3.Dot(driver.Tsuba - driver.Kashira, dir);
+        var span = System.Numerics.Vector3.Distance(driver.HoldPrimaryWorld, driver.HoldSecondaryWorld);
+        await Assert.That(leftT).IsLessThan(rightT);
+        await Assert.That(rightT).IsLessThan(tsubaT);
+        await Assert.That(span).IsGreaterThanOrEqualTo(0.18f);
+        await Assert.That(span).IsLessThanOrEqualTo(0.32f);
+    }
+
+    [Test]
+    public async Task Jodan_hands_and_tsuba_clear_the_head()
+    {
+        var driver = new KatoriKataDriver { HoldMode = true };
+        driver.SeekPhase("jodan");
+        var head = driver.World.Position(HumanoidBone.Head) + new System.Numerics.Vector3(0f, 0.06f, 0f);
+        await Assert.That(System.Numerics.Vector3.Distance(driver.HoldPrimaryWorld, head)).IsGreaterThanOrEqualTo(0.14f);
+        await Assert.That(System.Numerics.Vector3.Distance(driver.HoldSecondaryWorld, head)).IsGreaterThanOrEqualTo(0.14f);
+        await Assert.That(System.Numerics.Vector3.Distance(driver.Tsuba, head)).IsGreaterThanOrEqualTo(0.14f);
+    }
 }

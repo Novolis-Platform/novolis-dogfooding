@@ -22,6 +22,7 @@ internal sealed class KatoriKataDriver
     float _time;
     Matrix4x4 _weaponWorld = Matrix4x4.Identity;
     Vector3 _kashira;
+    Vector3 _tsuba;
     Vector3 _kissaki;
     Vector3 _holdPrimaryWorld;
     Vector3 _holdSecondaryWorld;
@@ -47,6 +48,7 @@ internal sealed class KatoriKataDriver
     public string SkinSource => "ken-timeline";
     public string ClipId => KatoriKataClips.ClipId;
     public Vector3 Kashira => _kashira;
+    public Vector3 Tsuba => _tsuba;
     public Vector3 Kissaki => _kissaki;
     public Vector3 HoldPrimaryWorld => _holdPrimaryWorld;
     public Vector3 HoldSecondaryWorld => _holdSecondaryWorld;
@@ -89,19 +91,27 @@ internal sealed class KatoriKataDriver
             return;
 
         var sample = KenTimeline.Evaluate(_time);
+        var blade = _kissaki - _kashira;
+        var side = MathF.Abs(Vector3.Dot(Vector3.Normalize(blade), Vector3.UnitY)) > 0.9f
+            ? Vector3.UnitX
+            : Vector3.Normalize(Vector3.Cross(blade, Vector3.UnitY));
         var segs = new List<Vector3>
         {
             _kashira, _kissaki,
-            _holdPrimaryWorld, _holdPrimaryWorld + new Vector3(0.06f, 0f, 0f),
-            _holdPrimaryWorld, _holdPrimaryWorld + new Vector3(0f, 0.06f, 0f),
+            // Tsuba cross (handguard)
+            _tsuba - side * 0.07f, _tsuba + side * 0.07f,
+            _tsuba - Vector3.Normalize(Vector3.Cross(side, blade)) * 0.07f,
+            _tsuba + Vector3.Normalize(Vector3.Cross(side, blade)) * 0.07f,
+            _holdPrimaryWorld, _holdPrimaryWorld + new Vector3(0.05f, 0f, 0f),
+            _holdPrimaryWorld, _holdPrimaryWorld + new Vector3(0f, 0.05f, 0f),
             _world.Position(HumanoidBone.RightHand), _holdPrimaryWorld,
         };
         if (sample.TwoHand >= 0.35f)
         {
             segs.Add(_holdSecondaryWorld);
-            segs.Add(_holdSecondaryWorld + new Vector3(0.06f, 0f, 0f));
+            segs.Add(_holdSecondaryWorld + new Vector3(0.05f, 0f, 0f));
             segs.Add(_holdSecondaryWorld);
-            segs.Add(_holdSecondaryWorld + new Vector3(0f, 0.06f, 0f));
+            segs.Add(_holdSecondaryWorld + new Vector3(0f, 0.05f, 0f));
             segs.Add(_world.Position(HumanoidBone.LeftHand));
             segs.Add(_holdSecondaryWorld);
         }
@@ -212,7 +222,13 @@ internal sealed class KatoriKataDriver
         // Spine/hips moved — re-read body frame for blade.
         PlaceWeapon(sample);
         if (HoldMode)
+        {
+            if (sample.TwoHand >= 0.35f)
+                ClampHoldsToArmReach();
             LockHands(sample);
+            if (sample.TwoHand >= 0.35f)
+                EnsureHandsClearHead(sample);
+        }
 
         HumanoidPoseSolver.BakeLocal(_bind, _world, _pose);
     }
@@ -280,27 +296,28 @@ internal sealed class KatoriKataDriver
     {
         var hips = _world.Position(HumanoidBone.Hips);
         var yaw = Quaternion.CreateFromAxisAngle(Vector3.UnitY, s.SpineYaw);
-        var grip = hips + Vector3.Transform(s.GripLocal, yaw);
+        var gripMid = hips + Vector3.Transform(s.GripLocal, yaw);
         var tipDir = Vector3.Normalize(Vector3.Transform(s.TipDir, yaw));
-        // Grip is near secondary (left) hand; kashira back along blade, kissaki forward.
-        var kashira = grip - tipDir * (KenTimeline.BokkenLength * 0.32f);
-        var kissaki = grip + tipDir * (KenTimeline.BokkenLength * 0.68f);
-        _weaponWorld = KenWorldMatrix(kashira, kissaki);
+        // Align blade +Z to tipDir; map grip-mid local → gripMid world (correct hand spacing).
+        var basis = KenBasis(tipDir);
+        var midLocal = _holds.GripMidLocal;
+        _weaponWorld = basis * Matrix4x4.CreateTranslation(gripMid - Vector3.Transform(midLocal, basis));
         RefreshHoldsFromWeapon();
     }
 
     void LockHands(KenTimeline.Sample s)
     {
         var targets = HumanoidFullBodyIkTargets.WithDefaults();
-        // Elbows soft under the blade during kamae; open slightly on the cut.
         var cut = Phase.Contains("Kesagiri", StringComparison.Ordinal)
                   || Phase.Contains("Cutting", StringComparison.Ordinal);
-        var poleY = cut ? -0.55f : -1.0f;
-        targets.RightHandPole = new Vector3(0.45f, poleY, 0.35f);
-        targets.LeftHandPole = new Vector3(-0.45f, poleY, 0.35f);
+        var jodan = Phase.Contains("Jōdan", StringComparison.Ordinal)
+                    || Phase.Contains("jodan", StringComparison.OrdinalIgnoreCase);
+        // Elbows out / down so forearms don't collapse through the skull in jōdan.
+        var poleY = cut ? -0.55f : jodan ? -0.35f : -1.0f;
+        var poleOut = jodan ? 0.75f : 0.45f;
+        targets.RightHandPole = new Vector3(poleOut, poleY, 0.35f);
+        targets.LeftHandPole = new Vector3(-poleOut, poleY, 0.35f);
 
-        // Arms start from Identity (= T-pose). Any limb without an IK target stays
-        // stuck out sideways — always target unused hands to a hang pose.
         var leftHang = HangTarget(left: true);
         var rightHang = HangTarget(left: false);
 
@@ -317,13 +334,89 @@ internal sealed class KatoriKataDriver
         }
         else
         {
-            // Walk / rei / opening: right lightly on tsuka, left hangs at the side.
             targets.RightHand = _holdPrimaryWorld;
             targets.LeftHand = leftHang;
             targets.LeftHandPole = new Vector3(-0.2f, -1f, 0.15f);
             targets.RightHandPole = new Vector3(0.25f, -1f, 0.15f);
         }
 
+        HumanoidFullBodyIk.Apply(_world, _bind, targets);
+    }
+
+    /// <summary>Pull unreachable grip targets toward the shoulders before IK.</summary>
+    void ClampHoldsToArmReach()
+    {
+        var rLen = Vector3.Distance(_bind[HumanoidBone.RightArm], _bind[HumanoidBone.RightHand]) * 0.96f;
+        var lLen = Vector3.Distance(_bind[HumanoidBone.LeftArm], _bind[HumanoidBone.LeftHand]) * 0.96f;
+        var rShoulder = _world.Position(HumanoidBone.RightShoulder);
+        var lShoulder = _world.Position(HumanoidBone.LeftShoulder);
+        _holdPrimaryWorld = ClampToReach(rShoulder, _holdPrimaryWorld, rLen);
+        _holdSecondaryWorld = ClampToReach(lShoulder, _holdSecondaryWorld, lLen);
+    }
+
+    static Vector3 ClampToReach(Vector3 root, Vector3 target, float maxLen)
+    {
+        var d = target - root;
+        var len = d.Length();
+        if (len <= maxLen || len < 1e-6f)
+            return target;
+        return root + d * (maxLen / len);
+    }
+
+    /// <summary>Translate ken so grip mid matches hand mid (keeps authored tip aim).</summary>
+    void CenterKenOnHands()
+    {
+        var midHands = (_world.Position(HumanoidBone.RightHand) + _world.Position(HumanoidBone.LeftHand)) * 0.5f;
+        var midHolds = (_holdPrimaryWorld + _holdSecondaryWorld) * 0.5f;
+        _weaponWorld *= Matrix4x4.CreateTranslation(midHands - midHolds);
+        RefreshHoldsFromWeapon();
+    }
+
+    /// <summary>If tsuka/tsuba sits in the head sphere, shift ken up/back and re-lock.</summary>
+    void EnsureHandsClearHead(KenTimeline.Sample s)
+    {
+        if (!HoldMode || s.TwoHand < 0.35f)
+            return;
+
+        var head = _world.Position(HumanoidBone.Head) + new Vector3(0f, 0.06f, 0f);
+        const float clearR = 0.17f;
+        var yaw = s.SpineYaw;
+        var forward = new Vector3(MathF.Sin(yaw), 0f, MathF.Cos(yaw));
+        var away = Vector3.Normalize(-forward * 0.9f + Vector3.UnitY * 0.5f);
+
+        for (var i = 0; i < 5; i++)
+        {
+            var mid = (_holdPrimaryWorld + _holdSecondaryWorld) * 0.5f;
+            var worst = 0f;
+            foreach (var p in new[] { _holdPrimaryWorld, _holdSecondaryWorld, mid, _tsuba })
+            {
+                var d = Vector3.Distance(p, head);
+                if (d < clearR)
+                    worst = MathF.Max(worst, clearR - d);
+            }
+
+            if (worst <= 0f)
+                break;
+
+            _weaponWorld *= Matrix4x4.CreateTranslation(away * (worst + 0.04f));
+            RefreshHoldsFromWeapon();
+            ClampHoldsToArmReach();
+            RelockTwoHands();
+            CenterKenOnHands();
+            RelockTwoHands();
+        }
+
+        CenterKenOnHands();
+        RelockTwoHands();
+    }
+
+    void RelockTwoHands()
+    {
+        var targets = HumanoidFullBodyIkTargets.WithDefaults();
+        targets.RightHandPole = new Vector3(0.75f, -0.35f, 0.35f);
+        targets.LeftHandPole = new Vector3(-0.75f, -0.35f, 0.35f);
+        targets.RightHand = _holdPrimaryWorld;
+        targets.LeftHand = _holdSecondaryWorld;
         HumanoidFullBodyIk.Apply(_world, _bind, targets);
     }
 
@@ -343,6 +436,7 @@ internal sealed class KatoriKataDriver
         _holdPrimaryWorld = _holds.World(_holds.PrimaryGrip, _weaponWorld);
         _holdSecondaryWorld = _holds.World(_holds.SecondaryGrip, _weaponWorld);
         _kashira = _holds.World(_holds.Kashira, _weaponWorld);
+        _tsuba = _holds.World(_holds.Tsuba, _weaponWorld);
         _kissaki = _holds.World(_holds.Kissaki, _weaponWorld);
     }
 
