@@ -26,7 +26,7 @@ Host alone:
 dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\ChannelLab\ChannelHost\ChannelHost.csproj -p:NovolisUseProjectReferences=true
 ```
 
-Until new media packages are on GitHub Packages, keep `-p:NovolisUseProjectReferences=true` (or build via `d:\novolis\novolis-governance\build\Novolis.Platform.slnx`).
+Until media packages (`Novolis.Avalonia.Media`, `Novolis.Media.Rtc*`, `Novolis.Media.Capture.Windows`) are on GitHub Packages, keep `-p:NovolisUseProjectReferences=true` (or build via `d:\novolis\novolis-governance\build\Novolis.Platform.slnx`). ChannelLab is intentionally **not** in `Novolis.Dogfooding.slnx` until those packages publish.
 
 ## Dogfood proof
 

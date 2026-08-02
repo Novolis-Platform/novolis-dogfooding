@@ -2,6 +2,8 @@
 
 Minimal `net10.0-android` NativeActivity that loads **`libnovolis_raylib_android.so`** from `Novolis.Raylib.Native` (`android-arm64`).
 
+Not registered in `Novolis.Dogfooding.slnx` (Linux CI lacks the Android workload). Build this `.csproj` locally.
+
 Desktop Hello remains at [`../RaylibHello`](../RaylibHello) (`RayGame.Run`).
 
 ## Build (ProjectRef)

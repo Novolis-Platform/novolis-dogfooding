@@ -16,7 +16,6 @@
   </Folder>
   <Folder Name="/raylib/">
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
-    <Project Path="apps/RaylibHello.Android/RaylibHello.Android.csproj" />
     <Project Path="apps/raylib/XFighter/XFighter.csproj" />
     <Project Path="apps/raylib/XFighter.Tests/XFighter.Tests.csproj" />
     <Project Path="apps/raylib/FreightWing/FreightWing.csproj" />
@@ -70,9 +69,6 @@
 
 
     <Project Path="apps/avalonia/FriendLab/FriendLab.csproj" />
-    <Project Path="apps/avalonia/ChannelLab/ChannelLab.csproj" />
-    <Project Path="apps/avalonia/ChannelLab/ChannelHost/ChannelHost.csproj" />
-    <Project Path="apps/avalonia/ChannelLab/ChannelSmoke/ChannelSmoke.csproj" />
   </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
