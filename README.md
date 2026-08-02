@@ -39,6 +39,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `BouncingBall` | `apps/BouncingBall` | Raylib, Math.Arrays, Simulation, Physics.Collision |
 | `DoomLite3D` | `apps/DoomLite3D` | Raylib, Math, Simulation (World, View, Kinematics) |
 | `RagdollPlay` | `apps/RagdollPlay` | Raylib, Simulation, Physics.Joints, Physics.Collision |
+| `ClothPlay` | `apps/ClothPlay` | Raylib, Simulation, Physics.Joints cloth sheet, Physics.Collision |
 | `RandoriFight` | `apps/RandoriFight` | Raylib, Simulation.View, Simulation.Humanoid |
 | `PlatformerHop` | `apps/PlatformerHop` | Raylib, Simulation.Kinematics, Simulation.View |
 | `PlatformerTwoD` | `apps/PlatformerTwoD` | Rendering.TwoD, Backends.TwoD.Silk, Simulation |
@@ -51,6 +52,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `MeshBench` (Mesh Studio) | `apps/rendering/MeshBench` | Workspaces, Timeline, Snapshots, Rendering, Audio |
 | `GamingSmoke` | `apps/gaming/GamingSmoke` | Game.Identity, Game.MenuFlows, Game.Multiplayer.Abstractions |
 | `TopDownDoom` | `apps/gaming/TopDownDoom` | Rendering.TwoD, Game flows |
+| `TapDuelFootball` | `apps/gaming/TapDuelFootball` | Rendering.TwoD, Game.MenuFlows — hotseat tap duel |
 | `NeuralRacing` | `apps/NeuralRacing` | Simulation.Racing, MachineLearning.Neural |
 | `VoiceSmoke` | `apps/audio/VoiceSmoke` | Audio.Voice, Voice.Atc (Sherpa Piper TTS) |
 | `NovolisVoiceStudio` | `apps/audio/NovolisVoiceStudio` | Voice.Design + Avalonia.Voice |
@@ -61,6 +63,10 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `SceneLab` | `apps/avalonia/SceneLab` | Avalonia 3D scene lab |
 | `TorrentLab` | `apps/avalonia/TorrentLab` | Avalonia torrent session UI |
 | `HumanoidLab` | `apps/avalonia/HumanoidLab` | Simulation.Humanoid, Humanoid.Physics |
+| `CharacterLab` | `apps/avalonia/CharacterLab` | Drill/salute rig + character/rifle parade scene |
+| `KatoriLab` | `apps/avalonia/KatoriLab` | TSKSR-inspired kenjutsu wire + bokken hold IK |
+| `KatoriLab.Tests` | `apps/avalonia/KatoriLab.Tests` | Kata correctness (timeline, holds, walk hang) |
+| `FriendLab` | `apps/avalonia/FriendLab` | Find-a-Friend prototype — multi-window users, 3-of-5 interests + geo |
 | `CalypsoCad` | `apps/cad/CalypsoCad` | CAD deckplan generation |
 | `AstroSmoke` | `apps/astro/AstroSmoke` | Astro catalog/routing/assessment/overlay/plotting |
 | `StarMapLab` | `apps/astro/StarMapLab` | Avalonia.StarMap + Astro route planner |

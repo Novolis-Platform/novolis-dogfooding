@@ -6,6 +6,14 @@ Add a project under `apps/` (or `apps/<repo>/` for multi-app repos like `renderi
 
 In-repo API walkthroughs (`HelloGame`, `HelloRuntime`, …) stay in `novolis-raylib/samples/`. Published-package demos and cross-repo integration apps live here.
 
+## FriendLab
+
+Multi-window Find-a-Friend prototype (3-of-5 interest overlap + geo radius). Desk window opens one Avalonia window per simulated app user.
+
+```bash
+dotnet run --project apps/avalonia/FriendLab
+```
+
 ## SketchLab
 
 Freehand sketch dogfood for `Novolis.Avalonia.Controls` `SketchControl`. Clipboard export only (transparent PNG or SVG text).
@@ -30,6 +38,16 @@ Hand-ported Rev G deckplans → `.cadjson` / `.cadshapejson` / `.cadlayers.json`
 ```bash
 dotnet run --project apps/cad/CalypsoCad
 dotnet run --project apps/cad/CalypsoCad -- --generate-only
+```
+
+## FreightWing
+
+X-Wing Alliance–inspired dual-role campaign (freighter → X-wing transfer). Bake content from a local Steam install via `novolis-experimental` `Xwa.Cli`, then run the app (no Steam/experimental at runtime).
+
+```powershell
+$env:XWA_INSTALL_DIR = "D:\Steam\steamapps\common\Star Wars X-Wing Alliance"
+dotnet run --project d:\novolis\novolis-experimental\src\Novolis.Experimental.Xwa.Cli -- all --out d:\novolis\novolis-dogfooding\apps\raylib\FreightWing\Content
+dotnet run --project d:\novolis\novolis-dogfooding\apps\raylib\FreightWing -p:NovolisUseProjectReferences=true
 ```
 
 ## SilkTwoDHello
@@ -74,3 +92,11 @@ dotnet run --project apps/io/AdbLab -p:NovolisUseProjectReferences=true -- --smo
 
 - `IoSmoke` — Paths, Recovery, Watching, Processes, Git (`apps/io/IoSmoke/README.md`)
 - `AdbLab` — Mobile.Android protocol/stats/install (`apps/io/AdbLab/README.md`)
+
+## Tap Duel Football
+
+Portrait hotseat tap-tug football (`Rendering.TwoD` + `Game.MenuFlows`), recreation of [tap-duel-football](https://github.com/frankhaugen/tap-duel-football).
+
+```powershell
+dotnet run --project apps/gaming/TapDuelFootball -p:NovolisUseProjectReferences=true
+```

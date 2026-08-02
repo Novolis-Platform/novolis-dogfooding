@@ -99,6 +99,7 @@
     <PackageVersion Include="Novolis.Physics.Astro" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Ballistics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Collision.Simple" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Physics.Cloth" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Joints" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Abstractions" Version="2026.1.*" />
@@ -122,8 +123,10 @@
     <PackageVersion Include="Novolis.Rendering.TwoD" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Kinematics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Racing" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.SpaceCombat" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.View" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Humanoid" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Simulation.Humanoid.Import" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Humanoid.Physics" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Simulation.Humanoid.Skinning" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Humanoid" Version="2026.1.*" />
@@ -132,11 +135,17 @@
     <PackageVersion Include="Novolis.Transports.WireFish" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.Torrent" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Transports.LocalIpc" Version="2026.1.*" />
-    <!-- ProjectRef is non-transitive for NuGet graphs: CAD hosts that ProjectRef Avalonia.3D / Backends.Vulkan must pin Silk natives explicitly. -->
+    <!-- ProjectRef is non-transitive for NuGet graphs: CAD / TwoD Silk hosts must pin Silk packages explicitly. -->
+    <PackageVersion Include="Silk.NET.GLFW" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Input" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Input.Common" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Input.Glfw" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.OpenGL" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.Vulkan" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.Shaderc" Version="2.22.0" />
     <PackageVersion Include="Silk.NET.Shaderc.Native" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Windowing" Version="2.22.0" />
+    <PackageVersion Include="Silk.NET.Windowing.Glfw" Version="2.22.0" />
     <PackageVersion Include="TUnit" Version="1.44.39" />
   </ItemGroup>
 </Project>

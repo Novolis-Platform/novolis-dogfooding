@@ -1,4 +1,5 @@
 using Novolis.Audio.Voice;
+using Novolis.Audio.Voice.Abstractions;
 using Novolis.Dogfooding.Voice;
 using Novolis.Audio.Voice.Profiles;
 using Novolis.Audio.Voice.SherpaOnnx;

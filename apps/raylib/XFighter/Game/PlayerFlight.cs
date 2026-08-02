@@ -1,52 +1,76 @@
 using System.Numerics;
-using Novolis.Raylib;
 using Novolis.Raylib.Game;
+using Novolis.Raylib.Interact;
 using Novolis.Raylib.Rendering;
+using Novolis.Simulation.SpaceCombat;
+using Novolis.Simulation.View;
 
 namespace XFighter.Game;
 
 internal sealed class PlayerFlight
 {
-    public float Yaw;
-    public float Pitch;
-    public float Roll;
-    public float Speed = 22f;
-    public Vector3 Position = Vector3.Zero;
+    private readonly CraftState _craft = new()
+    {
+        Profile = CraftProfile.FighterDefault,
+        Speed = 22f,
+        PlayerControlled = true,
+    };
 
-    public Vector3 Forward => RaylibVector3.ForwardFromYawPitch(Yaw, Pitch);
+    public PlayerFlight() => _craft.ResetVitals();
 
-    public float Throttle01 => Math.Clamp((Speed - 6f) / 42f, 0f, 1f);
+    public float Yaw
+    {
+        get => _craft.Yaw;
+        set => _craft.Yaw = value;
+    }
+
+    public float Pitch
+    {
+        get => _craft.Pitch;
+        set => _craft.Pitch = value;
+    }
+
+    public float Roll
+    {
+        get => _craft.Roll;
+        set => _craft.Roll = value;
+    }
+
+    public float Speed
+    {
+        get => _craft.Speed;
+        set => _craft.Speed = value;
+    }
+
+    public Vector3 Position
+    {
+        get => _craft.Position;
+        set => _craft.Position = value;
+    }
+
+    public Vector3 Forward => _craft.Forward;
+
+    public float Throttle01 => _craft.Throttle01;
 
     public void Update(RayGameContext ctx)
     {
-        var dt = ctx.DeltaSeconds;
         var delta = ctx.MouseDelta;
-        Yaw += delta.X * 0.0022f;
-        Pitch = Math.Clamp(Pitch - delta.Y * 0.0022f, -1.1f, 1.1f);
-
-        if (ctx.IsKeyDown(Novolis.Raylib.Interact.KeyboardKey.A))
-            Roll = Math.Min(Roll + 2.8f * dt, 0.75f);
-        if (ctx.IsKeyDown(Novolis.Raylib.Interact.KeyboardKey.D))
-            Roll = Math.Max(Roll - 2.8f * dt, -0.75f);
-        Roll *= 1f - 3.5f * dt;
-
-        if (ctx.IsKeyDown(Novolis.Raylib.Interact.KeyboardKey.W))
-            Speed = Math.Min(Speed + 28f * dt, 48f);
-        if (ctx.IsKeyDown(Novolis.Raylib.Interact.KeyboardKey.S))
-            Speed = Math.Max(Speed - 22f * dt, 6f);
-
-        Speed *= 1f - 0.35f * dt;
-        Position += Forward * (Speed * dt);
+        var intent = new FlightIntent
+        {
+            YawDelta = delta.X * 0.0022f,
+            PitchDelta = -delta.Y * 0.0022f,
+            RollLeft = ctx.IsKeyDown(KeyboardKey.A) ? 1f : 0f,
+            RollRight = ctx.IsKeyDown(KeyboardKey.D) ? 1f : 0f,
+            ThrottleUp = ctx.IsKeyDown(KeyboardKey.W) ? 1f : 0f,
+            ThrottleDown = ctx.IsKeyDown(KeyboardKey.S) ? 1f : 0f,
+        };
+        ArcadeFlight.Apply(_craft, intent, ctx.DeltaSeconds);
     }
 
-    public Camera BuildCamera()
+    public Novolis.Raylib.Rendering.Camera BuildCamera()
     {
-        var eye = Position + new Vector3(0, 0.35f, 0);
-        var target = eye + Forward * 10f;
-        var worldUp = Vector3.UnitY;
-        var right = Vector3.Normalize(Vector3.Cross(Forward, worldUp));
-        var up = Vector3.Normalize(Vector3.Cross(right, Forward));
-        var rolledUp = Vector3.Normalize(up * MathF.Cos(Roll) + right * MathF.Sin(Roll));
-        return Camera.Perspective(eye, target, rolledUp, 72f);
+        var pose = CraftCamera.Cockpit(Position, Forward, Roll);
+        return Novolis.Raylib.Rendering.Camera.Perspective(
+            pose.Position, pose.Target, pose.Up, pose.FieldOfViewDegrees);
     }
 }

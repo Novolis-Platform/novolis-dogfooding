@@ -3,6 +3,7 @@
     <Project Path="apps/shared/Novolis.Dogfooding.TwoD/Novolis.Dogfooding.TwoD.csproj" />
     <Project Path="apps/shared/Novolis.Dogfooding.Compose/Novolis.Dogfooding.Compose.csproj" />
     <Project Path="apps/shared/Novolis.Dogfooding.Voice/Novolis.Dogfooding.Voice.csproj" />
+    <Project Path="apps/shared/Novolis.Dogfooding.SpaceCombat/Novolis.Dogfooding.SpaceCombat.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Novolis.Dogfooding.Voice.Unit/Novolis.Dogfooding.Voice.Unit.csproj" />
@@ -17,6 +18,7 @@
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
     <Project Path="apps/raylib/XFighter/XFighter.csproj" />
     <Project Path="apps/raylib/XFighter.Tests/XFighter.Tests.csproj" />
+    <Project Path="apps/raylib/FreightWing/FreightWing.csproj" />
   </Folder>
   <Folder Name="/rendering/">
     <Project Path="apps/rendering/RaytraceHello/RaytraceHello.csproj" />
@@ -33,6 +35,7 @@
     <Project Path="apps/BouncingBall/BouncingBall.csproj" />
     <Project Path="apps/ArtillerySimulator/ArtillerySimulator.csproj" />
     <Project Path="apps/RagdollPlay/RagdollPlay.csproj" />
+    <Project Path="apps/ClothPlay/ClothPlay.csproj" />
     <Project Path="apps/PlatformerHop/PlatformerHop.csproj" />
     <Project Path="apps/PlatformerTwoD/PlatformerTwoD.csproj" />
     <Project Path="apps/RtsLite/RtsLite.csproj" />
@@ -56,7 +59,13 @@
     <Project Path="apps/avalonia/SketchLab/SketchLab.csproj" />
     <Project Path="apps/avalonia/ViewportBench/ViewportBench.csproj" />
     <Project Path="apps/avalonia/HumanoidLab/HumanoidLab.csproj" />
+    <Project Path="apps/avalonia/CharacterLab/CharacterLab.csproj" />
+    <Project Path="apps/avalonia/KatoriLab/KatoriLab.csproj" />
+    <Project Path="apps/avalonia/KatoriLab.Tests/KatoriLab.Tests.csproj" />
     <Project Path="apps/avalonia/TorrentLab/TorrentLab.csproj" />
+
+
+    <Project Path="apps/avalonia/FriendLab/FriendLab.csproj" />
   </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
@@ -82,6 +91,7 @@
   <Folder Name="/gaming/">
     <Project Path="apps/gaming/GamingSmoke/GamingSmoke.csproj" />
     <Project Path="apps/gaming/TopDownDoom/TopDownDoom.csproj" />
+    <Project Path="apps/gaming/TapDuelFootball/TapDuelFootball.csproj" />
   </Folder>
   <Folder Name="/cad/">
     <Project Path="apps/cad/CalypsoCad/CalypsoCad.csproj" />
