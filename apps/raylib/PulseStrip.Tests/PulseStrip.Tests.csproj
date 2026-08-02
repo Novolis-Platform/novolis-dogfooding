@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>PulseStrip.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="TUnit" />
+    <PackageReference Include="Novolis.MachineLearning.Neural" />
+    <PackageReference Include="Novolis.MachineLearning.Neural.Abstractions" />
+    <PackageReference Include="Novolis.Simulation.Racing" />
+    <ProjectReference Include="..\PulseStrip.Core\PulseStrip.Core.csproj" />
+  </ItemGroup>
+</Project>

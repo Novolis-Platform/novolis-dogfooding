@@ -19,6 +19,9 @@
     <Project Path="apps/raylib/XFighter/XFighter.csproj" />
     <Project Path="apps/raylib/XFighter.Tests/XFighter.Tests.csproj" />
     <Project Path="apps/raylib/FreightWing/FreightWing.csproj" />
+    <Project Path="apps/raylib/PulseStrip.Core/PulseStrip.Core.csproj" />
+    <Project Path="apps/raylib/PulseStrip/PulseStrip.csproj" />
+    <Project Path="apps/raylib/PulseStrip.Tests/PulseStrip.Tests.csproj" />
   </Folder>
   <Folder Name="/rendering/">
     <Project Path="apps/rendering/RaytraceHello/RaytraceHello.csproj" />

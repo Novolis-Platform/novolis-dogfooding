@@ -21,6 +21,11 @@
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
     <PackageVersion Include="MessagePack" Version="3.1.8" />
+    <PackageVersion Include="Novolis.Audio" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Runtime" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Bindings" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Native" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Core" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Effects" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Filters" Version="2026.1.*" />
@@ -91,6 +96,7 @@
     <PackageVersion Include="Novolis.Game.MenuFlows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Multiplayer.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.MachineLearning.Neural" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.MachineLearning.Neural.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Topology" Version="2026.1.*" />
