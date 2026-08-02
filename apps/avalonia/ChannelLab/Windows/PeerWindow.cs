@@ -6,7 +6,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using ChannelLab.Services;
 using ChannelLab.Ui;
-using Novolis.Avalonia.Media;
+using Novolis.Avalonia.Video;
 
 namespace ChannelLab.Windows;
 

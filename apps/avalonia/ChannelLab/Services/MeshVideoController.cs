@@ -1,6 +1,6 @@
 using Avalonia.Threading;
-using Novolis.Avalonia.Media;
-using Novolis.Media.Rtc;
+using Novolis.Avalonia.Video;
+using Novolis.Video.Rtc;
 
 namespace ChannelLab.Services;
 

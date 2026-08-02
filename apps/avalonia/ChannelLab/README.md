@@ -1,6 +1,6 @@
 # ChannelLab
 
-Avalonia IRC dogfood: control window + peer windows over a tiny ASP.NET **ChannelHost** (SignalR + guest nicks). Media plane is native Avalonia + `Novolis.Media.Rtc` mesh (no WebView / browser WebRTC).
+Avalonia IRC dogfood: control window + peer windows over a tiny ASP.NET **ChannelHost** (SignalR + guest nicks). Media plane is native Avalonia + `Novolis.Video.Rtc` mesh (no WebView / browser WebRTC).
 
 ## Primitives
 
@@ -10,7 +10,7 @@ Avalonia IRC dogfood: control window + peer windows over a tiny ASP.NET **Channe
 | Channel | `#lobby` only |
 | Message | `Say` fan-out + SQLite scrollback |
 | Presence | `Roster` on join/part |
-| MediaSession | Avalonia `VideoSurface` tiles + `Novolis.Media.Rtc` mesh (max **4** peers). SignalR relays `video-join` / `video-part` / `offer` / `answer` / `ice` only. No SFU, LiveKit, Coturn, or WebView. |
+| MediaSession | Avalonia `VideoSurface` tiles + `Novolis.Video.Rtc` mesh (max **4** peers). SignalR relays `video-join` / `video-part` / `offer` / `answer` / `ice` only. No SFU, LiveKit, Coturn, or WebView. |
 
 ## Run
 
@@ -26,7 +26,7 @@ Host alone:
 dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\ChannelLab\ChannelHost\ChannelHost.csproj -p:NovolisUseProjectReferences=true
 ```
 
-Media packages (`Novolis.Avalonia.Media`, `Novolis.Media.Rtc*`, `Novolis.Media.Capture.Windows`) are on GitHub Packages. For local sibling iteration, pass `-p:NovolisUseProjectReferences=true` (or build via `d:\novolis\novolis-governance\build\Novolis.Platform.slnx`).
+Media packages (`Novolis.Avalonia.Video`, `Novolis.Video.Rtc*`, `Novolis.Video.Capture.Windows`) are on GitHub Packages. For local sibling iteration, pass `-p:NovolisUseProjectReferences=true` (or build via `d:\novolis\novolis-governance\build\Novolis.Platform.slnx`).
 
 ## Dogfood proof
 
@@ -51,7 +51,7 @@ UI:
 
 - Avalonia control + peer windows (Fluent, no Inter)
 - ChannelHost: SignalR hub + JWT guest claims (`Novolis.Game.Identity` / `Identity.AspNetCore`)
-- Mesh: `Novolis.Media.Rtc` (SIPSorcery), `Novolis.Media.Capture.Windows`, `Novolis.Avalonia.Media`
+- Mesh: `Novolis.Video.Rtc` (SIPSorcery), `Novolis.Video.Capture.Windows`, `Novolis.Avalonia.Video` — packages live in [novolis-video](https://github.com/Novolis-Platform/novolis-video)
 - Scrollback: `Microsoft.Data.Sqlite` at `%LocalAppData%\Novolis\ChannelLab\`  
   (`Novolis.Storage.Sqlite` is currently unusable — `IKeyed` / `IRepository` API drift — so the host uses the same SQLite stack that package wraps.)
 

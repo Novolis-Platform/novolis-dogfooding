@@ -12,10 +12,15 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
-    <PackageReference Include="Novolis.Avalonia.Media" />
-    <PackageReference Include="Novolis.Media.Rtc.Abstractions" />
-    <PackageReference Include="Novolis.Media.Rtc" />
-    <PackageReference Include="Novolis.Media.Capture.Windows" />
+    <PackageReference Include="Novolis.Avalonia.Video" />
+    <PackageReference Include="Novolis.Video.Rtc.Abstractions" />
+    <PackageReference Include="Novolis.Video.Rtc" />
+    <PackageReference Include="Novolis.Video.Capture.Windows" />
+    <!-- Direct SIPSorcery refs so managed + vpxmd natives copy next to ChannelLab.exe -->
+    <PackageReference Include="SIPSorcery" />
+    <PackageReference Include="SIPSorceryMedia.Abstractions" />
+    <PackageReference Include="SIPSorceryMedia.Windows" />
+    <PackageReference Include="SIPSorceryMedia.Encoders" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="ChannelHost/**" />
