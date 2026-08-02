@@ -8,6 +8,7 @@
     <PackageReference Include="Novolis.Audio.Effects" />
     <PackageReference Include="Novolis.Audio.Playback" />
     <PackageReference Include="Novolis.Game.MenuFlows" />
+    <PackageReference Include="Novolis.MachineLearning.Neural" />
     <PackageReference Include="Novolis.Simulation.SpaceCombat" />
     <PackageReference Include="Novolis.Simulation.View" />
     <PackageReference Include="Novolis.Raylib">

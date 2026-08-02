@@ -3,4 +3,14 @@
           Condition="Exists('$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.Version.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.Packaging.targets"
           Condition="Exists('$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.Packaging.targets')" />
+
+  <!-- Android consumers need Native buildTransitive (AndroidNativeLibrary). Desktop keeps ExcludeAssets from Directory.Build.props. -->
+  <ItemGroup Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-android'))">
+    <PackageReference Update="Novolis.Raylib">
+      <ExcludeAssets></ExcludeAssets>
+    </PackageReference>
+    <PackageReference Update="Novolis.Raylib.Native">
+      <ExcludeAssets></ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>

@@ -17,7 +17,8 @@ internal static class FreightWingHud
         MissionSession session,
         string craftName,
         string objectiveLine,
-        string? comms)
+        string? comms,
+        CrewStation crewStation = CrewStation.Dual)
     {
         var player = session.Player;
         var cx = ctx.Width / 2;
@@ -40,8 +41,15 @@ internal static class FreightWingHud
             ctx.HudText($"RNG {(int)Vector3.Distance(lockTarget.Position, player.Position)}", cx - 36, cy + 44, 12, HudGreen);
         }
 
+        var crewLabel = crewStation switch
+        {
+            CrewStation.Pilot => "CREW PILOT (AI GUN)",
+            CrewStation.Gunner => "CREW GUNNER (AI PILOT)",
+            _ => "CREW DUAL",
+        };
+
         ctx.HudText($"CRAFT {craftName}", 48, 18, 18, HudAmber);
-        ctx.HudText($"PHASE {session.Phase}", 48, 38, 14, HudGreen);
+        ctx.HudText($"PHASE {session.Phase}  |  {crewLabel}", 48, 38, 14, HudGreen);
         ctx.HudText(objectiveLine, 280, 18, 16, HudGreen);
 
         ctx.HudText($"KILLS {session.Kills}", 48, ctx.Height - 72, 20, HudGreen);
@@ -56,7 +64,7 @@ internal static class FreightWingHud
         if (!string.IsNullOrEmpty(comms))
             ctx.HudText(comms, 48, 70, 16, HudGreen);
 
-        ctx.HudText("MOUSE AIM | W/S THROTTLE | A/D ROLL | FIRE LMB/SPACE | T TRANSFER | ESC MENU", 48, ctx.Height - 22, 13,
+        ctx.HudText("MOUSE AIM | W/S THROTTLE | A/D ROLL | FIRE LMB/SPACE | G CREW | T TRANSFER | ESC MENU", 48, ctx.Height - 22, 13,
             Color.FromArgb(255, 140, 160, 175));
     }
 }

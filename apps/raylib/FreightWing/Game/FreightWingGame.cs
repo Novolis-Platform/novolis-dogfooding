@@ -30,6 +30,7 @@ internal sealed class FreightWingGame : IDisposable
     private float _commsTimer;
     private bool _chaseCam;
     private MissionPhase _lastPhase;
+    private CrewStation _crewStation = CrewStation.Dual;
 
     public FreightWingGame(ContentPack pack, bool smoke)
     {
@@ -153,8 +154,13 @@ internal sealed class FreightWingGame : IDisposable
             MaxHostilesAlive = Math.Max(m.HostileCount + 2, 10),
         });
         _session.Begin();
+        _session.CrewStation = _crewStation;
+        _session.SetCrewControllers(
+            pilot: NeuralImitationController.CreatePilot(),
+            gunner: NeuralImitationController.CreateGunner(),
+            freighterPilot: NeuralImitationController.CreatePilot(neuralBlend: 0.4f));
         _lastPhase = _session.Phase;
-        _comms = "Otana bridge — stay on course.";
+        _comms = "Otana bridge — stay on course. Press G to cycle crew station.";
         _commsTimer = 4f;
         ctxDisableNote();
     }
@@ -176,6 +182,24 @@ internal sealed class FreightWingGame : IDisposable
 
         if (ctx.IsKeyPressed(KeyboardKey.C))
             _chaseCam = !_chaseCam;
+
+        if (ctx.IsKeyPressed(KeyboardKey.G))
+        {
+            _crewStation = _crewStation switch
+            {
+                CrewStation.Dual => CrewStation.Pilot,
+                CrewStation.Pilot => CrewStation.Gunner,
+                _ => CrewStation.Dual,
+            };
+            _session.CrewStation = _crewStation;
+            _comms = _crewStation switch
+            {
+                CrewStation.Pilot => "Crew: you PILOT — AI gunner online.",
+                CrewStation.Gunner => "Crew: you GUNNER — AI pilot online.",
+                _ => "Crew: DUAL control.",
+            };
+            _commsTimer = 3.5f;
+        }
 
         var intent = ReadIntent(ctx);
         _session.Tick(intent, ctx.DeltaSeconds);
@@ -306,7 +330,7 @@ internal sealed class FreightWingGame : IDisposable
             MissionPhase.Fighter => $"Protect Otana — destroy {session.Descriptor.DestroyRequired} (have {session.Kills})",
             _ => "",
         };
-        FreightWingHud.Draw(ctx, session, craftName, objective, _comms);
+        FreightWingHud.Draw(ctx, session, craftName, objective, _comms, _crewStation);
     }
 
     private static FlightIntent ReadIntent(RayGameContext ctx)

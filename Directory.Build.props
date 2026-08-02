@@ -48,7 +48,7 @@
   <Import Project="$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.PackageIcon.props"
           Condition="Exists('$(MSBuildThisFileDirectory)..\novolis-governance\build\Novolis.PackageIcon.props')" />
 
-  <ItemGroup Label="Novolis.Raylib.Native packaged targets expect repo paths; RID assets in nupkg suffice.">
+  <ItemGroup Label="Novolis.Raylib.Native packaged targets expect repo paths; RID assets in nupkg suffice (desktop).">
     <PackageReference Update="Novolis.Raylib">
       <ExcludeAssets>buildTransitive</ExcludeAssets>
     </PackageReference>

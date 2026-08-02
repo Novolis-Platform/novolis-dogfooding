@@ -63,6 +63,10 @@
     <PackageVersion Include="Novolis.Modeling.Import" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Media" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Media.Rtc.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Media.Rtc" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Media.Capture.Windows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Git" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.GitHub" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Mobile.Android" Version="2026.1.*" />
@@ -93,8 +97,13 @@
     <PackageVersion Include="Novolis.Economy.Finance" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Agents" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Identity" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.Identity.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Game.Identity.AspNetCore" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.MenuFlows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Multiplayer.Abstractions" Version="2026.1.*" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.8" />
     <PackageVersion Include="Novolis.MachineLearning.Neural" Version="2026.1.*" />
     <PackageVersion Include="Novolis.MachineLearning.Neural.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
@@ -111,6 +120,7 @@
     <PackageVersion Include="Novolis.Raylib.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Bindings" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Capture" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Native" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Runtime" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Game" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
