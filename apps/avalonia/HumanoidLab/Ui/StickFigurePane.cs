@@ -1,10 +1,20 @@
 using System.Numerics;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Novolis.Simulation.Humanoid;
 
 namespace HumanoidLab.Ui;
+
+/// <summary>Which Reach effector is being dragged (FrontXy plane).</summary>
+internal enum ReachDragTarget
+{
+    None = 0,
+    LeftHand,
+    RightHand,
+    Head,
+}
 
 /// <summary>Avalonia viewport: capsule mannequin + optional debug sticks / overlays.</summary>
 internal sealed class StickFigurePane : Control
@@ -18,6 +28,16 @@ internal sealed class StickFigurePane : Control
     private Vector3[] _meshVertices = [];
     private int[] _meshIndices = [];
 
+    private bool _hasProjection;
+    private double _originX;
+    private double _originY;
+    private double _ppm = 1;
+    private ReachDragTarget _drag = ReachDragTarget.None;
+    private Vector3 _leftHandTarget;
+    private Vector3 _rightHandTarget;
+    private Vector3 _headTarget;
+    private bool _hasDragTargets;
+
     public StickViewMode ViewMode { get; set; } = StickViewMode.FrontXy;
 
     public string Caption { get; set; } = "";
@@ -27,6 +47,30 @@ internal sealed class StickFigurePane : Control
     /// does not zoom/chase the pile.
     /// </summary>
     public (float MinU, float MaxU, float MinV, float MaxV)? FixedViewBounds { get; set; }
+
+    /// <summary>When true, pointer drag moves L/R hand or head targets in the view plane.</summary>
+    public bool EnableReachDrag { get; set; }
+
+    /// <summary>Raised while an effector is dragged (world-space target).</summary>
+    public event Action<ReachDragTarget, Vector3>? ReachTargetDragged;
+
+    public StickFigurePane()
+    {
+        Focusable = true;
+        PointerPressed += OnPointerPressed;
+        PointerMoved += OnPointerMoved;
+        PointerReleased += OnPointerReleased;
+        PointerCaptureLost += (_, _) => _drag = ReachDragTarget.None;
+    }
+
+    /// <summary>Updates hit-test / drag handles for Reach mode.</summary>
+    public void SetReachTargets(Vector3 leftHand, Vector3 rightHand, Vector3 head)
+    {
+        _leftHandTarget = leftHand;
+        _rightHandTarget = rightHand;
+        _headTarget = head;
+        _hasDragTargets = true;
+    }
 
     public void SetMannequin(MannequinCapsule[] limbs, Vector3 headCenter)
     {
@@ -91,11 +135,16 @@ internal sealed class StickFigurePane : Control
             new Pen(LabPalette.PaneEdgeBrush, 1.5),
             new Rect(0.75, 0.75, bounds.Width - 1.5, bounds.Height - 1.5));
 
-        if (!TryBuildProjection(bounds.Size, out var originX, out var originY, out var pixelsPerMeter))
+        _hasProjection = TryBuildProjection(bounds.Size, out _originX, out _originY, out _ppm);
+        if (!_hasProjection)
         {
             DrawCaption(context, bounds);
             return;
         }
+
+        var originX = _originX;
+        var originY = _originY;
+        var pixelsPerMeter = _ppm;
 
         DrawGround(context, originX, originY, pixelsPerMeter, bounds.Width);
 
@@ -181,7 +230,129 @@ internal sealed class StickFigurePane : Control
             context.DrawLine(stringPen, a, b);
         }
 
+        if (EnableReachDrag && _hasDragTargets)
+        {
+            DrawHandle(context, _leftHandTarget, originX, originY, pixelsPerMeter);
+            DrawHandle(context, _rightHandTarget, originX, originY, pixelsPerMeter);
+            DrawHandle(context, _headTarget, originX, originY, pixelsPerMeter);
+        }
+
         DrawCaption(context, bounds);
+    }
+
+    private void DrawHandle(DrawingContext context, Vector3 world, double ox, double oy, double ppm)
+    {
+        var p = Project(world, ox, oy, ppm);
+        context.DrawEllipse(LabPalette.AmberBrush, new Pen(LabPalette.TealBrush, 1.5), p, 7, 7);
+    }
+
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!EnableReachDrag || !_hasDragTargets || !_hasProjection)
+            return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        EnsureProjection();
+        var screen = e.GetPosition(this);
+        if (!TryPickTarget(screen, out var which))
+            return;
+
+        _drag = which;
+        e.Pointer.Capture(this);
+        e.Handled = true;
+    }
+
+    private void OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_drag == ReachDragTarget.None || !_hasProjection)
+            return;
+
+        EnsureProjection();
+        var screen = e.GetPosition(this);
+        if (!TryScreenToWorld(screen, out var world))
+            return;
+
+        switch (_drag)
+        {
+            case ReachDragTarget.LeftHand:
+                world = new Vector3(world.X, world.Y, _leftHandTarget.Z);
+                _leftHandTarget = world;
+                break;
+            case ReachDragTarget.RightHand:
+                world = new Vector3(world.X, world.Y, _rightHandTarget.Z);
+                _rightHandTarget = world;
+                break;
+            case ReachDragTarget.Head:
+                world = new Vector3(world.X, world.Y, _headTarget.Z);
+                _headTarget = world;
+                break;
+            default:
+                return;
+        }
+
+        ReachTargetDragged?.Invoke(_drag, world);
+        InvalidateVisual();
+        e.Handled = true;
+    }
+
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_drag == ReachDragTarget.None)
+            return;
+        _drag = ReachDragTarget.None;
+        e.Pointer.Capture(null);
+        e.Handled = true;
+    }
+
+    private void EnsureProjection()
+    {
+        if (_hasProjection)
+            return;
+        _hasProjection = TryBuildProjection(Bounds.Size, out _originX, out _originY, out _ppm);
+    }
+
+    private bool TryPickTarget(Point screen, out ReachDragTarget target)
+    {
+        target = ReachDragTarget.None;
+        const double hitPx = 14.0;
+        var best = hitPx * hitPx;
+        TryCandidate(ReachDragTarget.LeftHand, _leftHandTarget, screen, ref best, ref target);
+        TryCandidate(ReachDragTarget.RightHand, _rightHandTarget, screen, ref best, ref target);
+        TryCandidate(ReachDragTarget.Head, _headTarget, screen, ref best, ref target);
+        return target != ReachDragTarget.None;
+    }
+
+    private void TryCandidate(
+        ReachDragTarget id,
+        Vector3 world,
+        Point screen,
+        ref double bestDistSq,
+        ref ReachDragTarget best)
+    {
+        var p = Project(world, _originX, _originY, _ppm);
+        var dx = p.X - screen.X;
+        var dy = p.Y - screen.Y;
+        var d2 = dx * dx + dy * dy;
+        if (d2 >= bestDistSq)
+            return;
+        bestDistSq = d2;
+        best = id;
+    }
+
+    /// <summary>Maps a pane pixel to world X/Y (FrontXy) or Z/Y (SideZy); depth axis left as 0.</summary>
+    public bool TryScreenToWorld(Point screen, out Vector3 world)
+    {
+        world = default;
+        if (!_hasProjection || _ppm < 1e-6)
+            return false;
+
+        var u = (float)((screen.X - _originX) / _ppm);
+        var v = (float)((_originY - screen.Y) / _ppm);
+        world = ViewMode == StickViewMode.SideZy
+            ? new Vector3(0f, v, u)
+            : new Vector3(u, v, 0f);
+        return true;
     }
 
     private bool TryBuildProjection(Size size, out double originX, out double originY, out double pixelsPerMeter)

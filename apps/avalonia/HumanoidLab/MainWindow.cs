@@ -14,16 +14,18 @@ internal sealed class MainWindow : Window
     private readonly StickFigurePane _walkPane = new() { ClipToBounds = true };
     private readonly StickFigurePane _ragdollPane = new() { ClipToBounds = true };
     private readonly StickFigurePane _bowPane = new() { ClipToBounds = true };
+    private readonly StickFigurePane _reachPane = new() { ClipToBounds = true };
     private readonly WalkDemo _walk;
     private readonly RagdollDemo _ragdoll;
     private readonly BowDemo _bow;
+    private readonly ReachDemo _reach;
     private readonly DispatcherTimer _timer;
     private DateTime _lastTick = DateTime.UtcNow;
 
     public MainWindow()
     {
-        Title = "HumanoidLab — Walk · Ragdoll · Bow";
-        Width = 1280;
+        Title = "HumanoidLab — Walk · Ragdoll · Bow · Reach";
+        Width = 1480;
         Height = 720;
         Background = LabPalette.NavyBrush;
 
@@ -32,6 +34,7 @@ internal sealed class MainWindow : Window
         _walk = new WalkDemo(bind, bank);
         _ragdoll = new RagdollDemo(bind);
         _bow = new BowDemo(bind, bank);
+        _reach = new ReachDemo(bind);
 
         Content = new DockPanel
         {
@@ -68,12 +71,13 @@ internal sealed class MainWindow : Window
                 new Grid
                 {
                     Margin = new Thickness(12),
-                    ColumnDefinitions = ColumnDefinitions.Parse("*,12,*,12,*"),
+                    ColumnDefinitions = ColumnDefinitions.Parse("*,8,*,8,*,8,*"),
                     Children =
                     {
                         Pane("Walk", _walkPane, 0),
                         Pane("Ragdoll", _ragdollPane, 2),
                         Pane("Bow", _bowPane, 4),
+                        Pane("Reach", _reachPane, 6),
                     },
                 },
             },
@@ -129,5 +133,6 @@ internal sealed class MainWindow : Window
         _walk.Tick(dt, _walkPane);
         _ragdoll.Tick(dt, _ragdollPane);
         _bow.Tick(dt, _bowPane);
+        _reach.Tick(dt, _reachPane);
     }
 }

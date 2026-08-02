@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TapDuelFootball</RootNamespace>
+    <Description>Portrait hotseat tap-duel football — recreation of frankhaugen/tap-duel-football on Novolis Rendering.TwoD + Game.MenuFlows.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Game.MenuFlows" />
+    <PackageReference Include="Novolis.Math.Geometry" />
+    <!-- Explicit: ProjectRef mode is non-transitive for NuGet graphs. -->
+    <PackageReference Include="Novolis.Math.Topology" />
+    <PackageReference Include="Novolis.Rendering.TwoD" />
+    <PackageReference Include="Novolis.Rendering.Backends.TwoD.Silk" />
+    <PackageReference Include="Novolis.Rendering.Presentation.Abstractions" />
+    <!-- ProjectRef non-transitive: Silk windowing/input for Backends.TwoD.Silk. -->
+    <PackageReference Include="Silk.NET.GLFW" />
+    <PackageReference Include="Silk.NET.Input" />
+    <PackageReference Include="Silk.NET.Input.Common" />
+    <PackageReference Include="Silk.NET.Input.Glfw" />
+    <PackageReference Include="Silk.NET.OpenGL" />
+    <PackageReference Include="Silk.NET.Windowing" />
+    <PackageReference Include="Silk.NET.Windowing.Glfw" />
+  </ItemGroup>
+</Project>

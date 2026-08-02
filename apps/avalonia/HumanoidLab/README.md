@@ -2,14 +2,16 @@
 
 Avalonia dogfood for `Novolis.Simulation.Humanoid` + `Novolis.Simulation.Humanoid.Physics`.
 
-Three panes:
+Four panes:
 
 1. **Walk** — procedural clip → FK → capsule mannequin (side view)
-2. **Ragdoll** — settled sphere ragdoll + **AdaptiveMesh** person hull (`HumanoidAdaptiveBody`)
+2. **Ragdoll** — settled ConstrainedSphereSimulator + **AdaptiveMesh** person hull (`HumanoidAdaptiveBody`)
 3. **Bow** — bow-draw clip + `TwoBoneIk` + mannequin + bow overlay
+4. **Reach** — `HumanoidFullBodyIk` (hands / feet / head); **drag amber handles** to pin targets; idle sway when free; pose persisted via `BakeLocal`
 
 ```powershell
-dotnet run --project novolis-dogfooding/apps/avalonia/HumanoidLab -p:NovolisUseProjectReferences=true
+dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\HumanoidLab -p:NovolisUseProjectReferences=true
+dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\HumanoidLab -p:NovolisUseProjectReferences=true -- --smoke
 ```
 
 Use ProjectReference mode until Humanoid packages are on GitHub Packages.
