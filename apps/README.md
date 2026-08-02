@@ -8,7 +8,7 @@ In-repo API walkthroughs (`HelloGame`, `HelloRuntime`, …) stay in `novolis-ray
 
 ## FriendLab
 
-Multi-window Find-a-Friend prototype (3-of-5 interest overlap + geo radius). Desk window opens one Avalonia window per simulated app user.
+Multi-window Find-a-Friend prototype (3-of-5 interest overlap + geo radius). Control window opens one Avalonia window per simulated app user.
 
 ```bash
 dotnet run --project apps/avalonia/FriendLab

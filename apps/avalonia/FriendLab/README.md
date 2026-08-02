@@ -4,7 +4,7 @@ Avalonia dogfood recreating [find-a-friend](https://github.com/frankhaugen/find-
 
 ## How it works
 
-1. **Desk window** seeds a Harbor District scenario and opens multiple **user windows**.
+1. **Control window** seeds a Harbor District scenario and opens multiple **user windows**.
 2. Each user window is one “phone”: pick exactly five interests, set radius, drag your pin.
 3. Matches require ≥3 shared interests **and** distance ≤ your radius.
 4. Suggested activities come from shared tags and stay public/busy (library, trail cafe, market…).

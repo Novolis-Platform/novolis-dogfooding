@@ -56,7 +56,7 @@ public static class AvaloniaAgentMcpTools
     }
 
     [McpServerTool]
-    [Description("Compact multi-get: read text/enabled/visible for many AgentIds in one round-trip (prefer over full ui_tree for desk state).")]
+    [Description("Compact multi-get: read text/enabled/visible for many AgentIds in one round-trip (prefer over full ui_tree for bridge state).")]
     public static async Task<string> UiGet(
         [Description("AgentIds to read, e.g. calypso.voyage,calypso.survival,calypso.continue")]
         string[] controlIds,
@@ -180,7 +180,7 @@ public static class AvaloniaAgentMcpTools
     }
 
     [McpServerTool]
-    [Description("Click an Avalonia control by AgentId, or at window coordinates (x, y).")]
+    [Description("Click an Avalonia control by AgentId, or at window coordinates (x, y). Supports button=left|right|middle and clickCount for double-click.")]
     public static async Task<string> UiClick(
         [Description("Stable AgentId, e.g. lab.recovery.")]
         string? controlId = null,
@@ -188,10 +188,14 @@ public static class AvaloniaAgentMcpTools
         double? x = null,
         [Description("Window Y when controlId is omitted.")]
         double? y = null,
+        [Description("Mouse button: left (default), right, or middle.")]
+        string? button = null,
+        [Description("Click count; 2 for double-click.")]
+        int clickCount = 1,
         CancellationToken cancellationToken = default)
     {
         var response = await AvaloniaAgentRuntime.WithClientAsync(
-            c => c.ClickAsync(controlId, x, y, cancellationToken).AsTask(),
+            c => c.ClickAsync(controlId, x, y, button, clickCount, cancellationToken).AsTask(),
             cancellationToken).ConfigureAwait(false);
         return AvaloniaAgentRuntime.ToJson(response);
     }
@@ -228,6 +232,38 @@ public static class AvaloniaAgentMcpTools
     {
         var response = await AvaloniaAgentRuntime.WithClientAsync(
             c => c.SelectAsync(controlId, index, itemText, cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(response);
+    }
+
+    [McpServerTool]
+    [Description("Focus an Avalonia control by AgentId.")]
+    public static async Task<string> UiFocus(
+        [Description("Stable AgentId to focus.")]
+        string controlId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.FocusAsync(controlId, cancellationToken).AsTask(),
+            cancellationToken).ConfigureAwait(false);
+        return AvaloniaAgentRuntime.ToJson(response);
+    }
+
+    [McpServerTool]
+    [Description("Scroll the nearest ScrollViewer by delta, or bring a control into view.")]
+    public static async Task<string> UiScroll(
+        [Description("Optional AgentId; omit to scroll the main window viewer.")]
+        string? controlId = null,
+        [Description("Horizontal scroll delta in DIPs.")]
+        double? deltaX = null,
+        [Description("Vertical scroll delta in DIPs.")]
+        double? deltaY = null,
+        [Description("When true, call BringIntoView on the control instead of applying deltas.")]
+        bool bringIntoView = false,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await AvaloniaAgentRuntime.WithClientAsync(
+            c => c.ScrollAsync(controlId, deltaX, deltaY, bringIntoView, cancellationToken).AsTask(),
             cancellationToken).ConfigureAwait(false);
         return AvaloniaAgentRuntime.ToJson(response);
     }

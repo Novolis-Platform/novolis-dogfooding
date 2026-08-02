@@ -2,7 +2,7 @@
 
 Dogfoods **Novolis.Avalonia.Controls** `SketchControl` with a Paint-light toolbar (Font Awesome via **Optris.Icons.Avalonia.FontAwesome**).
 
-**Shipped app:** production desk lives in **novolis-apps** as [Sketch Studio](../../../novolis-apps/src/SketchStudio/) — Open/Save `.sketchjson`, installer/zip via the apps catalog.
+**Shipped app:** production bridge lives in **novolis-apps** as [Sketch Studio](../../../novolis-apps/src/SketchStudio/) — Open/Save `.sketchjson`, installer/zip via the apps catalog.
 
 ## Tools
 
@@ -27,4 +27,4 @@ dotnet run --project novolis-dogfooding/apps/avalonia/SketchLab -p:NovolisUsePro
 | Package / app | Role |
 |---------------|------|
 | `Novolis.Avalonia.Controls` | `SketchControl` canvas |
-| [Sketch Studio](../../../novolis-apps/src/SketchStudio/) | Production sketch desk in novolis-apps |
+| [Sketch Studio](../../../novolis-apps/src/SketchStudio/) | Production sketch studio in novolis-apps |

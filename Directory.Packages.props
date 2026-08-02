@@ -62,6 +62,7 @@
     <PackageVersion Include="Novolis.Modeling.Scene" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Modeling.Import" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Raylib" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Gaming" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Rendering" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Video" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Video.Rtc.Abstractions" Version="2026.1.*" />

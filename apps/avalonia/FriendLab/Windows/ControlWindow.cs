@@ -29,7 +29,7 @@ internal sealed class ControlWindow : Window
     public ControlWindow(FriendHub hub)
     {
         _hub = hub;
-        Title = "FriendLab — Find a Friend desk";
+        Title = "FriendLab — Find a Friend control";
         Width = 980;
         Height = 720;
         MinWidth = 800;
@@ -41,7 +41,7 @@ internal sealed class ControlWindow : Window
         Refresh();
         Opened += (_, _) =>
         {
-            // Immediate multi-user desk: three phones side by side
+            // Immediate multi-user control: three phones side by side
             OpenOrFocus("alex");
             OpenOrFocus("blair");
             OpenOrFocus("drew");

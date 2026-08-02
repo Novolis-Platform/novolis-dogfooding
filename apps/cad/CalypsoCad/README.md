@@ -45,7 +45,7 @@ FP ── hab stack (−1/0/+1) ── WT-BH eng (38.8) ── Engineering OAH �
 Immediate-mode cubes/lines/cylinders (no DrawTriangle3D):
 
 - Door / hatch **leaves** + aft **ramp steps**; armored tint on CD-*
-- Module prop kits: cabin desk/webbing, galley appliance run, airlock dual hatches + hooks, triple corridor trunks, eng tanks/conduits, lounge bar/stools, cargo gantry/cleats/handrails
+- Module prop kits: cabin UI/webbing, galley appliance run, airlock dual hatches + hooks, triple corridor trunks, eng tanks/conduits, lounge bar/stools, cargo gantry/cleats/handrails
 - Orbit: hull **panel seams + rivets**; nacelle **end caps**; C40 containers in orbit + cargo interior
 
 ## Run
