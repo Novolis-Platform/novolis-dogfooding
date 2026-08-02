@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RootNamespace>ChannelLab</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>Avalonia dogfood — IRC client with multi-peer windows over ChannelHost.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Novolis.Avalonia.Media" />
+    <PackageReference Include="Novolis.Media.Rtc.Abstractions" />
+    <PackageReference Include="Novolis.Media.Rtc" />
+    <PackageReference Include="Novolis.Media.Capture.Windows" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="ChannelHost/**" />
+    <Content Remove="ChannelHost/**" />
+    <None Remove="ChannelHost/**" />
+    <EmbeddedResource Remove="ChannelHost/**" />
+    <Compile Remove="ChannelSmoke/**" />
+    <Content Remove="ChannelSmoke/**" />
+    <None Remove="ChannelSmoke/**" />
+    <EmbeddedResource Remove="ChannelSmoke/**" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>ChannelHost</RootNamespace>
+    <Description>ChannelLab SignalR host — guest nicks, #lobby chat, SQLite scrollback.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Game.Identity" />
+    <PackageReference Include="Novolis.Game.Identity.Abstractions" />
+    <PackageReference Include="Novolis.Game.Identity.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+</Project>
