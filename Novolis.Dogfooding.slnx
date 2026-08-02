@@ -69,6 +69,9 @@
 
 
     <Project Path="apps/avalonia/FriendLab/FriendLab.csproj" />
+    <Project Path="apps/avalonia/ChannelLab/ChannelLab.csproj" />
+    <Project Path="apps/avalonia/ChannelLab/ChannelHost/ChannelHost.csproj" />
+    <Project Path="apps/avalonia/ChannelLab/ChannelSmoke/ChannelSmoke.csproj" />
   </Folder>
   <Folder Name="/audio/">
     <Project Path="apps/audio/VoiceSmoke/VoiceSmoke.csproj" />
