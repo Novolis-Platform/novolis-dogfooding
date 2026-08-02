@@ -18,13 +18,13 @@ public sealed class HoverRaceSimulation
     public const int ControlOutputSize = 5;
 
     private const double DeltaTime = 1.0 / 60.0;
-    private const double MaxSpeed = 16.0;
-    private const double BoostMaxSpeed = 26.0;
-    private const double Acceleration = 11.0;
-    private const double MaxTurnRate = 2.6;
+    private const double MaxSpeed = 48.0;       // 3× prior 16
+    private const double BoostMaxSpeed = 78.0;  // 3× prior 26
+    private const double Acceleration = 33.0;   // 3× prior 11
+    private const double MaxTurnRate = 5.2;     // 2× so steering keeps up with 3× speed
     private const double BoostDrainPerSecond = 0.35;
     private const double BoostRegenPerSecond = 0.12;
-    private const float ProjectileSpeed = 42f;
+    private const float ProjectileSpeed = 126f; // 3× prior 42
     private const float PickupRadius = 2.2f;
     private const float ProjectileHitRadius = 1.8f;
 
@@ -33,10 +33,12 @@ public sealed class HoverRaceSimulation
     private readonly ITrackProgressResolver _progress = new TrackProgressResolver();
     private readonly IRewardModel? _rewardModel;
     private readonly double[]? _rewardAccum;
+    private readonly MobiusTrackFrames.SurfaceFrame[] _frames;
 
     public RaceTrack Track { get; }
     public IReadOnlyList<IHoverController> Controllers { get; }
     public HoverRaceWorldState State { get; private set; }
+    public IReadOnlyList<MobiusTrackFrames.SurfaceFrame> SurfaceFrames => _frames;
 
     /// <summary>Raised when a craft fires a weapon (for SFX/VFX hooks).</summary>
     public event Action<HoverCraftState>? WeaponFired;
@@ -66,6 +68,7 @@ public sealed class HoverRaceSimulation
         Controllers = controllers;
         _rewardModel = trainingRewardModel;
         _rewardAccum = trainingRewardAccumulator;
+        _frames = MobiusTrackFrames.Build(track.CenterLineSamples);
 
         if (trainingRewardModel is not null)
         {
@@ -168,44 +171,59 @@ public sealed class HoverRaceSimulation
             c.Speed += Acceleration * 0.6 * DeltaTime;
         c.Speed = Math.Clamp(c.Speed, 0, maxSpeed);
 
-        var turn = decision.Steering * MaxTurnRate * DeltaTime * (1.0 - 0.35 * (c.Speed / BoostMaxSpeed));
-        var cos = Math.Cos(turn);
-        var sin = Math.Sin(turn);
-        var fx = (float)(c.Forward.X * cos - c.Forward.Z * sin);
-        var fz = (float)(c.Forward.X * sin + c.Forward.Z * cos);
-        c.Forward = Vector3.Normalize(new Vector3(fx, 0f, fz));
-        c.Bank = Math.Clamp(c.Bank + (float)(decision.Steering * 4.0 * DeltaTime) - c.Bank * 3f * (float)DeltaTime, -0.7f, 0.7f);
+        var frame = MobiusTrackFrames.Nearest(_frames, c.Position);
+        var turn = (float)(decision.Steering * MaxTurnRate * DeltaTime * (1.0 - 0.35 * (c.Speed / BoostMaxSpeed)));
+        var turnQ = Quaternion.CreateFromAxisAngle(frame.Up, turn);
+        var steered = Vector3.Transform(c.Forward, turnQ);
+        if (steered.LengthSquared() < 1e-8f)
+            steered = frame.Tangent;
+        // Stay mostly rail-aligned on the Möbius ribbon while allowing player/AI steer.
+        c.Forward = Vector3.Normalize(Vector3.Lerp(Vector3.Normalize(steered), frame.Tangent, 0.12f));
 
-        var planar = Flat(c.Position) + c.Forward * (float)(c.Speed * DeltaTime);
-        var altitude = HoverHeight + (boosting ? 0.25f : 0f) + MathF.Sin(State.Tick * 0.08f + c.Id) * 0.05f;
-        c.Position = new Vector3(planar.X, altitude, planar.Z);
+        c.Position += c.Forward * (float)(c.Speed * DeltaTime);
+
+        // Re-seat onto twisted road: lateral offset preserved, height follows surface up.
+        frame = MobiusTrackFrames.Nearest(_frames, c.Position);
+        var toCraft = c.Position - frame.Position;
+        var lateral = Math.Clamp(
+            Vector3.Dot(toCraft, frame.Right),
+            (float)(-Track.Geometry.HalfWidth * 0.95),
+            (float)(Track.Geometry.HalfWidth * 0.95));
+        var hover = HoverHeight + (boosting ? 0.35f : 0f) + MathF.Sin(State.Tick * 0.08f + c.Id) * 0.05f;
+        c.Position = frame.Position + frame.Right * lateral + frame.Up * hover;
+        // Keep nose on the twisted ribbon.
+        c.Forward = Vector3.Normalize(Vector3.Lerp(c.Forward, frame.Tangent, 0.2f));
+        c.Bank = Math.Clamp(frame.TwistRadians / MathF.PI, -2f, 2f);
     }
 
     private void ResolveCollisions(HoverCraftState c)
     {
-        var col = (int)c.Position.X;
-        var row = (int)c.Position.Z;
-        if (col < 0 || col >= Track.Width || row < 0 || row >= Track.Height)
-        {
-            Crash(c);
+        // Continuous road test against centerline half-width (long circuits are not cell-accurate at edges).
+        var frame = MobiusTrackFrames.Nearest(_frames, c.Position);
+        var toCraft = c.Position - frame.Position;
+        var lateral = Vector3.Dot(toCraft, frame.Right);
+        var half = Track.Geometry.HalfWidth;
+        var wallBand = Math.Max(1.0, half * 0.12);
+
+        if (Math.Abs(lateral) <= half)
             return;
+
+        c.Health -= c.ShieldActive ? 4.0 : 12.0;
+        c.Speed *= 0.35;
+        var push = (float)(-Math.Sign(lateral) * Math.Max(0.8, wallBand));
+        c.Position += frame.Right * push;
+        // Snap back onto twisted road band if still outside.
+        frame = MobiusTrackFrames.Nearest(_frames, c.Position);
+        toCraft = c.Position - frame.Position;
+        lateral = Vector3.Dot(toCraft, frame.Right);
+        if (Math.Abs(lateral) > half)
+        {
+            var snap = (float)(lateral - Math.CopySign(half * 0.92, lateral));
+            c.Position -= frame.Right * snap;
         }
 
-        var cell = Track.Cells[col, row];
-        if (cell is TrackCell.Wall or TrackCell.Empty)
-        {
-            c.Health -= c.ShieldActive ? 4.0 : 12.0;
-            c.Speed *= 0.35;
-            // Nudge toward centerline.
-            var prog = _progress.Resolve(Track, Flat(c.Position), c.Forward);
-            var tangent = Track.ProgressMap.Tangents[
-                Math.Clamp((int)(prog.LoopT * Track.ProgressMap.Samples.Count), 0, Track.ProgressMap.Samples.Count - 1)];
-            var normal = new Vector3(tangent.Z, 0f, -tangent.X);
-            var push = (float)(-Math.Sign(prog.SignedCenterOffset) * 0.6);
-            c.Position += normal * push;
-            if (c.Health <= 0)
-                Crash(c);
-        }
+        if (c.Health <= 0)
+            Crash(c);
     }
 
     private static void Crash(HoverCraftState c)
@@ -361,21 +379,34 @@ public sealed class HoverRaceSimulation
 
     private HoverRaceWorldState CreateInitialState(int targetLaps)
     {
-        var start = Track.StartPose;
         var craft = new List<HoverCraftState>(Controllers.Count);
+        var startFrame = _frames.Length > 0 ? _frames[0] : default;
         for (var i = 0; i < Controllers.Count; i++)
         {
-            var lateral = (i - (Controllers.Count - 1) * 0.5f) * 1.6f;
-            var tangent = start.Forward;
-            var normal = new Vector3(tangent.Z, 0f, -tangent.X);
-            var pos = start.Position + normal * lateral - tangent * (i * 2.2f);
+            var lateral = (i - (Controllers.Count - 1) * 0.5f) * 2.4f;
+            var along = -i * 3.2f;
+            var pos = startFrame.Position
+                      + startFrame.Right * lateral
+                      + startFrame.Tangent * along
+                      + startFrame.Up * HoverHeight;
+            if (_frames.Length == 0)
+            {
+                var start = Track.StartPose;
+                var n = new Vector3(start.Forward.Z, 0f, -start.Forward.X);
+                pos = start.Position + n * lateral - start.Forward * (i * 2.2f);
+                pos = new Vector3(pos.X, HoverHeight, pos.Z);
+            }
+
             craft.Add(new HoverCraftState
             {
                 Id = i,
                 Name = Controllers[i].Name,
-                Position = new Vector3(pos.X, HoverHeight, pos.Z),
-                PreviousPosition = new Vector3(pos.X, HoverHeight, pos.Z),
-                Forward = Vector3.Normalize(new Vector3(tangent.X, 0f, tangent.Z)),
+                Position = pos,
+                PreviousPosition = pos,
+                Forward = _frames.Length > 0
+                    ? startFrame.Tangent
+                    : Vector3.Normalize(new Vector3(Track.StartPose.Forward.X, 0f, Track.StartPose.Forward.Z)),
+                Bank = startFrame.TwistRadians / MathF.PI,
                 WeaponAmmo = i == 0 ? 1 : 0,
             });
         }
@@ -392,19 +423,18 @@ public sealed class HoverRaceSimulation
     private List<TrackPickup> BuildPickups()
     {
         var list = new List<TrackPickup>();
-        var samples = Track.CenterLineSamples;
-        if (samples.Count == 0)
+        if (_frames.Length == 0)
             return list;
 
-        var step = Math.Max(1, samples.Count / 6);
-        for (var i = step / 2; i < samples.Count; i += step)
+        var step = Math.Max(1, _frames.Length / 8);
+        for (var i = step / 2; i < _frames.Length; i += step)
         {
-            var p = samples[i];
+            var f = _frames[i];
             list.Add(new TrackPickup
             {
                 Id = list.Count,
                 Kind = list.Count % 2 == 0 ? PickupKind.Weapon : PickupKind.Shield,
-                Position = new Vector3(p.X, HoverHeight, p.Z),
+                Position = f.Position + f.Up * (HoverHeight + 0.4f),
             });
         }
 

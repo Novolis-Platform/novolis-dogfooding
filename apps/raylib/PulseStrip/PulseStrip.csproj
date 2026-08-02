@@ -5,12 +5,15 @@
     <Description>3D anti-grav racer homage — spline circuits, weapons, procedural FX/SFX, ML opponents (Win/Linux).</Description>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AssimpNet" />
     <PackageReference Include="Novolis.Audio" />
     <PackageReference Include="Novolis.Audio.Abstractions" />
     <PackageReference Include="Novolis.Audio.Runtime" />
     <PackageReference Include="Novolis.Game.MenuFlows" />
     <PackageReference Include="Novolis.MachineLearning.Neural" />
     <PackageReference Include="Novolis.MachineLearning.Neural.Abstractions" />
+    <PackageReference Include="Novolis.Math.Geometry" />
+    <PackageReference Include="Novolis.Modeling.Import" />
     <PackageReference Include="Novolis.Simulation.Racing" />
     <PackageReference Include="Novolis.Raylib">
       <ExcludeAssets>buildTransitive</ExcludeAssets>

@@ -1,3 +1,4 @@
+using System.Numerics;
 using PulseStrip.Core;
 using PulseStrip.Core.Ai;
 using Novolis.Simulation.Racing.Tracks;
@@ -7,18 +8,56 @@ namespace PulseStrip.Tests;
 public class HoverRaceSimulationTests
 {
     [Test]
-    public async Task Track_Build_Produces_Centerline_And_Gates()
+    public async Task Mega_Circuit_Is_About_100x_CompactOval_And_2x_Wide()
     {
-        var track = new TrackBuilder().Build(BuiltInTracks.CompactOval);
-        await Assert.That(track.CenterLineSamples.Count).IsGreaterThan(10);
-        await Assert.That(track.Gates.Count).IsGreaterThan(0);
-        await Assert.That(track.Geometry.HalfWidth).IsGreaterThan(0);
+        var ovalArc = CenterSplineMath.MeasureArcLength(BuiltInTracks.CompactOval.BuildSpec.CenterLine, 1500);
+        var gp = PulseStripCircuits.ByIndex(0);
+        var validation = CenterSplineMath.Validate(gp.BuildSpec.CenterLine, 2000);
+        await Assert.That(validation.Ok).IsTrue();
+        await Assert.That(gp.BuildSpec.TrackHalfWidth).IsEqualTo(8.0);
+        await Assert.That(BuiltInTracks.CompactOval.BuildSpec.TrackHalfWidth * 2).IsEqualTo(gp.BuildSpec.TrackHalfWidth);
+
+        var ratio = validation.ArcLength / ovalArc;
+        await Assert.That(ratio).IsGreaterThan(80.0);
+        await Assert.That(ratio).IsLessThan(130.0);
+
+        // 3D circuit: elevation + side weave must survive bake (not flattened).
+        var ySpan = gp.BuildSpec.CenterLine.ControlPoints.Max(p => p.Y)
+                    - gp.BuildSpec.CenterLine.ControlPoints.Min(p => p.Y);
+        await Assert.That(ySpan).IsGreaterThan(100f);
+        var baked = new PulseStripTrackBuilder().Build(gp);
+        var bakedY = baked.CenterLineSamples.Max(p => p.Y) - baked.CenterLineSamples.Min(p => p.Y);
+        await Assert.That(bakedY).IsGreaterThan(100f);
+
+        var frames = MobiusTrackFrames.Build(baked.CenterLineSamples);
+        await Assert.That(frames.Length).IsEqualTo(baked.CenterLineSamples.Count);
+        // Möbius half-twist + 2 swirls ⇒ mid-lap up should leave world-up.
+        var mid = frames[frames.Length / 2];
+        await Assert.That(MathF.Abs(Vector3.Dot(mid.Up, Vector3.UnitY))).IsLessThan(0.98f);
+    }
+
+    [Test]
+    public async Task PulseStrip_Track_Builder_Stamps_Road_And_Keeps_Invisible_Gates()
+    {
+        var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
+        await Assert.That(track.CenterLineSamples.Count).IsEqualTo(PulseStripTrackBuilder.SampleCount);
+        await Assert.That(track.Gates.Count).IsGreaterThan(10);
+        await Assert.That(track.Geometry.HalfWidth).IsEqualTo(8.0);
+        await Assert.That(track.ProgressMap.TotalArcLength).IsGreaterThan(10_000);
+    }
+
+    [Test]
+    public async Task Center_Spline_Rejects_Degenerate_Loop()
+    {
+        var bad = new SplineLoop([new(0, 0, 0), new(1, 0, 0), new(1, 0, 0), new(0, 0, 1)]);
+        var result = CenterSplineMath.Validate(bad, 200);
+        await Assert.That(result.Ok).IsFalse();
     }
 
     [Test]
     public async Task Hover_Tick_Advances_Progress_Without_Immediate_Crash()
     {
-        var track = new TrackBuilder().Build(BuiltInTracks.MicroCircle);
+        var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
         var player = new PlayerHoverController("T")
         {
             Current = new HoverControlDecision(0, 1, 0, 0, false),
@@ -35,7 +74,7 @@ public class HoverRaceSimulationTests
     [Test]
     public async Task Weapon_Fire_Consumes_Ammo_And_Spawns_Projectile()
     {
-        var track = new TrackBuilder().Build(BuiltInTracks.MicroCircle);
+        var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
         var player = new PlayerHoverController("T")
         {
             Current = new HoverControlDecision(0, 0.2, 0, 0, true),
@@ -57,7 +96,7 @@ public class HoverRaceSimulationTests
             HoverRaceSimulation.ControlOutputSize,
             random: new Random(1));
         var controller = new NeuralHoverController(net);
-        var track = new TrackBuilder().Build(BuiltInTracks.MicroCircle);
+        var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
         var sim = new HoverRaceSimulation(track, [controller], targetLaps: 1);
         for (var i = 0; i < 30; i++)
             sim.Tick();

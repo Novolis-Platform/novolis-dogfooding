@@ -6,7 +6,6 @@ using Novolis.Audio;
 using Novolis.Game.MenuFlows;
 using Novolis.Raylib.Game;
 using Novolis.Raylib.Interact;
-using Novolis.Raylib.Rendering;
 using Novolis.Simulation.Racing.Tracks;
 using PulseStrip.Audio;
 using PulseStrip.Core;
@@ -14,15 +13,6 @@ using PulseStrip.Core.Ai;
 
 internal sealed class PulseStripGame : IDisposable
 {
-    private static readonly Color VoidBlack = Color.FromArgb(255, 4, 8, 18);
-    private static readonly Color NeonCyan = Color.FromArgb(255, 40, 220, 230);
-    private static readonly Color NeonMagenta = Color.FromArgb(255, 255, 60, 170);
-    private static readonly Color NeonAmber = Color.FromArgb(255, 255, 180, 60);
-    private static readonly Color TrackBlue = Color.FromArgb(255, 20, 50, 120);
-    private static readonly Color WallPink = Color.FromArgb(220, 255, 40, 120);
-    private static readonly Color PlayerHull = Color.FromArgb(255, 230, 240, 255);
-    private static readonly Color AiHull = Color.FromArgb(255, 80, 200, 140);
-
     private readonly string _contentDir;
     private readonly IAudioEngine _audio;
     private readonly PulseStripSfx _sfx;
@@ -31,6 +21,7 @@ internal sealed class PulseStripGame : IDisposable
     private int _circuitIndex;
     private HoverRaceSimulation? _sim;
     private PlayerHoverController? _player;
+    private TrackRibbonMesh? _ribbon;
     private readonly List<VfxSpark> _sparks = [];
     private float _resultsTimer;
     private string _status = "";
@@ -48,6 +39,7 @@ internal sealed class PulseStripGame : IDisposable
     public void Initialize(RayGameContext ctx)
     {
         _sfx.EnsureGenerated();
+        _ = ShipMeshCache.Player; // warm FBX load
         _screens.PushAsync(new TitleScreen()).GetAwaiter().GetResult();
         _sfx.Play("blip");
     }
@@ -74,12 +66,14 @@ internal sealed class PulseStripGame : IDisposable
 
     private void UpdateTitle(RayGameContext ctx)
     {
-        ctx.Clear(VoidBlack);
-        ctx.HudText("PULSESTRIP", 72, 120, 56, NeonCyan);
-        ctx.HudText("Anti-grav circuit racing", 76, 190, 22, NeonMagenta);
-        ctx.HudText("ENTER — select circuit", 76, 280, 20, Color.White);
-        ctx.HudText("WASD — drive   SHIFT — boost   SPACE — fire", 76, 320, 18, Color.LightGray);
-        ctx.HudText("ESC — quit", 76, ctx.Height - 48, 16, Color.Gray);
+        ctx.Clear(PulseStripLook.Void);
+        ctx.HudRect(0, ctx.Height / 2, ctx.Width, ctx.Height / 2, Color.FromArgb(255, 10, 2, 24));
+        ctx.HudText("PULSESTRIP", 72, 110, 64, PulseStripLook.HudCyan);
+        ctx.HudText("ANTI-GRAVITY COMBAT RACING", 76, 190, 22, PulseStripLook.RailMagenta);
+        ctx.HudText("ENTER — SELECT CIRCUIT", 76, 300, 20, Color.White);
+        ctx.HudText("W/S THROTTLE   A/D STEER   SHIFT BOOST   SPACE FIRE", 76, 340, 16, PulseStripLook.HudDim);
+        ctx.HudText("Ship meshes: Synert/WipeoutClone (MIT)", 76, ctx.Height - 72, 14, PulseStripLook.HudDim);
+        ctx.HudText("ESC — QUIT", 76, ctx.Height - 48, 16, Color.Gray);
 
         if (ctx.IsKeyPressed(KeyboardKey.Enter) || ctx.IsKeyPressed(KeyboardKey.Space))
         {
@@ -93,17 +87,18 @@ internal sealed class PulseStripGame : IDisposable
 
     private void UpdateCircuit(RayGameContext ctx)
     {
-        ctx.Clear(VoidBlack);
-        ctx.HudText("SELECT CIRCUIT", 72, 80, 32, NeonAmber);
+        ctx.Clear(PulseStripLook.Void);
+        ctx.HudText("SELECT CIRCUIT", 72, 80, 36, PulseStripLook.HudAmber);
         for (var i = 0; i < PulseStripCircuits.All.Count; i++)
         {
             var selected = i == _circuitIndex;
-            var color = selected ? NeonCyan : Color.White;
-            var mark = selected ? ">" : " ";
-            ctx.HudText($"{mark} {PulseStripCircuits.DisplayName(i)}", 90, 160 + i * 40, 24, color);
+            ctx.HudText(
+                $"{(selected ? ">" : " ")} {PulseStripCircuits.DisplayName(i).ToUpperInvariant()}",
+                90, 170 + i * 48, 26,
+                selected ? PulseStripLook.HudCyan : Color.White);
         }
 
-        ctx.HudText("UP/DOWN  ENTER race  ESC back", 72, ctx.Height - 48, 16, Color.LightGray);
+        ctx.HudText("UP/DOWN   ENTER RACE   ESC BACK", 72, ctx.Height - 48, 16, PulseStripLook.HudDim);
 
         if (ctx.IsKeyPressed(KeyboardKey.Up) || ctx.IsKeyPressed(KeyboardKey.W))
             _circuitIndex = Math.Max(0, _circuitIndex - 1);
@@ -126,7 +121,8 @@ internal sealed class PulseStripGame : IDisposable
     private void StartRace()
     {
         var def = PulseStripCircuits.ByIndex(_circuitIndex);
-        var track = new TrackBuilder().Build(def);
+        var track = new PulseStripTrackBuilder().Build(def);
+        _ribbon = TrackRibbonMesh.Build(track);
         var brainsDir = Path.Combine(_contentDir, "brains");
         IReadOnlyList<Novolis.MachineLearning.Neural.INeuralNetwork> brains;
         try
@@ -138,22 +134,23 @@ internal sealed class PulseStripGame : IDisposable
             brains = [];
         }
 
-        _player = new PlayerHoverController("You");
+        _player = new PlayerHoverController("YOU");
         var controllers = new List<IHoverController> { _player };
         for (var i = 0; i < 3; i++)
         {
+            var callsign = $"AG-{i + 1:00}";
             if (i < brains.Count)
-                controllers.Add(new NeuralHoverController(brains[i]));
+                controllers.Add(new NamedHoverController(callsign, new NeuralHoverController(brains[i])));
             else
-                controllers.Add(new FullThrottleHoverController($"Throttle-{i + 1}"));
+                controllers.Add(new FullThrottleHoverController(callsign));
         }
 
         _sim = new HoverRaceSimulation(track, controllers, targetLaps: 3);
         _sim.WeaponFired += _ => _sfx.Play("fire");
-        _sim.WeaponHit += (_, _) =>
+        _sim.WeaponHit += (_, victim) =>
         {
             _sfx.Play("hit");
-            SpawnSparks(_sim!.State.Craft[0].Position, NeonMagenta, 8);
+            SpawnSparks(victim.Position, PulseStripLook.Plasma, 6);
         };
         _sim.PickupCollected += (_, _) => _sfx.Play("pickup");
         _sim.LapCompleted += c =>
@@ -167,22 +164,17 @@ internal sealed class PulseStripGame : IDisposable
 
     private void UpdateRace(RayGameContext ctx)
     {
-        if (_sim is null || _player is null)
+        if (_sim is null || _player is null || _ribbon is null)
             return;
 
         _player.Current = ReadPlayerInput(ctx);
         _sim.Tick();
 
         var player = _sim.State.Craft[0];
-        if (player.Boosting)
-        {
-            SpawnSparks(player.Position - player.Forward * 1.2f, NeonAmber, 2);
-            if (_sim.State.Tick % 20 == 0)
-                _sfx.Play("boost");
-        }
-
-        if (player.Speed > 12)
-            SpawnSparks(player.Position - player.Forward * 0.8f, NeonCyan, 1);
+        if (player.Boosting && _sim.State.Tick % 4 == 0)
+            SpawnSparks(player.Position - player.Forward * 1.6f, PulseStripLook.Boost, 1);
+        if (player.Boosting && _sim.State.Tick % 18 == 0)
+            _sfx.Play("boost");
 
         TickSparks(ctx.DeltaSeconds);
         DrawRace(ctx);
@@ -198,34 +190,33 @@ internal sealed class PulseStripGame : IDisposable
             while (_screens.Current is not null && _screens.Current.ScreenId != "circuit")
                 _screens.PopAsync().GetAwaiter().GetResult();
             _sim = null;
+            _ribbon = null;
         }
     }
 
     private void UpdateResults(RayGameContext ctx)
     {
-        ctx.Clear(VoidBlack);
+        ctx.Clear(PulseStripLook.Void);
         var craft = _sim?.State.Craft;
-        ctx.HudText("RESULTS", 72, 80, 40, NeonAmber);
+        ctx.HudText("RACE COMPLETE", 72, 80, 40, PulseStripLook.HudAmber);
         if (craft is not null)
         {
-            var ranked = craft.OrderBy(c => c.Place).ToList();
-            for (var i = 0; i < ranked.Count; i++)
+            foreach (var (c, i) in craft.OrderBy(x => x.Place).Select((c, i) => (c, i)))
             {
-                var c = ranked[i];
                 var tag = c.Crashed ? "DNF" : $"P{c.Place}";
-                var color = c.Id == 0 ? NeonCyan : Color.White;
-                ctx.HudText($"{tag}  {c.Name}  laps={c.CompletedLaps}  hp={c.Health:0}", 90, 160 + i * 36, 22, color);
+                ctx.HudText($"{tag}  {c.Name}", 90, 170 + i * 40, 24, c.Id == 0 ? PulseStripLook.HudCyan : Color.White);
             }
         }
 
         _resultsTimer += ctx.DeltaSeconds;
-        ctx.HudText(_resultsTimer > 1.2f ? "ENTER — circuits   ESC — title" : "…", 72, ctx.Height - 48, 18, Color.LightGray);
+        ctx.HudText(_resultsTimer > 1.2f ? "ENTER — CIRCUITS    ESC — TITLE" : "…", 72, ctx.Height - 48, 18, PulseStripLook.HudDim);
 
         if (_resultsTimer > 1.2f && (ctx.IsKeyPressed(KeyboardKey.Enter) || ctx.IsKeyPressed(KeyboardKey.Space)))
         {
             while (_screens.Current is not null && _screens.Current.ScreenId != "circuit")
                 _screens.PopAsync().GetAwaiter().GetResult();
             _sim = null;
+            _ribbon = null;
             _sfx.Play("blip");
         }
 
@@ -234,125 +225,59 @@ internal sealed class PulseStripGame : IDisposable
             while (_screens.Current is not null && _screens.Current.ScreenId != "title")
                 _screens.PopAsync().GetAwaiter().GetResult();
             _sim = null;
+            _ribbon = null;
         }
     }
 
     private void DrawRace(RayGameContext ctx)
     {
         var sim = _sim!;
+        var ribbon = _ribbon!;
         var player = sim.State.Craft[0];
-        ctx.Clear(VoidBlack);
+        ctx.Clear(PulseStripLook.Void);
 
-        var chase = player.Position - player.Forward * 8f + Vector3.UnitY * 4.5f;
-        var target = player.Position + player.Forward * 6f;
-        var camera = Camera.Perspective(chase, target, Vector3.UnitY, 62f);
+        var camera = PulseStripLook.ChaseCamera(player);
         ctx.BeginWorld(camera);
 
-        DrawTrack(ctx, sim.Track);
-        DrawPickups(ctx, sim);
-        DrawCraft(ctx, sim);
-        DrawProjectiles(ctx, sim);
-        DrawSparks(ctx);
+        PulseStripLook.DrawAtmosphere(ctx, player.Position);
+        PulseStripLook.DrawCircuit(ctx, sim.Track, ribbon, sim.State.Tick);
+        PulseStripLook.DrawSpeedStreaks(player);
 
-        ctx.EndWorld();
-        DrawHud(ctx, sim, player);
-    }
-
-    private static void DrawTrack(RayGameContext ctx, RaceTrack track)
-    {
-        var samples = track.CenterLineSamples;
-        var half = (float)track.Geometry.HalfWidth;
-        for (var i = 0; i < samples.Count; i++)
-        {
-            var a = samples[i];
-            var b = samples[(i + 1) % samples.Count];
-            var mid = (a + b) * 0.5f;
-            mid.Y = 0.05f;
-            var tangent = Vector3.Normalize(b - a);
-            if (tangent.LengthSquared() < 1e-6f)
-                continue;
-            var len = Vector3.Distance(a, b);
-            ctx.DrawShipBox(mid, new Vector3(half * 2f, 0.12f, Math.Max(0.4f, len)), TrackBlue);
-
-            var normal = new Vector3(tangent.Z, 0f, -tangent.X);
-            var left = mid + normal * half;
-            var right = mid - normal * half;
-            left.Y = 1.1f;
-            right.Y = 1.1f;
-            ctx.DrawShipBox(left, new Vector3(0.25f, 2.2f, Math.Max(0.4f, len)), WallPink);
-            ctx.DrawShipBox(right, new Vector3(0.25f, 2.2f, Math.Max(0.4f, len)), WallPink);
-
-            if (i % 8 == 0)
-                ctx.DrawBolt(a with { Y = 0.2f }, b with { Y = 0.2f }, NeonCyan);
-        }
-
-        foreach (var gate in track.Gates)
-        {
-            var ga = gate.A with { Y = 2.5f };
-            var gb = gate.B with { Y = 2.5f };
-            ctx.DrawBolt(ga, gb, NeonMagenta);
-        }
-    }
-
-    private static void DrawPickups(RayGameContext ctx, HoverRaceSimulation sim)
-    {
         foreach (var pad in sim.State.Pickups)
         {
-            if (!pad.Available)
-                continue;
-            var color = pad.Kind == PickupKind.Weapon ? NeonAmber : NeonCyan;
-            ctx.DrawGlowSphere(pad.Position, 0.55f, color);
-            ctx.DrawGlowSphereWires(pad.Position, 0.75f, color);
+            if (pad.Available)
+                PulseStripLook.DrawPickup(pad, sim.State.Tick);
         }
-    }
 
-    private static void DrawCraft(RayGameContext ctx, HoverRaceSimulation sim)
-    {
         foreach (var c in sim.State.Craft)
         {
-            if (c.Crashed)
-                continue;
-            var color = c.Id == 0 ? PlayerHull : AiHull;
-            var size = new Vector3(1.1f, 0.45f, 2.0f);
-            ctx.DrawShipBox(c.Position, size, color);
-            ctx.DrawShipWires(c.Position, size * 1.05f, c.Boosting ? NeonAmber : NeonCyan);
-            if (c.ShieldActive)
-                ctx.DrawGlowSphereWires(c.Position, 1.4f, NeonCyan);
-            if (c.Boosting)
-                ctx.DrawGlowSphere(c.Position - c.Forward * 1.4f, 0.35f, NeonAmber);
+            if (!c.Crashed)
+                PulseStripLook.DrawShip(ctx, c, player: c.Id == 0);
         }
-    }
 
-    private static void DrawProjectiles(RayGameContext ctx, HoverRaceSimulation sim)
-    {
         foreach (var p in sim.State.Projectiles)
         {
             if (!p.Active)
                 continue;
-            ctx.DrawLaserBolt(p.Position, p.Position + Vector3.Normalize(p.Velocity) * 1.2f, NeonMagenta);
+            var dir = Vector3.Normalize(p.Velocity);
+            var tip = p.Position + dir * 2.8f;
+            PulseStripNativeDraw.Triangle(
+                tip,
+                p.Position + Vector3.UnitY * 0.12f,
+                p.Position - Vector3.UnitY * 0.12f,
+                PulseStripLook.Plasma);
+            ctx.DrawLaserBolt(p.Position, tip, PulseStripLook.Plasma);
         }
-    }
 
-    private void DrawSparks(RayGameContext ctx)
-    {
         foreach (var s in _sparks)
-            ctx.DrawGlowSphere(s.Pos, 0.12f, s.Color);
-    }
+            PulseStripNativeDraw.Triangle(
+                s.Pos,
+                s.Pos + new Vector3(0.08f, 0.08f, 0),
+                s.Pos + new Vector3(-0.08f, 0.08f, 0),
+                s.Color);
 
-    private void DrawHud(RayGameContext ctx, HoverRaceSimulation sim, HoverCraftState player)
-    {
-        ctx.HudText("PULSESTRIP", 24, 20, 22, NeonCyan);
-        ctx.HudText($"{_status}  LAP {Math.Min(player.CompletedLaps + 1, sim.State.TargetLaps)}/{sim.State.TargetLaps}", 24, 50, 18, Color.White);
-        ctx.HudText($"P{player.Place}  SPD {player.Speed:0.0}  BOOST {player.BoostFuel * 100:0}%", 24, 78, 18, NeonAmber);
-        ctx.HudText($"HP {player.Health:0}  AMMO {player.WeaponAmmo}{(player.ShieldActive ? "  SHIELD" : "")}", 24, 106, 18, player.Health < 35 ? Color.OrangeRed : Color.LightGray);
-
-        var y = 140;
-        foreach (var c in sim.State.Craft.OrderBy(x => x.Place))
-        {
-            var mark = c.Id == 0 ? ">" : " ";
-            ctx.HudText($"{mark} P{c.Place} {c.Name}", ctx.Width - 280, y, 16, c.Id == 0 ? NeonCyan : Color.Gray);
-            y += 22;
-        }
+        ctx.EndWorld();
+        PulseStripLook.DrawRaceHud(ctx, sim, player, _status);
     }
 
     private static HoverControlDecision ReadPlayerInput(RayGameContext ctx)
@@ -370,7 +295,7 @@ internal sealed class PulseStripGame : IDisposable
         if (ctx.IsKeyDown(KeyboardKey.S) || ctx.IsKeyDown(KeyboardKey.Down))
             brake = 1;
         if (throttle < 0.1 && brake < 0.1)
-            throttle = 0.55; // mild auto-cruise
+            throttle = 0.55;
 
         var boost = ctx.IsKeyDown(KeyboardKey.LeftShift) ? 1.0 : 0.0;
         var fire = ctx.IsKeyPressed(KeyboardKey.Space);
@@ -384,10 +309,13 @@ internal sealed class PulseStripGame : IDisposable
         {
             var vel = new Vector3(
                 (float)(rng.NextDouble() * 2 - 1),
-                (float)(rng.NextDouble() * 2),
+                (float)(rng.NextDouble() * 1.5),
                 (float)(rng.NextDouble() * 2 - 1));
-            _sparks.Add(new VfxSpark(origin, vel * 4f, 0.35f + (float)rng.NextDouble() * 0.25f, color));
+            _sparks.Add(new VfxSpark(origin, vel * 3f, 0.18f + (float)rng.NextDouble() * 0.12f, color));
         }
+
+        while (_sparks.Count > 40)
+            _sparks.RemoveAt(0);
     }
 
     private void TickSparks(float dt)
@@ -395,7 +323,7 @@ internal sealed class PulseStripGame : IDisposable
         for (var i = _sparks.Count - 1; i >= 0; i--)
         {
             var s = _sparks[i];
-            s = s with { Pos = s.Pos + s.Vel * dt, Life = s.Life - dt, Vel = s.Vel + Vector3.UnitY * -2f * dt };
+            s = s with { Pos = s.Pos + s.Vel * dt, Life = s.Life - dt, Vel = s.Vel + Vector3.UnitY * -3f * dt };
             if (s.Life <= 0)
                 _sparks.RemoveAt(i);
             else
@@ -408,4 +336,10 @@ internal sealed class PulseStripGame : IDisposable
         _sfx.Dispose();
         _audio.Dispose();
     }
+}
+
+internal sealed class NamedHoverController(string name, IHoverController inner) : IHoverController
+{
+    public string Name { get; } = name;
+    public HoverControlDecision Decide(in HoverObservation observation) => inner.Decide(in observation);
 }

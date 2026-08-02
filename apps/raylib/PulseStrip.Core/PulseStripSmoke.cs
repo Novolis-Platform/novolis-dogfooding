@@ -18,7 +18,7 @@ public static class PulseStripSmoke
             forceRetrain: false,
             cancellationToken);
 
-        var track = new TrackBuilder().Build(BuiltInTracks.CompactOval);
+        var track = new PulseStripTrackBuilder().Build(PulseStripCircuits.ByIndex(0));
         var player = new PlayerHoverController("SmokePilot")
         {
             Current = new HoverControlDecision(0, 1, 0, 0, false),
