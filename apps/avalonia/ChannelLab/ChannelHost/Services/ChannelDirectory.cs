@@ -109,14 +109,6 @@ public sealed class ChannelDirectory
         }
     }
 
-    public void PartVideo(string channel, string connectionId)
-    {
-        if (!_channels.TryGetValue(channel, out var state))
-            return;
-        lock (state.Gate)
-            state.VideoMembers.Remove(connectionId);
-    }
-
     /// <summary>Removes video membership. Returns true if the connection was in the video mesh.</summary>
     public bool TryPartVideo(string channel, string connectionId)
     {
