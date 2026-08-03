@@ -12,6 +12,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Novolis.Avalonia.Audio" />
     <PackageReference Include="Novolis.Audio.Edit" />
+    <PackageReference Include="Novolis.Audio.Midi" />
     <PackageReference Include="Novolis.Audio.Core" />
   </ItemGroup>
 </Project>
