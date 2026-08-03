@@ -23,7 +23,7 @@ internal sealed class MainWindow : Window
         };
         _piano = new MidiPianoWorkspace(musicProject: project)
         {
-            HeaderTitle = "MIDI Piano — 50+ sounds · record · MIDI/patch save",
+            HeaderTitle = "Piano score — roll · grand staff · sounds · QuestPDF",
         };
 
         var tabs = new TabControl
@@ -38,7 +38,7 @@ internal sealed class MainWindow : Window
         });
         tabs.Items.Add(new TabItem
         {
-            Header = "MIDI Piano",
+            Header = "Piano Score",
             Content = _piano,
             Foreground = Brushes.White,
         });

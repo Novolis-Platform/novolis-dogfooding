@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>MusicMakerLab</RootNamespace>
     <IsPackable>false</IsPackable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -10,6 +10,7 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="NAudio" />
     <PackageReference Include="Novolis.Avalonia.Audio" />
     <PackageReference Include="Novolis.Audio.Edit" />
     <PackageReference Include="Novolis.Audio.Midi" />
