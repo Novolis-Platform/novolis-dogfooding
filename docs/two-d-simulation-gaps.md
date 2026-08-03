@@ -76,7 +76,7 @@ Package **`Novolis.Avalonia.Rendering`** (`novolis-avalonia`):
 | `TwoDSceneControl` | `TwoDScene` via OpenGL (`SilkTwoDRenderer`) |
 | `Rgba32FrameControl` | CPU `Rgba32` frames (`IFramePresenter`) — path trace preview |
 
-Sample: `novolis-avalonia/samples/RenderingAvalonia`. Dogfood apps can add `PackageReference` to `Novolis.Avalonia.Rendering` after GPR publish (no cross-repo `ProjectReference`).
+Sample: `novolis-dogfooding/apps/avalonia/RenderingAvalonia`. PackageReference `Novolis.Avalonia.Rendering` (no cross-repo `ProjectReference`).
 
 ## Dropped: TerraFX
 

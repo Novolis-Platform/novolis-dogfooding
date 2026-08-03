@@ -16,6 +16,13 @@
   </Folder>
   <Folder Name="/raylib/">
     <Project Path="apps/RaylibHello/RaylibHello.csproj" />
+    <Project Path="apps/raylib/HelloGame/HelloGame.csproj" />
+    <Project Path="apps/raylib/HelloRuntime/HelloRuntime.csproj" />
+    <Project Path="apps/raylib/HelloHosting/HelloHosting.csproj" />
+    <Project Path="apps/raylib/HelloTesting/HelloTesting.csproj" />
+    <Project Path="apps/raylib/HelloCapture/HelloCapture.csproj" />
+    <Project Path="apps/raylib/HelloGui/HelloGui.csproj" />
+    <Project Path="apps/raylib/HelloRaygui/HelloRaygui.csproj" />
     <Project Path="apps/raylib/XFighter/XFighter.csproj" />
     <Project Path="apps/raylib/XFighter.Tests/XFighter.Tests.csproj" />
     <Project Path="apps/raylib/FreightWing/FreightWing.csproj" />
@@ -61,6 +68,8 @@
     <Project Path="apps/avalonia/StudioChromeLab/StudioChromeLab.csproj" />
     <Project Path="apps/avalonia/SketchLab/SketchLab.csproj" />
     <Project Path="apps/avalonia/ViewportBench/ViewportBench.csproj" />
+    <Project Path="apps/avalonia/RenderingAvalonia/RenderingAvalonia.csproj" />
+    <Project Path="apps/avalonia/SceneLab/SceneLab.csproj" />
     <Project Path="apps/avalonia/HumanoidLab/HumanoidLab.csproj" />
     <Project Path="apps/avalonia/CharacterLab/CharacterLab.csproj" />
     <Project Path="apps/avalonia/KatoriLab/KatoriLab.csproj" />
@@ -101,5 +110,9 @@
   </Folder>
   <Folder Name="/cad/">
     <Project Path="apps/cad/CalypsoCad/CalypsoCad.csproj" />
+  </Folder>
+  <Folder Name="/workspaces/">
+    <Project Path="apps/workspaces/MinimalWorkspaceTimeline/MinimalWorkspaceTimeline.csproj" />
+    <Project Path="apps/workspaces/ProjectTimelineBench/ProjectTimelineBench.csproj" />
   </Folder>
 </Solution>

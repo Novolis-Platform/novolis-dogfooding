@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ProjectTimelineBench</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Abstractions" />
+    <PackageReference Include="Novolis.Snapshots.Abstractions" />
+    <PackageReference Include="Novolis.Timeline.Abstractions" />
+    <PackageReference Include="Novolis.Timeline.FileSystem" />
+    <PackageReference Include="Novolis.Workspaces.Abstractions" />
+    <PackageReference Include="Novolis.Workspaces.FileSystem" />
+    <PackageReference Include="Novolis.Workspaces.Projects.Timeline" />
+    <PackageReference Include="Novolis.Workspaces.Timeline" />
+  </ItemGroup>
+</Project>

@@ -34,6 +34,10 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 |-----|--------|---------------------------|
 | `MathGridDemo` | `apps/MathGridDemo` | Math.Arrays |
 | `RaylibHello` | `apps/RaylibHello` | Raylib |
+| `HelloGame` … `HelloRaygui` | `apps/raylib/Hello*` | Raylib API walkthroughs |
+| `RenderingAvalonia` | `apps/avalonia/RenderingAvalonia` | Avalonia.Rendering + Avalonia.Raylib |
+| `MinimalWorkspaceTimeline` | `apps/workspaces/MinimalWorkspaceTimeline` | Workspaces + Timeline |
+| `ProjectTimelineBench` | `apps/workspaces/ProjectTimelineBench` | Workspaces.Projects.Timeline |
 | `XFighter` | `apps/raylib/XFighter` | Raylib, Audio (Core, Effects, Playback, Voice) |
 | `ArtillerySimulator` | `apps/ArtillerySimulator` | Raylib, Physics.Ballistics, Physics.Collision, Simulation |
 | `BouncingBall` | `apps/BouncingBall` | Raylib, Math.Arrays, Simulation, Physics.Collision |

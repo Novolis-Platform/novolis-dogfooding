@@ -128,6 +128,10 @@
     <PackageVersion Include="Novolis.Raylib.Native" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Runtime" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Raylib.Game" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Hosting" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Raygui" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Raylib.Testing" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Workspaces.Projects.Timeline" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Cpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.Igpu" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Rendering.Backends.TwoD.Silk" Version="2026.1.*" />

@@ -32,8 +32,6 @@ dotnet run --project apps/avalonia/SceneLab -p:NovolisUseProjectReferences=true 
 ```
 
 Also: `--renderer gl|cpu|vulkan|raylib` or env `SCENELAB_RENDERER` (default `gl`). Path-trace Vulkan remains a separate compute backend; SceneLab’s Vulkan option is graphics wire + readback.
-Same-repo sample (ProjectReference): `novolis-avalonia/samples/SceneLab`.
-
 When using `-p:NovolisUseProjectReferences=true`, SceneLab PackageReferences Raylib/Silk natives explicitly (ProjectRef mode is non-transitive for NuGet graphs).
 
 ## Demo mesh sample (optional)
