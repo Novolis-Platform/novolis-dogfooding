@@ -1,24 +1,60 @@
 using Avalonia.Controls;
+using Avalonia.Media;
 using Novolis.Avalonia.Audio;
 
 namespace MusicMakerLab;
 
 internal sealed class MainWindow : Window
 {
-    readonly AudioEditWorkspace _workspace;
+    readonly AudioEditWorkspace _arrangement;
+    readonly MidiPianoWorkspace _piano;
 
     public MainWindow()
     {
         Title = "Music Maker Lab";
         Width = 1280;
-        Height = 780;
+        Height = 820;
         Background = AudioEditPalette.Pane;
 
-        _workspace = new AudioEditWorkspace(FullDemoBuilder.Build())
+        var project = FullDemoBuilder.Build();
+        _arrangement = new AudioEditWorkspace(project)
         {
-            HeaderTitle = "Music Maker Lab — library · tracks · waveforms · fades · export",
+            HeaderTitle = "Arrangement — library · tracks · waveforms · fades · export",
         };
-        Content = _workspace;
-        Closed += (_, _) => _workspace.Dispose();
+        _piano = new MidiPianoWorkspace(musicProject: project)
+        {
+            HeaderTitle = "MIDI Piano — 50+ sounds · record · MIDI/patch save",
+        };
+
+        var tabs = new TabControl
+        {
+            Background = AudioEditPalette.Pane,
+        };
+        tabs.Items.Add(new TabItem
+        {
+            Header = "Arrangement",
+            Content = _arrangement,
+            Foreground = Brushes.White,
+        });
+        tabs.Items.Add(new TabItem
+        {
+            Header = "MIDI Piano",
+            Content = _piano,
+            Foreground = Brushes.White,
+        });
+        tabs.SelectionChanged += (_, _) =>
+        {
+            if (tabs.SelectedIndex == 0)
+                _arrangement.Refresh();
+            else
+                _piano.Focus();
+        };
+
+        Content = tabs;
+        Closed += (_, _) =>
+        {
+            _arrangement.Dispose();
+            _piano.Dispose();
+        };
     }
 }

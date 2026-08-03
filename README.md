@@ -15,9 +15,8 @@
 </p>
 
 <p align="center">
-  [![Novolis](https://img.shields.io/badge/Novolis-Platform-111827?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSI1NCIgZmlsbD0iIzA1MDcwZCIvPjx0ZXh0IHg9IjYwIiB5PSI3MiIgZmlsbD0iIzJmZGZmZiIgZm9udC1zaXplPSI0OCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIj5OPC90ZXh0Pjwvc3ZnPg==)](https://github.com/Novolis-Platform)
-  [![CI](https://img.shields.io/github/actions/workflow/status/Novolis-Platform/novolis-dogfooding/merge.yml?branch=main&label=merge&logo=github)](https://github.com/Novolis-Platform/novolis-dogfooding/actions)
-  [![Packages](https://img.shields.io/badge/packages-GitHub%20Packages-0a7ea3?logo=nuget)](https://github.com/orgs/Novolis-Platform/packages?repo_name=novolis-dogfooding)
+  <a href="https://github.com/Novolis-Platform/novolis-dogfooding/actions"><img src="https://img.shields.io/github/actions/workflow/status/Novolis-Platform/novolis-dogfooding/merge.yml?branch=main&label=merge&logo=github" alt="merge"/></a>
+  <a href="https://github.com/orgs/Novolis-Platform/packages?repo_name=novolis-dogfooding"><img src="https://img.shields.io/badge/packages-GitHub%20Packages-0a7ea3?logo=nuget" alt="packages"/></a>
   <a href="https://github.com/Novolis-Platform"><img src="https://img.shields.io/badge/org-Novolis--Platform-111827" alt="org"/></a>
 </p>
 
