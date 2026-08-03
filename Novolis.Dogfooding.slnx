@@ -69,6 +69,7 @@
     <Project Path="apps/avalonia/SketchLab/SketchLab.csproj" />
     <Project Path="apps/avalonia/ViewportBench/ViewportBench.csproj" />
     <Project Path="apps/avalonia/RenderingAvalonia/RenderingAvalonia.csproj" />
+    <Project Path="apps/avalonia/MovieMakerLab/MovieMakerLab.csproj" />
     <Project Path="apps/avalonia/SceneLab/SceneLab.csproj" />
     <Project Path="apps/avalonia/HumanoidLab/HumanoidLab.csproj" />
     <Project Path="apps/avalonia/CharacterLab/CharacterLab.csproj" />

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MovieMakerLab</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>Minimal Windows Movie Maker–style dogfood for Novolis.Video.Edit + Novolis.Avalonia.Video.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Novolis.Avalonia.Video" />
+    <PackageReference Include="Novolis.Video.Edit" />
+    <PackageReference Include="Novolis.Video.Rtc.Abstractions" />
+  </ItemGroup>
+</Project>
