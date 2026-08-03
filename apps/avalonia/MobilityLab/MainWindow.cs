@@ -98,7 +98,7 @@ internal sealed class MainWindow : Window
 
     public MainWindow()
     {
-        Title = "MobilityLab — tax–mobility desk";
+        Title = "MobilityLab — tax–mobility lab";
         Width = 1280;
         Height = 960;
         MinWidth = 1024;

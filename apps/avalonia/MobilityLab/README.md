@@ -1,6 +1,6 @@
 # MobilityLab
 
-Controlled tax–mobility desk on the Civics / Economy / Geopolitics kernels (Avalonia scientific UI — not a Spectre theatre clone).
+Controlled tax–mobility lab on the Civics / Economy / Geopolitics kernels (Avalonia scientific UI — not a Spectre theatre clone).
 
 ## Abstract
 
@@ -51,7 +51,7 @@ dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\Mob
 dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 36
 ```
 
-Headless prints a markdown report with identification, effect sizes, and PASS/FAIL. Desk: **Copy markdown report**.
+Headless prints a markdown report with identification, effect sizes, and PASS/FAIL. Lab UI: **Copy markdown report**.
 
 War-shock confounder (expect identification FAIL):
 

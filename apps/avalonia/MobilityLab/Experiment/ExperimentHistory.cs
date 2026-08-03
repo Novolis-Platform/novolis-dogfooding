@@ -35,7 +35,7 @@ sealed class MonthSample
 
 readonly record struct CouplingCheck(bool Pass, string Claim, string Detail);
 
-/// <summary>Causal / twin contrasts for the tax-mobility desk.</summary>
+/// <summary>Causal / twin contrasts for the tax-mobility lab.</summary>
 sealed class EffectSizes
 {
     public double AttAlphaPop { get; init; }
