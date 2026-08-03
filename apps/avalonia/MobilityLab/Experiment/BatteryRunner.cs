@@ -44,8 +44,7 @@ static class BatteryRunner
             foreach (var tau in study.DoseGrid)
             {
                 var dModel = ExperimentHost.Simulate(study.DoseArm(tau, seed0), $"dose-{tau:0.00}").Model;
-                var dCf = ExperimentHost.Simulate(study.CounterfactualArm(seed0), "dose-cf").Model;
-                var dRes = ScientificEvaluator.Evaluate(dModel, dCf);
+                var dRes = ScientificEvaluator.Evaluate(dModel, cfModel);
                 doseCurve.Add(new DosePoint
                 {
                     Tax = tau,
@@ -63,9 +62,18 @@ static class BatteryRunner
         {
             foreach (var seed in study.Seeds)
             {
-                var eModel = ExperimentHost.Simulate(study.PrimaryArm(seed), $"ens-{seed}").Model;
-                var eCf = ExperimentHost.Simulate(study.CounterfactualArm(seed), $"ens-cf-{seed}").Model;
-                var eRes = ScientificEvaluator.Evaluate(eModel, eCf);
+                ExperimentResult eRes;
+                if (seed == seed0)
+                {
+                    eRes = primaryResult;
+                }
+                else
+                {
+                    var eModel = ExperimentHost.Simulate(study.PrimaryArm(seed), $"ens-{seed}").Model;
+                    var eCf = ExperimentHost.Simulate(study.CounterfactualArm(seed), $"ens-cf-{seed}").Model;
+                    eRes = ScientificEvaluator.Evaluate(eModel, eCf);
+                }
+
                 ensemble.Add(new EnsemblePoint
                 {
                     Seed = seed,
@@ -165,18 +173,17 @@ static class BatteryEvaluator
         checks.Add(new CouplingCheck(
             e.AttAlphaPopPct < -0.02,
             "ATT primary",
-            $"ATT pop %={e.AttAlphaPopPct.ToString("+0.0%;-0.0%", inv)}; " +
-            $"ATT pop={e.AttAlphaPop.ToString("0", inv)}"));
+            $"ATT pop %={Pct(e.AttAlphaPopPct)}; ATT pop={e.AttAlphaPop.ToString("0", inv)}"));
 
         var preTrendOk = !e.HasEventStudy || Math.Abs(e.PreShockDidGrowth) < 0.08;
         checks.Add(new CouplingCheck(
             preTrendOk,
             "pre-trend",
             e.HasEventStudy
-                ? $"pre-shock DID growth={e.PreShockDidGrowth.ToString("+0.0%;-0.0%", inv)} " +
+                ? $"pre-shock DID growth={Pct(e.PreShockDidGrowth)} " +
                   $"(pre net mig={e.PreShockMeanNetMig.ToString("0", inv)}; " +
                   $"post={e.PostShockMeanNetMig.ToString("0", inv)})"
-                : "no shock schedule (static treatment) — skipped"));
+                : "no shock schedule (static treatment) - skipped"));
 
         var doseOk = !study.IncludeDose ||
                      (agg.DoseMonotonic && agg.DoseAttAt045 <= agg.DoseAttAt022 - 0.02);
@@ -184,8 +191,8 @@ static class BatteryEvaluator
             doseOk,
             "dose responds",
             study.IncludeDose
-                ? $"monotonic={agg.DoseMonotonic}; ATT@0.22={agg.DoseAttAt022.ToString("+0.0%;-0.0%", inv)}; " +
-                  $"ATT@0.45={agg.DoseAttAt045.ToString("+0.0%;-0.0%", inv)}; " +
+                ? $"monotonic={agg.DoseMonotonic}; ATT@0.22={Pct(agg.DoseAttAt022)}; " +
+                  $"ATT@0.45={Pct(agg.DoseAttAt045)}; " +
                   $"tax@-5%={FmtTax(agg.TaxAtAttMinus5Pct)}; tax@-20%={FmtTax(agg.TaxAtAttMinus20Pct)}"
                 : "dose grid off"));
 
@@ -195,8 +202,7 @@ static class BatteryEvaluator
             placeboOk,
             "placebo symmetry",
             study.IncludePlacebo
-                ? $"placebo DID={agg.PlaceboDid.ToString("+0.0%;-0.0%", inv)}; " +
-                  $"primary DID={agg.PrimaryDid.ToString("+0.0%;-0.0%", inv)}"
+                ? $"placebo DID={Pct(agg.PlaceboDid)}; primary DID={Pct(agg.PrimaryDid)}"
                 : "placebo off"));
 
         var fiscalOk = e.AttCumTaxRevenue > 0 && e.AttAlphaPop < 0;
@@ -213,14 +219,17 @@ static class BatteryEvaluator
             ensOk,
             "ensemble sign",
             study.IncludeEnsemble
-                ? $"mean ATT%={agg.EnsembleMeanAttPct.ToString("+0.0%;-0.0%", inv)}; " +
-                  $"min={agg.EnsembleMinAttPct.ToString("+0.0%;-0.0%", inv)}; " +
-                  $"max={agg.EnsembleMaxAttPct.ToString("+0.0%;-0.0%", inv)}; sameSign={agg.EnsembleSameSign}"
+                ? $"mean ATT%={Pct(agg.EnsembleMeanAttPct)}; " +
+                  $"min={Pct(agg.EnsembleMinAttPct)}; " +
+                  $"max={Pct(agg.EnsembleMaxAttPct)}; sameSign={agg.EnsembleSameSign}"
                 : "ensemble off"));
 
         return checks;
 
         static string FmtTax(double? t) =>
             t is null ? "n/a" : t.Value.ToString("0.00", CultureInfo.InvariantCulture);
+
+        static string Pct(double v) =>
+            v.ToString("+0.0%;-0.0%;0.0%", CultureInfo.InvariantCulture);
     }
 }

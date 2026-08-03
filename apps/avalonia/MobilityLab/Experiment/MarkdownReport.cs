@@ -82,7 +82,7 @@ static class MarkdownReport
         sb.AppendLine(
             "Battery: primary shock/treatment vs same-seed CF (Alpha tax = Beta tax); " +
             "dose-response grid; high-tax placebo twin (Alpha=Beta=treatment); multi-seed ensemble. " +
-            "Kernel Wave 2 (unrest/HD) is out of scope — this harness explores the Wave 1 policy surface.");
+            "Kernel Wave 2 (unrest/HD) is out of scope - this harness explores the Wave 1 policy surface.");
         sb.AppendLine();
 
         sb.AppendLine("## Study checks");
@@ -136,9 +136,9 @@ static class MarkdownReport
             foreach (var d in battery.DoseCurve)
             {
                 sb.AppendLine(
-                    $"| {d.Tax.ToString("0.00", inv)} | {d.AttPopPct.ToString("+0.0%;-0.0%", inv)} | " +
-                    $"{d.AttMeanPush.ToString("+0.000;-0.000", inv)} | {d.DidPopGrowth.ToString("+0.0%;-0.0%", inv)} | " +
-                    $"{d.AttTaxRevenue.ToString("+0.0;-0.0", inv)} | {d.AttMeanProd.ToString("+0.00;-0.00", inv)} |");
+                    $"| {d.Tax.ToString("0.00", inv)} | {Pct(d.AttPopPct)} | " +
+                    $"{d.AttMeanPush.ToString("+0.000;-0.000;0.000", inv)} | {Pct(d.DidPopGrowth)} | " +
+                    $"{d.AttTaxRevenue.ToString("+0.0;-0.0;0.0", inv)} | {d.AttMeanProd.ToString("+0.00;-0.00;0.00", inv)} |");
             }
 
             sb.AppendLine();
@@ -155,11 +155,11 @@ static class MarkdownReport
         {
             sb.AppendLine("## Placebo high twin");
             sb.AppendLine();
-            sb.AppendLine("| Estimand | Placebo (α=β=high) | Primary |");
-            sb.AppendLine("|----------|-------------------|---------|");
+            sb.AppendLine("| Estimand | Placebo (Alpha=Beta=high) | Primary |");
+            sb.AppendLine("|----------|---------------------------|---------|");
             sb.AppendLine(
-                $"| DID pop growth | {placebo.Result.Effects.DidPopGrowth.ToString("+0.0%;-0.0%", inv)} | " +
-                $"{agg.PrimaryDid.ToString("+0.0%;-0.0%", inv)} |");
+                $"| DID pop growth | {Pct(placebo.Result.Effects.DidPopGrowth)} | " +
+                $"{Pct(agg.PrimaryDid)} |");
             sb.AppendLine(
                 $"| Alpha pop delta | {placebo.Result.Effects.AlphaPopDelta.ToString("+0;-0", inv)} | " +
                 $"{e.AlphaPopDelta.ToString("+0;-0", inv)} |");
@@ -184,16 +184,16 @@ static class MarkdownReport
             foreach (var p in battery.Ensemble)
             {
                 sb.AppendLine(
-                    $"| {p.Seed} | {p.AttPopPct.ToString("+0.0%;-0.0%", inv)} | " +
-                    $"{p.DidPopGrowth.ToString("+0.0%;-0.0%", inv)} | " +
-                    $"{p.AttMeanPush.ToString("+0.000;-0.000", inv)} |");
+                    $"| {p.Seed} | {Pct(p.AttPopPct)} | " +
+                    $"{Pct(p.DidPopGrowth)} | " +
+                    $"{p.AttMeanPush.ToString("+0.000;-0.000;0.000", inv)} |");
             }
 
             sb.AppendLine();
             sb.AppendLine(
-                $"- Mean / min / max ATT%: **{agg.EnsembleMeanAttPct.ToString("+0.0%;-0.0%", inv)}** / " +
-                $"{agg.EnsembleMinAttPct.ToString("+0.0%;-0.0%", inv)} / " +
-                $"{agg.EnsembleMaxAttPct.ToString("+0.0%;-0.0%", inv)}");
+                $"- Mean / min / max ATT%: **{Pct(agg.EnsembleMeanAttPct)}** / " +
+                $"{Pct(agg.EnsembleMinAttPct)} / " +
+                $"{Pct(agg.EnsembleMaxAttPct)}");
             sb.AppendLine($"- Same sign: **{agg.EnsembleSameSign}**");
             sb.AppendLine();
         }
@@ -264,4 +264,7 @@ static class MarkdownReport
             .Replace("≥", ">=", StringComparison.Ordinal)
             .Replace("–", "-", StringComparison.Ordinal)
             .Replace("—", "-", StringComparison.Ordinal);
+
+    static string Pct(double v) =>
+        v.ToString("+0.0%;-0.0%;0.0%", CultureInfo.InvariantCulture);
 }
