@@ -89,7 +89,7 @@ static class Dashboard
                 $"trade {TriadHistory.Spark(h.TradeVolume)}"));
         }
 
-        var feed = new Panel(string.Join('\n', log.Reverse().Take(10).Reverse()))
+        var feed = new Panel(string.Join('\n', log.Reverse().Take(10).Reverse().Select(Markup.Escape)))
         {
             Header = new PanelHeader("Month log"),
             Border = BoxBorder.Rounded,
@@ -126,11 +126,7 @@ static class Dashboard
         $"ore {HoldingLedger.GetQuantity(eco, firm, region, TriadWorld.OreId):0.#}  " +
         $"widgets {HoldingLedger.GetQuantity(eco, firm, region, TriadWorld.WidgetId):0.#}");
 
-    static double Control(WorldState world, PolityId id)
-    {
-        var home = world.Provinces.Count(p => p.HomePolityId == id);
-        return home == 0 ? 1 : world.CountOwnedProvinces(id) / (double)home;
-    }
+    static double Control(WorldState world, PolityId id) => world.PopWeightedControlRatio(id);
 
     static string MapLine(WorldState world) =>
         string.Join(' ', world.Provinces.OrderBy(p => p.Id.Value).Select(p =>

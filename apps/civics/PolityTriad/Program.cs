@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Novolis.Economy.Core;
 using Novolis.Geopolitics.Core;
 using PolityTriad;
 using Spectre.Console;
@@ -25,7 +24,15 @@ if (headlessMonths)
         MonthTick.RunScriptedArc(model, log, i);
         MonthTick.Advance(model, log);
         if ((i + 1) % 6 == 0)
-            Console.Error.WriteLine($"… month {i + 1}/{months} [{model.Phase}]");
+        {
+            var a = model.World.Polity(new PolityId(0));
+            var last = model.History.Months.LastOrDefault();
+            Console.Error.WriteLine(
+                $"… M{i + 1}/{months} [{model.Phase}] " +
+                $"α tax={(last?.Alpha.TaxCollected ?? 0):0.#} prod={(last?.Alpha.ProductionValue ?? 0):0.#} " +
+                $"WF={a.Civic.WarFatigue:0.00} ore={(last?.Alpha.OreStock ?? 0):0.#} " +
+                $"tradeΔ={(last?.TradeDelta ?? 0):0.#} captures={model.CapturesTotal}");
+        }
     }
 
     sw.Stop();
@@ -133,40 +140,5 @@ static bool TryParseHeadless(string[] args, out int months)
     return false;
 }
 
-static void WriteHeadlessReport(TriadWorld.Model model, int months, TimeSpan elapsed)
-{
-    var alpha = model.World.Polity(new PolityId(0));
-    var beta = model.World.Polity(new PolityId(1));
-    var gamma = model.World.Polity(new PolityId(2));
-    var aCash = model.AlphaEconomy.Entities.Values.Sum(e => e.Cash.Amount);
-    var bCash = model.BetaEconomy.Entities.Values.Sum(e => e.Cash.Amount);
-    var occupied = model.World.Provinces.Count(p => p.OwnerId != p.HomePolityId);
-
-    Console.WriteLine("=== Polity Triad headless (intricate theatre) ===");
-    Console.WriteLine($"Months: {months}  wall {elapsed.TotalSeconds:0.0}s  phase={model.Phase}  captures={model.CapturesTotal}");
-    Console.WriteLine(
-        $"Alpha L/A/WF/HD: {alpha.Civic.Legitimacy:0.00}/{alpha.Civic.Approval:0.00}/" +
-        $"{alpha.Civic.WarFatigue:0.00}/{alpha.Civic.HumanDevelopment:0.00}  " +
-        $"GDP {alpha.Gdp:0}  force {alpha.Military.Total:0.#}  state {model.AlphaEconomy.Entities[TriadWorld.AlphaState].Cash.Amount:0.#}");
-    Console.WriteLine(
-        $"Beta  L/A/WF/HD: {beta.Civic.Legitimacy:0.00}/{beta.Civic.Approval:0.00}/" +
-        $"{beta.Civic.WarFatigue:0.00}/{beta.Civic.HumanDevelopment:0.00}  " +
-        $"GDP {beta.Gdp:0}  force {beta.Military.Total:0.#}  state {model.BetaEconomy.Entities[TriadWorld.BetaState].Cash.Amount:0.#}");
-    Console.WriteLine(
-        $"Gamma L/A/WF: {gamma.Civic.Legitimacy:0.00}/{gamma.Civic.Approval:0.00}/{gamma.Civic.WarFatigue:0.00}  " +
-        $"tech {gamma.TechLevel:0.00}  GDP {gamma.Gdp:0}");
-    Console.WriteLine(
-        $"Economy cash αΣ {aCash:0.#} βΣ {bCash:0.#}  " +
-        $"at war: {model.World.AreAtWar(new PolityId(0), new PolityId(1))}  occupied provinces: {occupied}");
-    Console.WriteLine(
-        $"Trade CMΣ {model.Telemetry.CommonMarketVolume:0.#}  worldΣ {model.Telemetry.WorldMarketVolume:0.#}  " +
-        $"CM treaties {model.World.CountActiveTreatiesOfKind(TreatyKind.CommonMarket)}  " +
-        $"R&D {model.World.CountActiveTreatiesOfKind(TreatyKind.ResearchPartnership)}");
-    if (model.History.AlphaWarFatigue.Count > 0)
-    {
-        Console.WriteLine(
-            $"Arc αL {TriadHistory.Spark(model.History.AlphaLegitimacy)}  " +
-            $"αWF {TriadHistory.Spark(model.History.AlphaWarFatigue)}  " +
-            $"βWF {TriadHistory.Spark(model.History.BetaWarFatigue)}");
-    }
-}
+static void WriteHeadlessReport(TriadWorld.Model model, int months, TimeSpan elapsed) =>
+    model.History.WriteEvidenceReport(model, months, elapsed);

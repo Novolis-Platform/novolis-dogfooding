@@ -1,25 +1,14 @@
 # MusicMakerLab
 
-Magix Music Maker / Audacity–style arrangement plus a **piano score** (piano-roll + grand staff) with QuestPDF export.
+Magix Music Maker–style **Arrangement** plus an **orchestral multi-part score**.
 
-## Tabs
+## Arrangement demo cue
 
-### Arrangement
-- Sound library with mini waveforms
-- Multi-track arrangement + playhead
-- Clip envelope — gain, fade in/out
-- Split at playhead / remove clip
-- Play mix preview (NAudio) + export mix WAV
+On launch, Arrangement loads the first **~20 seconds** of **By The Sword** by **Kevin Graham**
+(public preview from the composer’s [Ablaze](https://www.kevingrahamcomposer.com/ablaze) page),
+cached under `%LOCALAPPDATA%\Novolis\MusicMakerLab\`.
 
-### Piano Score
-- Grand-staff full score preview
-- Editable **piano-roll** (click to place notes, Alt/right-click or Delete to remove)
-- 50+ parametric sounds
-- On-screen keyboard + computer keys (A–K, Z/X octave)
-- Record onto the score · Play score
-- Save/load **MIDI**, patch/bank JSON
-- **Export PDF…** via QuestPDF (staff systems + piano-roll + note list)
-- Bounce WAV to Arrangement library
+For production/commercial use, license the track via Artlist (or your deal with the composer)—the preview is for local dogfood listening only.
 
 ## Run
 

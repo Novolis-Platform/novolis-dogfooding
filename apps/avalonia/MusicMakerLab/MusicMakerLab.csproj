@@ -12,6 +12,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="NAudio" />
     <PackageReference Include="QuestPDF" />
+    <PackageReference Include="MeltySynth" />
     <PackageReference Include="Novolis.Avalonia.Audio" />
     <PackageReference Include="Novolis.Audio.Edit" />
     <PackageReference Include="Novolis.Audio.Midi" />

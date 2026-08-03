@@ -23,6 +23,7 @@
     <PackageVersion Include="MessagePack" Version="3.1.8" />
     <PackageVersion Include="NAudio" Version="2.3.0" />
     <PackageVersion Include="QuestPDF" Version="2025.7.4" />
+    <PackageVersion Include="MeltySynth" Version="2.4.1" />
     <PackageVersion Include="Novolis.Audio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Runtime" Version="2026.1.*" />
@@ -51,6 +52,7 @@
     <PackageVersion Include="Novolis.Audio.Voice.Platform.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Platform.Windows" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Design" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Briefing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Studio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.StarMap" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Voice" Version="2026.1.*" />

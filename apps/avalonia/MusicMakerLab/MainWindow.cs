@@ -19,11 +19,11 @@ internal sealed class MainWindow : Window
         var project = FullDemoBuilder.Build();
         _arrangement = new AudioEditWorkspace(project)
         {
-            HeaderTitle = "Arrangement — library · tracks · waveforms · fades · export",
+            HeaderTitle = "Arrangement — By The Sword (Kevin Graham)",
         };
         _piano = new MidiPianoWorkspace(musicProject: project)
         {
-            HeaderTitle = "Piano Score",
+            HeaderTitle = "Orchestral Score",
         };
 
         var tabs = new TabControl
@@ -38,7 +38,7 @@ internal sealed class MainWindow : Window
         });
         tabs.Items.Add(new TabItem
         {
-            Header = "Piano Score",
+            Header = "Orchestral Score",
             Content = _piano,
             Foreground = Brushes.White,
         });

@@ -6,7 +6,6 @@ using Novolis.Geopolitics.Core;
 using Novolis.Geopolitics.Diplomacy;
 using Novolis.Geopolitics.Trade;
 using CivicsEngine = Novolis.Civics.Core.CivicEngine;
-// TreatyEffects lives in Diplomacy
 using CivicsGov = Novolis.Civics.Core.GovernmentType;
 using CivicsGovRules = Novolis.Civics.Core.GovernmentRules;
 using GeoCivic = Novolis.Geopolitics.Core.CivicEngine;
@@ -14,56 +13,61 @@ using GeoCivic = Novolis.Geopolitics.Core.CivicEngine;
 namespace PolityTriad;
 
 /// <summary>
-/// Composed month (intricate loop):
-/// 1) fiscal agents tweak intent
-/// 2) trade clearing → resource balances / shortages
-/// 3) Economy periods for Alpha &amp; Beta (production, wages, tax, transfers)
-/// 4) Civics from observed delivery + geo facts (control/wars/occupation)
-/// 5) force growth from capability demand
-/// 6) Gamma geo civic month
-/// 7) conflict resolution if at war (battles / captures)
-/// 8) history sample + phase label
+/// Composed month:
+/// agents → trade → Economy periods → Civics delivery → Gamma geo civic →
+/// PopulationMigration → treaty effects → conflict → history sample.
 /// </summary>
 static class MonthTick
 {
+    public const double PeoplePerHousehold = 250_000; // theatre scale: cohort count ↔ provincial people
+
     public static void Advance(TriadWorld.Model model, Queue<string> log)
     {
         var world = model.World;
         var telemetry = model.Telemetry;
         model.BattlesThisMonth = 0;
 
-        // --- 1. Policy agents (intent only) ---
         if (model.AgentsEnabled)
         {
             SyncNationTreasuryHint(model.AlphaNation, model.AlphaEconomy, TriadWorld.AlphaState);
             SyncNationTreasuryHint(model.BetaNation, model.BetaEconomy, TriadWorld.BetaState);
+            // Refresh emigration pressure hint for agent from last civic settle
+            model.AlphaNation.Demography.LastEmigrationPressure =
+                world.Polity(new PolityId(0)).Civic.EmigrationPressure;
+            model.BetaNation.Demography.LastEmigrationPressure =
+                world.Polity(new PolityId(1)).Civic.EmigrationPressure;
             var aTax0 = model.AlphaNation.Policy.HouseholdTaxRate;
             var bMil0 = model.BetaNation.Policy.MilitaryShare;
             model.FiscalAgent.AdjustPolicy(model.AlphaNation);
             model.FiscalAgent.AdjustPolicy(model.BetaNation);
             if (Math.Abs(model.AlphaNation.Policy.HouseholdTaxRate - aTax0) > 1e-9)
-                Note(log, $"α agent tax {aTax0:0.00}→{model.AlphaNation.Policy.HouseholdTaxRate:0.00}");
+            {
+                var msg = $"α tax intent {aTax0:0.00}→{model.AlphaNation.Policy.HouseholdTaxRate:0.00}";
+                Note(log, msg);
+                model.History.Mark("civics-agent", msg);
+            }
+
             if (Math.Abs(model.BetaNation.Policy.MilitaryShare - bMil0) > 1e-9)
-                Note(log, $"β agent mil {bMil0:0.00}→{model.BetaNation.Policy.MilitaryShare:0.00}");
+            {
+                var msg = $"β mil share {bMil0:0.00}→{model.BetaNation.Policy.MilitaryShare:0.00}";
+                Note(log, msg);
+                model.History.Mark("civics-agent", msg);
+            }
         }
 
-        // --- 2. Trade ---
         var tradeBefore = telemetry.CommonMarketVolume + telemetry.WorldMarketVolume;
         TradeClearing.RunMonth(world, telemetry);
         var tradeDelta = (telemetry.CommonMarketVolume + telemetry.WorldMarketVolume) - tradeBefore;
 
-        // Push shortages from negative balances into next civic context via Balance (already set by trade)
-        // Also starve Alpha ore slightly under war to show production bind.
         if (world.AreAtWar(new PolityId(0), new PolityId(1)))
         {
             model.AlphaEconomy = HoldingLedger.Upsert(
                 model.AlphaEconomy, TriadWorld.AlphaFirm, TriadWorld.RegionA, TriadWorld.OreId,
                 Math.Max(0m, HoldingLedger.GetQuantity(
-                    model.AlphaEconomy, TriadWorld.AlphaFirm, TriadWorld.RegionA, TriadWorld.OreId) - 2m));
+                    model.AlphaEconomy, TriadWorld.AlphaFirm, TriadWorld.RegionA, TriadWorld.OreId) - 6m));
         }
         else
         {
-            // Peacetime ore replenishment (extractive)
             model.AlphaEconomy = HoldingLedger.Upsert(
                 model.AlphaEconomy, TriadWorld.AlphaFirm, TriadWorld.RegionA, TriadWorld.OreId,
                 HoldingLedger.GetQuantity(
@@ -74,17 +78,21 @@ static class MonthTick
                     model.BetaEconomy, TriadWorld.BetaFirm, TriadWorld.RegionB, TriadWorld.OreId) + 4m);
         }
 
-        // --- 3–5. Economy → Civics → force for Alpha & Beta ---
+        SyncDemographyFromWorld(model.AlphaNation, world, new PolityId(0));
+        SyncDemographyFromWorld(model.BetaNation, world, new PolityId(1));
+
         model.AlphaEconomy = SettleNation(
             model, model.AlphaNation, model.AlphaEconomy,
-            TriadWorld.AlphaState, world.Polity(new PolityId(0)), log, "α");
+            TriadWorld.AlphaState, TriadWorld.AlphaFirm, TriadWorld.RegionA,
+            world.Polity(new PolityId(0)), log, "α", out var alphaStats);
         model.BetaEconomy = SettleNation(
             model, model.BetaNation, model.BetaEconomy,
-            TriadWorld.BetaState, world.Polity(new PolityId(1)), log, "β");
+            TriadWorld.BetaState, TriadWorld.BetaFirm, TriadWorld.RegionB,
+            world.Polity(new PolityId(1)), log, "β", out var betaStats);
 
-        // --- 6. Gamma geo-only + treaty effects ---
         var gamma = world.Polity(new PolityId(2));
         var gFacts = BuildGeoFacts(world, gamma.Id);
+        var gammaResearch = world.TreatiesContaining(gamma.Id, TreatyKind.ResearchPartnership).Any() ? 1.15 : 1.0;
         GeoCivic.ApplyMonth(gamma, new GeoCivic.MonthContext
         {
             ControlRatio = gFacts.ControlRatio,
@@ -92,11 +100,25 @@ static class MonthTick
             ResourceShortage = gFacts.ResourceShortage,
             OccupyingForeignLand = gFacts.OccupyingForeignLand,
             LostHomeProvinces = gFacts.LostHomeTerritory,
-            ResearchMultiplier = world.TreatiesContaining(gamma.Id, TreatyKind.ResearchPartnership).Any() ? 1.15 : 1.0,
-        });
+            ResearchMultiplier = gammaResearch,
+            NetMigration = gamma.Civic.LastNetMigration,
+        }, world);
+
+        var popBeforeA = world.OwnedPopulation(new PolityId(0));
+        PopulationMigration.RunMonth(world, telemetry);
+        var popDeltaA = world.OwnedPopulation(new PolityId(0)) - popBeforeA;
+        if (Math.Abs(popDeltaA) > 500)
+        {
+            var msg = $"α population Δ {popDeltaA:0} (geo migration)";
+            Note(log, msg);
+            model.History.Mark("population", msg);
+        }
+
+        model.AlphaEconomy = SyncCohortsFromPopulation(model.AlphaEconomy, TriadWorld.RegionA, world.OwnedPopulation(new PolityId(0)));
+        model.BetaEconomy = SyncCohortsFromPopulation(model.BetaEconomy, TriadWorld.RegionB, world.OwnedPopulation(new PolityId(1)));
+
         TreatyEffects.RunMonth(world, telemetry);
 
-        // --- 7. Battles ---
         if (world.AreAtWar(new PolityId(0), new PolityId(1)))
         {
             foreach (var war in world.ActiveWars.Where(w =>
@@ -110,7 +132,11 @@ static class MonthTick
                     model.BattlesThisMonth++;
                     model.CapturesTotal++;
                     telemetry.ProvincesCaptured++;
-                    Note(log, $"BATTLE capture — {world.Polity(war.Attacker).Name} advances ({war.ProvincesTakenByAttacker} taken)");
+                    var msg =
+                        $"{world.Polity(war.Attacker).Name} captured province " +
+                        $"(attacker taken tally {war.ProvincesTakenByAttacker})";
+                    Note(log, $"BATTLE {msg}");
+                    model.History.Mark("conflict", msg);
                     break;
                 }
 
@@ -119,88 +145,42 @@ static class MonthTick
             }
         }
 
-        // --- 8. Clock + history ---
         world.Day += WorldState.DaysPerMonth;
         var month = world.Day / WorldState.DaysPerMonth;
         var alpha = world.Polity(new PolityId(0));
         var beta = world.Polity(new PolityId(1));
         model.Phase = DescribePhase(world, alpha, beta);
-        var aCash = (double)model.AlphaEconomy.Entities[TriadWorld.AlphaState].Cash.Amount;
-        model.History.Record(
-            alpha.Civic.Legitimacy, alpha.Civic.Approval, alpha.Civic.WarFatigue, aCash, alpha.Gdp,
-            beta.Civic.Legitimacy, beta.Civic.WarFatigue, tradeDelta, model.BattlesThisMonth, model.Phase);
+
+        var aShortage = ResourceKinds.All.Sum(k => alpha.Balance[k] < 0 ? -alpha.Balance[k] : 0);
+        var bShortage = ResourceKinds.All.Sum(k => beta.Balance[k] < 0 ? -beta.Balance[k] : 0);
+        var gShortage = ResourceKinds.All.Sum(k => gamma.Balance[k] < 0 ? -gamma.Balance[k] : 0);
+
+        model.History.Record(new MonthSample
+        {
+            Month = month,
+            Phase = model.Phase,
+            AtWar = world.AreAtWar(alpha.Id, beta.Id),
+            Battles = model.BattlesThisMonth,
+            TradeDelta = tradeDelta,
+            Alpha = MonthSampleFactory.FromEconomyPolity(
+                alpha, model.AlphaEconomy, TriadWorld.AlphaState, TriadWorld.AlphaFirm, TriadWorld.RegionA,
+                alphaStats.Widgets, alphaStats.ProductionValue, alphaStats.ForceDemand, aShortage,
+                world.PopWeightedControlRatio(alpha.Id),
+                world.OwnedPopulation(alpha.Id), alpha.Civic.EmigrationPressure, alpha.Civic.LastNetMigration),
+            Beta = MonthSampleFactory.FromEconomyPolity(
+                beta, model.BetaEconomy, TriadWorld.BetaState, TriadWorld.BetaFirm, TriadWorld.RegionB,
+                betaStats.Widgets, betaStats.ProductionValue, betaStats.ForceDemand, bShortage,
+                world.PopWeightedControlRatio(beta.Id),
+                world.OwnedPopulation(beta.Id), beta.Civic.EmigrationPressure, beta.Civic.LastNetMigration),
+            Gamma = MonthSampleFactory.FromGeoOnly(
+                gamma, gShortage, world.PopWeightedControlRatio(gamma.Id),
+                world.OwnedPopulation(gamma.Id), gamma.Civic.EmigrationPressure, gamma.Civic.LastNetMigration),
+        });
 
         Note(log,
             $"M{month} [{model.Phase}] tradeΔ {tradeDelta:0.#} · " +
-            $"α L{alpha.Civic.Legitimacy:0.00}/A{alpha.Civic.Approval:0.00}/WF{alpha.Civic.WarFatigue:0.00}/HD{alpha.Civic.HumanDevelopment:0.00} · " +
-            $"β WF{beta.Civic.WarFatigue:0.00} ctrl {Control(world, beta.Id):0.00} · γ L{gamma.Civic.Legitimacy:0.00}");
-    }
-
-    static EconomyState SettleNation(
-        TriadWorld.Model model,
-        NationState nation,
-        EconomyState economy,
-        LegalEntityId stateId,
-        Polity polity,
-        Queue<string> log,
-        string tag)
-    {
-        economy = economy with
-        {
-            Policy = CivicEconomyBridge.ToEconomyStatePolicy(
-                nation.Policy,
-                transferPerHousehold: economy.Policy.TransferPerHousehold,
-                wagePerLaborHour: economy.Policy.WagePerLaborHour,
-                firmTaxRate: economy.Policy.FirmTaxRate),
-        };
-
-        var beforeWidgets = HoldingLedger.GetQuantity(
-            economy,
-            tag == "α" ? TriadWorld.AlphaFirm : TriadWorld.BetaFirm,
-            tag == "α" ? TriadWorld.RegionA : TriadWorld.RegionB,
-            TriadWorld.WidgetId);
-
-        economy = model.Engine.Advance(economy);
-
-        var afterWidgets = HoldingLedger.GetQuantity(
-            economy,
-            tag == "α" ? TriadWorld.AlphaFirm : TriadWorld.BetaFirm,
-            tag == "α" ? TriadWorld.RegionA : TriadWorld.RegionB,
-            TriadWorld.WidgetId);
-        var produced = afterWidgets - beforeWidgets;
-
-        var facts = BuildGeoFacts(model.World, polity.Id);
-        // Research boost if Alpha–Gamma research treaty and this is Alpha
-        if (tag == "α" && model.World.TreatiesContaining(polity.Id, TreatyKind.ResearchPartnership).Any())
-        {
-            facts = new PeriodContext
-            {
-                ControlRatio = facts.ControlRatio,
-                ActiveWars = facts.ActiveWars,
-                ResourceShortage = facts.ResourceShortage,
-                OccupyingForeignLand = facts.OccupyingForeignLand,
-                LostHomeTerritory = facts.LostHomeTerritory,
-                ResearchMultiplier = 1.15,
-            };
-        }
-
-        var period = CivicEconomyBridge.PeriodContextFromDelivery(
-            (double)economy.Flows.TaxCollected.Amount,
-            (double)economy.Flows.TransfersPaid.Amount,
-            facts);
-
-        var outcome = CivicsEngine.ApplyPeriod(nation, period);
-        SyncPolityFromNation(polity, nation, economy, stateId);
-        ApplyForceGrowth(polity, outcome.ForceCapabilityDemand);
-
-        if (produced > 0 || economy.Flows.WagesAccrued.Amount > 0)
-        {
-            Note(log,
-                $"{tag} eco: tax {economy.Flows.TaxCollected.Amount:0.#} xfer {economy.Flows.TransfersPaid.Amount:0.#} " +
-                $"wages {economy.Flows.WagesAccrued.Amount:0.#} widgets {produced:0.#} force+{outcome.ForceCapabilityDemand:0.##}");
-        }
-
-        return economy;
+            $"α tax{alphaStats.Tax:0.#}/prod{alphaStats.ProductionValue:0.#}/WF{alpha.Civic.WarFatigue:0.00} · " +
+            $"β WF{beta.Civic.WarFatigue:0.00} ctrl {Control(world, beta.Id):0.00}");
     }
 
     public static void DeclareWar(TriadWorld.Model model, Queue<string> log)
@@ -215,7 +195,15 @@ static class MonthTick
 
         model.World.Relations.Set(a, b, -55);
         var war = DiplomaticInstruments.DeclareWar(model.World, model.Telemetry, a, b);
-        Note(log, war is null ? "War refused." : "WAR — Alpha vs Beta. Ore imports collapse.");
+        if (war is null)
+        {
+            Note(log, "War refused.");
+            model.History.Mark("diplomacy", "DeclareWar refused");
+            return;
+        }
+
+        Note(log, "WAR — Alpha vs Beta. Ore replenishment stops; ore drain on Alpha.");
+        model.History.Mark("diplomacy", "War declared Alpha vs Beta (ore drain starts)");
         model.Phase = "war";
     }
 
@@ -234,7 +222,9 @@ static class MonthTick
         war.Active = false;
         DiplomaticInstruments.SignTreaty(model.World, model.Telemetry, TreatyKind.Peace, a, b, 360);
         model.World.Relations.Adjust(a, b, 15);
-        Note(log, "PEACE signed — 360d grace.");
+        model.Telemetry.WarsEnded++;
+        Note(log, "PEACE signed — 360d grace; occupation may remain.");
+        model.History.Mark("diplomacy", "Peace treaty Alpha–Beta (360d); occupation retained");
         model.Phase = "peace";
     }
 
@@ -242,8 +232,7 @@ static class MonthTick
     {
         var a = new PolityId(0);
         var g = new PolityId(2);
-        if (model.World.CountActiveTreatiesOfKind(TreatyKind.CommonMarket) > 0 &&
-            model.World.HaveTreaty(a, g, TreatyKind.CommonMarket))
+        if (model.World.HaveTreaty(a, g, TreatyKind.CommonMarket))
         {
             Note(log, "Alpha–Gamma Common Market already active.");
             return;
@@ -252,7 +241,15 @@ static class MonthTick
         model.World.Relations.Set(a, g, Math.Max(50, model.World.Relations.Get(a, g)));
         var t = DiplomaticInstruments.SignTreaty(
             model.World, model.Telemetry, TreatyKind.CommonMarket, a, g, 2000);
-        Note(log, t is null ? "CM refused." : "TREATY — Alpha–Gamma Common Market.");
+        if (t is null)
+        {
+            Note(log, "CM refused.");
+            model.History.Mark("diplomacy", "Common Market refused");
+            return;
+        }
+
+        Note(log, "TREATY — Alpha–Gamma Common Market.");
+        model.History.Mark("diplomacy", "Common Market signed Alpha–Gamma");
     }
 
     public static void SignResearch(TriadWorld.Model model, Queue<string> log)
@@ -262,14 +259,27 @@ static class MonthTick
         model.World.Relations.Set(a, g, Math.Max(55, model.World.Relations.Get(a, g)));
         var t = DiplomaticInstruments.SignTreaty(
             model.World, model.Telemetry, TreatyKind.ResearchPartnership, a, g, 1500);
-        Note(log, t is null ? "Research treaty refused." : "TREATY — Research Partnership (α tech ×1.15).");
+        if (t is null)
+        {
+            Note(log, "Research treaty refused.");
+            model.History.Mark("diplomacy", "Research Partnership refused");
+            return;
+        }
+
+        Note(log, "TREATY — Research Partnership (α/γ research ×1.15).");
+        model.History.Mark("diplomacy", "Research Partnership signed (research ×1.15)");
     }
 
     public static void RunScriptedArc(TriadWorld.Model model, Queue<string> log, int monthIndex)
     {
-        // Scripted beats so headless demos show the full stack without key presses.
         switch (monthIndex)
         {
+            case 1:
+                model.AlphaNation.Policy.HouseholdTaxRate = 0.38;
+                model.World.Polity(new PolityId(0)).Policy.HouseholdTaxRate = 0.38;
+                model.History.Mark("policy", "Alpha household tax spiked to 0.38 (mobility pressure)");
+                Note(log, "POLICY — Alpha tax spike 0.38");
+                break;
             case 2:
                 SignCommonMarket(model, log);
                 break;
@@ -278,14 +288,100 @@ static class MonthTick
                 break;
             case 8:
                 DeclareWar(model, log);
-                // Buff Alpha for eventual capture drama
                 model.World.Polity(new PolityId(0)).Military.Land += 400;
                 model.World.Polity(new PolityId(0)).Military.Air += 120;
+                model.History.Mark("conflict", "Alpha force reinforced (+400 land / +120 air) for offensive");
                 break;
             case 18 when model.World.AreAtWar(new PolityId(0), new PolityId(1)):
                 OfferPeace(model, log);
                 break;
         }
+    }
+
+    static void SyncDemographyFromWorld(NationState nation, WorldState world, PolityId id)
+    {
+        nation.Demography.Population = world.OwnedPopulation(id);
+        nation.Demography.LastNetMigration = world.Polity(id).Civic.LastNetMigration;
+        nation.Demography.LastEmigrationPressure = world.Polity(id).Civic.EmigrationPressure;
+    }
+
+    static EconomyState SyncCohortsFromPopulation(EconomyState economy, RegionId region, double population)
+    {
+        var targetHouseholds = Math.Max(1, (int)Math.Round(population / PeoplePerHousehold));
+        var cohorts = new Dictionary<CohortId, HouseholdCohort>(economy.Cohorts);
+        var regional = cohorts.Values.Where(c => c.RegionId.Equals(region)).ToList();
+        if (regional.Count == 0)
+            return economy;
+        var primary = regional[0];
+        cohorts[primary.Id] = primary with { HouseholdCount = targetHouseholds };
+        return economy with { Cohorts = cohorts };
+    }
+
+    static EconomyState SettleNation(
+        TriadWorld.Model model,
+        NationState nation,
+        EconomyState economy,
+        LegalEntityId stateId,
+        LegalEntityId firmId,
+        RegionId regionId,
+        Polity polity,
+        Queue<string> log,
+        string tag,
+        out (decimal Widgets, double Tax, double ForceDemand, double ProductionValue) stats)
+    {
+        economy = economy with
+        {
+            Policy = CivicEconomyBridge.ToEconomyStatePolicy(
+                nation.Policy,
+                transferPerHousehold: economy.Policy.TransferPerHousehold,
+                wagePerLaborHour: economy.Policy.WagePerLaborHour,
+                firmTaxRate: economy.Policy.FirmTaxRate),
+        };
+
+        var beforeWidgets = HoldingLedger.GetQuantity(economy, firmId, regionId, TriadWorld.WidgetId);
+        economy = model.Engine.Advance(economy);
+        var produced = HoldingLedger.GetQuantity(economy, firmId, regionId, TriadWorld.WidgetId) - beforeWidgets;
+
+        var facts = new PeriodContext
+        {
+            ControlRatio = model.World.PopWeightedControlRatio(polity.Id),
+            ActiveWars = model.World.ActiveWars.Count(w => w.Attacker == polity.Id || w.Defender == polity.Id),
+            ResourceShortage = ResourceKinds.All.Sum(k => polity.Balance[k] < 0 ? -polity.Balance[k] : 0),
+            OccupyingForeignLand = model.World.Provinces.Any(p => p.OwnerId == polity.Id && p.HomePolityId != polity.Id),
+            LostHomeTerritory = model.World.Provinces.Any(p => p.HomePolityId == polity.Id && p.OwnerId != polity.Id),
+            ResearchMultiplier = tag == "α" && model.World.TreatiesContaining(polity.Id, TreatyKind.ResearchPartnership).Any()
+                ? 1.15
+                : 1.0,
+            NetMigration = polity.Civic.LastNetMigration,
+        };
+
+        var period = CivicEconomyBridge.PeriodContextFromDelivery(
+            (double)economy.Flows.TaxCollected.Amount,
+            (double)economy.Flows.TransfersPaid.Amount,
+            facts);
+
+        var outcome = CivicsEngine.ApplyPeriod(nation, period);
+        SyncPolityFromNation(polity, nation, economy, stateId);
+        ApplyForceGrowth(polity, outcome.ForceCapabilityDemand);
+        polity.Civic.EmigrationPressure = outcome.EmigrationPressure;
+        polity.Civic.ImmigrationAttractiveness = outcome.ImmigrationAttractiveness;
+        nation.Demography.LastEmigrationPressure = outcome.EmigrationPressure;
+
+        stats = (
+            produced,
+            (double)economy.Flows.TaxCollected.Amount,
+            outcome.ForceCapabilityDemand,
+            (double)economy.Flows.ProductionOutputValue.Amount);
+
+        if (produced != 0 || economy.Flows.WagesAccrued.Amount > 0 || economy.Flows.ProductionOutputValue.Amount > 0)
+        {
+            Note(log,
+                $"{tag} eco: tax {economy.Flows.TaxCollected.Amount:0.#} xfer {economy.Flows.TransfersPaid.Amount:0.#} " +
+                $"wages {economy.Flows.WagesAccrued.Amount:0.#} prodVal {economy.Flows.ProductionOutputValue.Amount:0.#} " +
+                $"Δwidgets {produced:0.#} force+{outcome.ForceCapabilityDemand:0.##}");
+        }
+
+        return economy;
     }
 
     static PeriodContext BuildGeoFacts(WorldState world, PolityId id)
@@ -304,13 +400,7 @@ static class MonthTick
         };
     }
 
-    static double Control(WorldState world, PolityId id)
-    {
-        var home = world.Provinces.Count(p => p.HomePolityId == id);
-        if (home == 0)
-            return 1;
-        return world.CountOwnedProvinces(id) / (double)home;
-    }
+    static double Control(WorldState world, PolityId id) => world.PopWeightedControlRatio(id);
 
     static string DescribePhase(WorldState world, Polity alpha, Polity beta)
     {
@@ -340,6 +430,7 @@ static class MonthTick
         polity.Civic.WarFatigue = nation.Civic.WarFatigue;
         polity.Civic.LastTaxCollected = nation.Civic.LastTaxCollected;
         polity.Civic.LastTransfersPaid = nation.Civic.LastTransfersPaid;
+        polity.Civic.EmigrationPressure = nation.Demography.LastEmigrationPressure;
         polity.TaxRate = Math.Clamp(nation.Policy.HouseholdTaxRate, 0, 0.6);
         polity.MilitaryBudgetShare = Math.Clamp(nation.Policy.MilitaryShare, 0, 0.7);
         polity.Policy.HouseholdTaxRate = nation.Policy.HouseholdTaxRate;

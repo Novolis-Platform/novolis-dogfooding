@@ -68,6 +68,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `RaylibHello` | `apps/RaylibHello` | Raylib |
 | `HelloGame` … `HelloRaygui` | `apps/raylib/Hello*` | Raylib API walkthroughs |
 | `RenderingAvalonia` | `apps/avalonia/RenderingAvalonia` | Avalonia.Rendering + Avalonia.Raylib |
+| `MobilityLab` | `apps/avalonia/MobilityLab` | Tax–mobility Civics/Economy/Geopolitics Avalonia desk |
 | `MovieMakerLab` | `apps/avalonia/MovieMakerLab` | Video.Edit full demo (images/audio/transitions/text/export) |
 | `MusicMakerLab` | `apps/avalonia/MusicMakerLab` | Audio.Edit multi-track (library/waveforms/fades/export) |
 | `MinimalWorkspaceTimeline` | `apps/workspaces/MinimalWorkspaceTimeline` | Workspaces + Timeline |

@@ -7,38 +7,38 @@ using Novolis.Economy.Core.Steps;
 using Novolis.Geopolitics.Conflict;
 using Novolis.Geopolitics.Core;
 using CivicsGov = Novolis.Civics.Core.GovernmentType;
-using EcoResourceKind = Novolis.Economy.Core.ResourceKind;
 using GeoGov = Novolis.Geopolitics.Core.GovernmentType;
 using GeoResourceKind = Novolis.Geopolitics.Core.ResourceKind;
 using CoreMoney = Novolis.Economy.Core.Money;
 using CoreEntity = Novolis.Economy.Core.LegalEntity;
 using CoreEntityKind = Novolis.Economy.Core.LegalEntityKind;
 
-namespace PolityTriad;
+namespace MobilityLab.Experiment;
 
 /// <summary>
-/// Three-polity frontier: Alpha (Democracy, full Economy→Civics), Beta (Autocracy, Economy→Civics),
-/// Gamma (Multiparty, geo civic only + Common Market with Alpha).
+/// Three-polity twin design: Alpha (high-tax treatment), Beta (low-tax control),
+/// Gamma (low-tax haven). Dual Economy ledgers for α/β; γ geo civic only.
 /// </summary>
-static class TriadWorld
+static class TaxMobilityWorld
 {
-    public static readonly RegionId RegionA = RegionId.From(Guid.Parse("c1000000-0000-0000-0000-000000000001"));
-    public static readonly RegionId RegionB = RegionId.From(Guid.Parse("c1000000-0000-0000-0000-000000000002"));
+    public static readonly RegionId RegionA = RegionId.From(Guid.Parse("d1000000-0000-0000-0000-000000000001"));
+    public static readonly RegionId RegionB = RegionId.From(Guid.Parse("d1000000-0000-0000-0000-000000000002"));
 
-    public static readonly LegalEntityId AlphaFirm = LegalEntityId.From(Guid.Parse("c2000000-0000-0000-0000-000000000011"));
-    public static readonly LegalEntityId AlphaHh = LegalEntityId.From(Guid.Parse("c2000000-0000-0000-0000-000000000012"));
-    public static readonly LegalEntityId AlphaState = LegalEntityId.From(Guid.Parse("c2000000-0000-0000-0000-000000000013"));
-    public static readonly LegalEntityId BetaFirm = LegalEntityId.From(Guid.Parse("c2000000-0000-0000-0000-000000000021"));
-    public static readonly LegalEntityId BetaHh = LegalEntityId.From(Guid.Parse("c2000000-0000-0000-0000-000000000022"));
-    public static readonly LegalEntityId BetaState = LegalEntityId.From(Guid.Parse("c2000000-0000-0000-0000-000000000023"));
+    public static readonly LegalEntityId AlphaFirm = LegalEntityId.From(Guid.Parse("d2000000-0000-0000-0000-000000000011"));
+    public static readonly LegalEntityId AlphaHh = LegalEntityId.From(Guid.Parse("d2000000-0000-0000-0000-000000000012"));
+    public static readonly LegalEntityId AlphaState = LegalEntityId.From(Guid.Parse("d2000000-0000-0000-0000-000000000013"));
+    public static readonly LegalEntityId BetaFirm = LegalEntityId.From(Guid.Parse("d2000000-0000-0000-0000-000000000021"));
+    public static readonly LegalEntityId BetaHh = LegalEntityId.From(Guid.Parse("d2000000-0000-0000-0000-000000000022"));
+    public static readonly LegalEntityId BetaState = LegalEntityId.From(Guid.Parse("d2000000-0000-0000-0000-000000000023"));
 
-    public static readonly ResourceId OreId = ResourceId.From(Guid.Parse("c3000000-0000-0000-0000-000000000001"));
-    public static readonly ResourceId WidgetId = ResourceId.From(Guid.Parse("c3000000-0000-0000-0000-000000000002"));
-    public static readonly ActivityId AlphaAct = ActivityId.From(Guid.Parse("c4000000-0000-0000-0000-000000000001"));
-    public static readonly ActivityId BetaAct = ActivityId.From(Guid.Parse("c4000000-0000-0000-0000-000000000002"));
+    public static readonly ResourceId OreId = ResourceId.From(Guid.Parse("d3000000-0000-0000-0000-000000000001"));
+    public static readonly ResourceId WidgetId = ResourceId.From(Guid.Parse("d3000000-0000-0000-0000-000000000002"));
+    public static readonly ActivityId AlphaAct = ActivityId.From(Guid.Parse("d4000000-0000-0000-0000-000000000001"));
+    public static readonly ActivityId BetaAct = ActivityId.From(Guid.Parse("d4000000-0000-0000-0000-000000000002"));
 
     public sealed class Model
     {
+        public required ExperimentSpec Spec { get; set; }
         public required WorldState World { get; init; }
         public required NationState AlphaNation { get; init; }
         public required NationState BetaNation { get; init; }
@@ -48,29 +48,30 @@ static class TriadWorld
         public required WorldTelemetry Telemetry { get; init; }
         public required ConflictResolver Conflict { get; init; }
         public required HeuristicFiscalAgent FiscalAgent { get; init; }
-        public required TriadHistory History { get; init; }
-        public bool AgentsEnabled { get; set; } = true;
+        public required ExperimentHistory History { get; init; }
+        public bool AgentsEnabled { get; set; }
         public int BattlesThisMonth { get; set; }
         public int CapturesTotal { get; set; }
-        public string Phase { get; set; } = "peace";
+        public string Phase { get; set; } = "baseline";
     }
 
-    public static Model Create(int seed = 42)
+    public static Model Create(ExperimentSpec spec)
     {
-        var world = TheatreWorld();
+        var world = TheatreWorld(spec);
         var alpha = world.Polity(new PolityId(0));
         var beta = world.Polity(new PolityId(1));
         var alphaNation = ToNation(alpha, "a");
         var betaNation = ToNation(beta, "b");
-        alphaNation.Demography.Population = wOwned(world, 0);
-        betaNation.Demography.Population = wOwned(world, 1);
-        var alphaEco = OpenIndustrial(alphaNation, AlphaFirm, AlphaHh, AlphaState, AlphaAct, RegionA, seedCash: true);
-        var betaEco = OpenIndustrial(betaNation, BetaFirm, BetaHh, BetaState, BetaAct, RegionB, seedCash: true);
+        alphaNation.Demography.Population = world.OwnedPopulation(new PolityId(0));
+        betaNation.Demography.Population = world.OwnedPopulation(new PolityId(1));
+        var alphaEco = OpenIndustrial(alphaNation, AlphaFirm, AlphaHh, AlphaState, AlphaAct, RegionA);
+        var betaEco = OpenIndustrial(betaNation, BetaFirm, BetaHh, BetaState, BetaAct, RegionB);
         CivicEconomyBridge.BindEconomyState(alphaNation, AlphaState);
         CivicEconomyBridge.BindEconomyState(betaNation, BetaState);
 
         return new Model
         {
+            Spec = spec,
             World = world,
             AlphaNation = alphaNation,
             BetaNation = betaNation,
@@ -78,40 +79,56 @@ static class TriadWorld
             BetaEconomy = betaEco,
             Engine = DefaultPeriodPipeline.CreateEngine(),
             Telemetry = new WorldTelemetry(),
-            Conflict = new ConflictResolver(new Random(seed)),
+            Conflict = new ConflictResolver(new Random(spec.Seed)),
             FiscalAgent = new HeuristicFiscalAgent(),
-            History = new TriadHistory(),
+            History = new ExperimentHistory(),
+            AgentsEnabled = spec.AgentsEnabled,
         };
-
-        static double wOwned(WorldState w, int id) => w.OwnedPopulation(new PolityId(id));
     }
 
-    static WorldState TheatreWorld()
+    /// <summary>Re-apply treatment taxes so agents / drift cannot confound identification.</summary>
+    public static void LockTreatmentTaxes(Model model)
     {
-        var w = new WorldState { Seed = 42, SeedName = "polity-triad-theatre", Day = 0 };
-        w.Polities.Add(MakePolity(0, "Alpha", GeoGov.Democracy, milShare: 0.28, land: 280, air: 70, naval: 55, tax: 0.26));
-        w.Polities.Add(MakePolity(1, "Beta", GeoGov.Autocracy, milShare: 0.42, land: 320, air: 60, naval: 40, tax: 0.22));
-        w.Polities.Add(MakePolity(2, "Gamma", GeoGov.Multiparty, milShare: 0.22, land: 150, air: 40, naval: 80, tax: 0.14));
+        var spec = model.Spec;
+        SetTax(model.AlphaNation, model.World.Polity(new PolityId(0)), spec.AlphaTax);
+        SetTax(model.BetaNation, model.World.Polity(new PolityId(1)), spec.BetaTax);
+        model.World.Polity(new PolityId(2)).Policy.HouseholdTaxRate = spec.GammaTax;
+        model.World.Polity(new PolityId(2)).TaxRate = Math.Clamp(spec.GammaTax, 0, 0.6);
+    }
 
-        // Hex-ish strip: A0-A1-B0-B1 / G0-G1 with cross borders
+    static void SetTax(NationState nation, Polity polity, double tax)
+    {
+        nation.Policy.HouseholdTaxRate = tax;
+        polity.Policy.HouseholdTaxRate = tax;
+        polity.TaxRate = Math.Clamp(tax, 0, 0.6);
+    }
+
+    static WorldState TheatreWorld(ExperimentSpec spec)
+    {
+        var w = new WorldState { Seed = spec.Seed, SeedName = "mobility-lab", Day = 0 };
+        w.Polities.Add(MakePolity(0, "Alpha", GeoGov.Democracy, milShare: 0.28, land: 280, air: 70, naval: 55, tax: spec.AlphaTax));
+        w.Polities.Add(MakePolity(1, "Beta", GeoGov.Democracy, milShare: 0.28, land: 280, air: 70, naval: 55, tax: spec.BetaTax));
+        w.Polities.Add(MakePolity(2, "Gamma", GeoGov.Multiparty, milShare: 0.22, land: 150, air: 40, naval: 80, tax: spec.GammaTax));
+
+        // Matched geography: 2 provinces each, identical initial stocks
         AddProv(w, 0, 0, coastal: true, pop: 1_400_000, 1, 2);
         AddProv(w, 1, 0, coastal: false, pop: 1_200_000, 0, 2, 4);
-        AddProv(w, 2, 1, coastal: true, pop: 1_300_000, 0, 1, 3);
-        AddProv(w, 3, 1, coastal: true, pop: 1_100_000, 2, 5);
+        AddProv(w, 2, 1, coastal: true, pop: 1_400_000, 0, 1, 3);
+        AddProv(w, 3, 1, coastal: true, pop: 1_200_000, 2, 5);
         AddProv(w, 4, 2, coastal: false, pop: 1_500_000, 1, 5);
         AddProv(w, 5, 2, coastal: true, pop: 1_600_000, 3, 4);
 
-        // Complementary resource weights → trade pressure
         SetWeights(w.Provinces[0], food: 0.55, materials: 0.1);
         SetWeights(w.Provinces[1], food: 0.15, materials: 0.45);
-        SetWeights(w.Provinces[2], food: 0.1, materials: 0.5);
-        SetWeights(w.Provinces[3], food: 0.4, materials: 0.15);
+        SetWeights(w.Provinces[2], food: 0.55, materials: 0.1);
+        SetWeights(w.Provinces[3], food: 0.15, materials: 0.45);
         SetWeights(w.Provinces[4], food: 0.35, materials: 0.2);
         SetWeights(w.Provinces[5], food: 0.25, materials: 0.25);
 
-        w.Relations.Set(new PolityId(0), new PolityId(1), -20);
-        w.Relations.Set(new PolityId(0), new PolityId(2), 55);
-        w.Relations.Set(new PolityId(1), new PolityId(2), 10);
+        // Neutral relations — identification stays on tax differential
+        w.Relations.Set(new PolityId(0), new PolityId(1), 15);
+        w.Relations.Set(new PolityId(0), new PolityId(2), 40);
+        w.Relations.Set(new PolityId(1), new PolityId(2), 40);
         return w;
     }
 
@@ -142,32 +159,32 @@ static class TriadWorld
         p.ResourceWeights[GeoResourceKind.Rare] = rest;
     }
 
-    static Polity MakePolity(int id, string name, GeoGov gov, double milShare, double land, double air, double naval, double tax = 0.22) => new()
+    static Polity MakePolity(int id, string name, GeoGov gov, double milShare, double land, double air, double naval, double tax) => new()
     {
         Id = new PolityId(id),
         Name = name,
-        Continent = "Frontier",
+        Continent = "Lab",
         Government = gov,
-        Gdp = 90_000 + id * 8_000,
+        Gdp = 90_000,
         Treasury = 18_000,
         Stability = 0.72,
-        TechLevel = 1.0 + id * 0.05,
+        TechLevel = 1.0,
         Policy =
         {
             HouseholdTaxRate = tax,
-            TransferShare = 0.22 + (gov == GeoGov.Democracy ? 0.06 : 0),
+            TransferShare = 0.24,
             InfrastructureShare = 0.45,
-            PropagandaShare = gov == GeoGov.Autocracy ? 0.35 : 0.18,
+            PropagandaShare = 0.18,
             MilitaryShare = milShare,
         },
         Civic =
         {
             Legitimacy = 0.62,
             Approval = 0.52,
-            Corruption = gov == GeoGov.Autocracy ? 0.22 : 0.14,
+            Corruption = 0.14,
             HumanDevelopment = gov == GeoGov.Multiparty ? 0.62 : 0.52,
             WarFatigue = 0,
-            ImmigrationAttractiveness = gov == GeoGov.Multiparty ? 0.75 : 0.45,
+            ImmigrationAttractiveness = gov == GeoGov.Multiparty ? 0.78 : 0.48,
         },
         Military = new MilitaryForce { Land = land, Air = air, Naval = naval },
     };
@@ -206,8 +223,7 @@ static class TriadWorld
         LegalEntityId hh,
         LegalEntityId state,
         ActivityId act,
-        RegionId regionId,
-        bool seedCash)
+        RegionId regionId)
     {
         var region = new Region(regionId, LivingCapacity: 80, ProductionCapacity: 40m, LogisticsCapacity: 30m);
         var cohort = new HouseholdCohort(
@@ -228,14 +244,13 @@ static class TriadWorld
             wagePerLaborHour: CoreMoney.From(1.5m),
             firmTaxRate: 0.06m);
 
-        var stateCash = seedCash ? CoreMoney.From(140m) : CoreMoney.From(80m);
         var eco = EconomyState.Empty with
         {
             Entities = new Dictionary<LegalEntityId, CoreEntity>
             {
                 [hh] = new CoreEntity(hh, CoreEntityKind.Household, CoreMoney.From(90m)),
                 [firm] = new CoreEntity(firm, CoreEntityKind.Firm, CoreMoney.From(110m)),
-                [state] = new CoreEntity(state, CoreEntityKind.State, stateCash),
+                [state] = new CoreEntity(state, CoreEntityKind.State, CoreMoney.From(140m)),
             },
             Regions = new Dictionary<RegionId, Region> { [regionId] = region },
             Cohorts = new Dictionary<CohortId, HouseholdCohort> { [cohort.Id] = cohort },

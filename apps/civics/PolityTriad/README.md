@@ -35,4 +35,4 @@ dotnet run --project d:\novolis\novolis-dogfooding\apps\civics\PolityTriad\Polit
 | `A` | Toggle fiscal agents |
 | `Q` | Quit |
 
-Headless runs a **scripted arc**: CM @2 → R&D @4 → war @8 → peace @18 so trade, tech, fatigue, and battles show up without key presses.
+Headless prints an **evidence report**: milestone timeline, Economy peacetime-vs-wartime flows, Civics delivery match + war-fatigue, **population/mobility**, Geopolitics map/captures/trade, and PASS/FAIL cross-layer coupling checks (including tax→emigration).

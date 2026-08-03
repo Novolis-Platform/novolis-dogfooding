@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MobilityLab</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>
+      Controlled tax–mobility Avalonia lab: twin treatment/control on Civics/Economy/Geopolitics
+      with series, map, and PASS/FAIL coupling scorecard.
+    </Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Novolis.Avalonia.Briefing" />
+    <PackageReference Include="Novolis.Civics.Agents" />
+    <PackageReference Include="Novolis.Civics.Core" />
+    <PackageReference Include="Novolis.Civics.EconomyBridge" />
+    <PackageReference Include="Novolis.Economy.Core" />
+    <PackageReference Include="Novolis.Geopolitics.Conflict" />
+    <PackageReference Include="Novolis.Geopolitics.Core" />
+    <PackageReference Include="Novolis.Geopolitics.Diplomacy" />
+    <PackageReference Include="Novolis.Geopolitics.Trade" />
+  </ItemGroup>
+</Project>
