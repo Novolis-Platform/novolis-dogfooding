@@ -1,6 +1,6 @@
 # MobilityLab
 
-Controlled tax–mobility science desk on Civics / Economy / Geopolitics (Avalonia). Wave 1 kernels only — this app is a **design + estimation harness**, not new demography physics.
+Controlled tax–mobility science lab on Civics / Economy / Geopolitics (Avalonia). Wave 1 kernels only — this app is a **design + estimation harness**, not new demography physics.
 
 ## Abstract
 
