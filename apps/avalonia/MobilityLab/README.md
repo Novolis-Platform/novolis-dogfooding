@@ -56,7 +56,7 @@ Static (no shock) single arm:
 dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 36 --single --static
 ```
 
-Desk: **Battery study** checked by default → Run; **Copy markdown report** for chat paste.
+Lab UI: **Battery study** checked by default → Run; **Copy markdown report** for chat paste.
 
 ## Study PASS/FAIL
 
@@ -70,4 +70,4 @@ Desk: **Battery study** checked by default → Run; **Copy markdown report** for
 | fiscal tradeoff | ATT tax revenue &gt; 0 while ATT pop &lt; 0 |
 | ensemble sign | All seeds same ATT sign |
 
-Primary scientific claim remains **ATT primary** with war off. Dose/placebo/ensemble are what make the desk explore a policy surface instead of a single smoke test.
+Primary scientific claim remains **ATT primary** with war off. Dose/placebo/ensemble are what make the lab explore a policy surface instead of a single smoke test.
