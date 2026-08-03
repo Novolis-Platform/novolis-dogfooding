@@ -1,3 +1,36 @@
+<!-- novolis-marketing:start -->
+<p align="center">
+  <a href="https://github.com/Novolis-Platform">
+    <img src="https://raw.githubusercontent.com/Novolis-Platform/.github/main/brand/logo-brand-transparent.svg" width="360" alt="Novolis"/>
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Novolis-Platform/.github/main/brand/banners/novolis-dogfooding.svg" width="100%" alt="novolis-dogfooding"/>
+</p>
+
+<p align="center">
+  <strong>Integration labs that prove the stack</strong><br/>
+  Dogfood apps and labs that exercise Novolis packages end-to-end.
+</p>
+
+<p align="center">
+  [![Novolis](https://img.shields.io/badge/Novolis-Platform-111827?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSI1NCIgZmlsbD0iIzA1MDcwZCIvPjx0ZXh0IHg9IjYwIiB5PSI3MiIgZmlsbD0iIzJmZGZmZiIgZm9udC1zaXplPSI0OCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIj5OPC90ZXh0Pjwvc3ZnPg==)](https://github.com/Novolis-Platform)
+  [![CI](https://img.shields.io/github/actions/workflow/status/Novolis-Platform/novolis-dogfooding/merge.yml?branch=main&label=merge&logo=github)](https://github.com/Novolis-Platform/novolis-dogfooding/actions)
+  [![Packages](https://img.shields.io/badge/packages-GitHub%20Packages-0a7ea3?logo=nuget)](https://github.com/orgs/Novolis-Platform/packages?repo_name=novolis-dogfooding)
+  <a href="https://github.com/Novolis-Platform"><img src="https://img.shields.io/badge/org-Novolis--Platform-111827" alt="org"/></a>
+</p>
+
+<p align="center">
+  <a href="https://nuget.pkg.github.com/Novolis-Platform/index.json"><code>https://nuget.pkg.github.com/Novolis-Platform/index.json</code></a>
+  ·
+  <a href="https://github.com/Novolis-Platform/.github/blob/main/profile/README.md">Org landing</a>
+  ·
+  <a href="https://github.com/Novolis-Platform/novolis-governance">Governance</a>
+</p>
+
+---
+<!-- novolis-marketing:end -->
 # novolis-dogfooding
 
 Integration workspace that **consumes published Novolis packages** from [GitHub Packages](https://github.com/orgs/Novolis-Platform/packages) (`PackageReference` only).
@@ -36,7 +69,8 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `RaylibHello` | `apps/RaylibHello` | Raylib |
 | `HelloGame` … `HelloRaygui` | `apps/raylib/Hello*` | Raylib API walkthroughs |
 | `RenderingAvalonia` | `apps/avalonia/RenderingAvalonia` | Avalonia.Rendering + Avalonia.Raylib |
-| `MovieMakerLab` | `apps/avalonia/MovieMakerLab` | Video.Edit + Avalonia.Video storyboard |
+| `MovieMakerLab` | `apps/avalonia/MovieMakerLab` | Video.Edit full demo (images/audio/transitions/text/export) |
+| `MusicMakerLab` | `apps/avalonia/MusicMakerLab` | Audio.Edit multi-track (library/waveforms/fades/export) |
 | `MinimalWorkspaceTimeline` | `apps/workspaces/MinimalWorkspaceTimeline` | Workspaces + Timeline |
 | `ProjectTimelineBench` | `apps/workspaces/ProjectTimelineBench` | Workspaces.Projects.Timeline |
 | `XFighter` | `apps/raylib/XFighter` | Raylib, Audio (Core, Effects, Playback, Voice) |
@@ -92,3 +126,4 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `Novolis.Dogfooding.Compose` | `apps/shared/Novolis.Dogfooding.Compose` | ViewPose → rendering camera bridge |
 | `Novolis.Dogfooding.TwoD` | `apps/shared/Novolis.Dogfooding.TwoD` | TwoD platform/camera helpers |
 | `Novolis.Dogfooding.Voice` | `apps/shared/Novolis.Dogfooding.Voice` | ATC voice DI for demos |
+

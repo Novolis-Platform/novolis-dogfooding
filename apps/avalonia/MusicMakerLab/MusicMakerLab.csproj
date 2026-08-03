@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MusicMakerLab</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Description>Lightweight Magix Music Maker / Audacity–style dogfood for Novolis.Audio.Edit + Novolis.Avalonia.Audio.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Novolis.Avalonia.Audio" />
+    <PackageReference Include="Novolis.Audio.Edit" />
+    <PackageReference Include="Novolis.Audio.Core" />
+  </ItemGroup>
+</Project>

@@ -27,10 +27,12 @@
     <PackageVersion Include="Novolis.Audio.Bindings" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Native" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Core" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Audio.Edit" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Effects" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Filters" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Phraseology" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Playback" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Audio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Astro.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Astro.Assessment" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Astro.Catalog" Version="2026.1.*" />

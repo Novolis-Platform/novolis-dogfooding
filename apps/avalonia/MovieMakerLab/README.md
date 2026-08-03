@@ -1,8 +1,12 @@
 # MovieMakerLab
 
-Minimal Windows Movie Maker–style dogfood: collections, storyboard, preview monitor, and transport.
+Full Movie Maker–style dogfood for `Novolis.Video.Edit` + `Novolis.Avalonia.Video`.
 
-Exercises `Novolis.Video.Edit` + `Novolis.Avalonia.Video`.
+## Features in the UI
+
+- **Media library** — thumbnails for images / color cards / audio; preview pane; double-click or **Add to storyboard** / **Add to audio track**
+- **Transition inspector** — select a storyboard clip, choose Fade/Wipe + duration, **Apply** (amber wedge on the strip)
+- **Export movie…** — writes playable `movie.avi` (+ `audio.wav` + `movie.json`)
 
 ## Run
 
@@ -10,11 +14,12 @@ Exercises `Novolis.Video.Edit` + `Novolis.Avalonia.Video`.
 dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MovieMakerLab\MovieMakerLab.csproj -p:NovolisUseProjectReferences=true
 ```
 
-Use ProjectReference mode until `Novolis.Video.Edit` is published to GitHub Packages.
+## Suggested walkthrough
 
-## Basics
+1. Play the starter storyboard (Sky → Hills with fade).
+2. In the library, select **Dusk still** → **Add to storyboard**.
+3. Click the Hills clip on the storyboard → set Wipe 0.7s → **Apply transition**.
+4. Select **Bed tone A3** → **Add to audio track**.
+5. **Export movie…** and open `movie.avi`.
 
-- **Import pictures** — stills into collections + storyboard
-- **Make color card** — solid title cards (always previewable)
-- **Split at playhead** / **Remove clip**
-- **Play / Pause** + storyboard scrub
+Demo assets: `%LocalAppData%\Novolis\MovieMakerLab\demo-assets\`.
