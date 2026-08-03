@@ -1,45 +1,38 @@
 # MobilityLab
 
-Controlled tax–mobility lab on the Civics / Economy / Geopolitics kernels (Avalonia scientific UI — not a Spectre theatre clone).
+Controlled tax–mobility science desk on Civics / Economy / Geopolitics (Avalonia). Wave 1 kernels only — this app is a **design + estimation harness**, not new demography physics.
 
 ## Abstract
 
-Holding geography and initial stocks fixed, does raising polity Alpha’s household tax above the Economy tax-push / Civics emigration thresholds cause (1) net population outflow, (2) higher emigration pressure, and (3) weaker early approval vs low-tax twin Beta, with Gamma as a low-tax destination?
+Holding geography and initial stocks fixed, does raising Alpha’s household tax above Economy tax-push / Civics emigration thresholds cause population outflow, higher pressure, and civic/fiscal tradeoffs vs twin Beta, with Gamma as haven?
 
-Default treatment: α tax `0.38`, β tax `0.14`, γ tax `0.12`, 36 months, seed 42. An optional war-shock confounder is **off** by default so the primary claim stays identifiable.
+Default **science battery**: 48 months, baseline/shock at month 12, α treatment `0.38`, β/γ low tax, dose grid, placebo high twin, seeds `{42,43,44}`.
 
-## Identification strategy
+## Study design (battery)
 
-- **Twin / treatment–control:** Alpha and Beta share matched province counts, near-equal initial populations, government form, and military baseline; only household tax differs.
-- **Same-seed counterfactual:** a second world where Alpha tax = Beta tax (no treatment gap). Primary causal estimand is **ATT** on Alpha outcomes (treated − CF).
-- **Within-world DID:** Alpha vs Beta population growth rates in the treated world.
-- Gamma is a low-tax haven with higher immigration attractiveness.
-- Treatment taxes are **re-locked every month** after optional fiscal agents.
-- Fiscal agents default **off**; war shock is a confounder switch (identification check fails when on).
-- Spatial population truth: `Province.Population` via `PopulationMigration`. See [demography-coupling.md](d:\novolis\novolis-civics\docs\demography-coupling.md).
+| Arm | Role |
+|-----|------|
+| Primary | Shock (or static) treatment tax on Alpha; β/γ low |
+| Counterfactual | Alpha tax = Beta tax (ATT baseline) |
+| Dose grid | α ∈ {0.22, 0.28, 0.32, 0.38, 0.45} vs CF |
+| Placebo high twin | α = β = treatment tax — twin DID should collapse |
+| Ensemble | Primary+CF across seeds — same-sign robustness |
 
-## Estimands (reported)
+**Shock schedule:** months before `ShockMonth` lock Alpha at Beta tax; from shock onward Alpha gets treatment tax. Pre-trend DID should be near zero.
 
-| Estimand | Definition |
-|----------|------------|
-| ATT Alpha pop | Treated Alpha end pop − CF Alpha end pop (also % of baseline) |
-| ATT mean push | Post-burn-in (after M6) mean emigration pressure: treated − CF |
-| DID pop growth | Alpha relative Δpop − Beta relative Δpop (treated world) |
-| Gamma absorb share | Gamma Δpop / (−Alpha Δpop) when Alpha loses people |
-| Early approval gap | Mean approval Alpha−Beta over M1–M18 (tax channel; not end L) |
+Spatial authority: [demography-coupling.md](d:\novolis\novolis-civics\docs\demography-coupling.md). Kernel Wave 2 (unrest/HD→productivity) is **out of scope** here.
 
-End-horizon legitimacy is a **diagnostic only** — both polities often sit near the 1.0 ceiling.
+## Estimands
 
-## Month loop
-
-1. Optional fiscal agents  
-2. Lock treatment taxes  
-3. Trade clearing  
-4. Economy periods (α/β) → Civics delivery  
-5. Gamma geo civic month  
-6. `PopulationMigration.RunMonth`  
-7. Optional conflict (if war shock active)  
-8. Sample series → evaluate vs counterfactual
+| Estimand | Meaning |
+|----------|---------|
+| ATT Alpha pop % | Treated − CF end pop / baseline |
+| Twin DID growth | Alpha vs Beta relative Δpop in primary |
+| ATT mean push | Post-burn-in pressure treated − CF |
+| Event study | Pre vs post-shock mean net mig / push / approval |
+| Dose curve | ATT pop % and push vs α tax; monotonicity |
+| Placebo DID | Should be ≪ primary DID |
+| Fiscal ATT | Cumulative tax revenue, mean production, end cash |
 
 ## How to reproduce
 
@@ -48,26 +41,33 @@ dotnet build d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab
 
 dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true
 
-dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 36
+dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 48
 ```
 
-Headless prints a markdown report with identification, effect sizes, and PASS/FAIL. Lab UI: **Copy markdown report**.
-
-War-shock confounder (expect identification FAIL):
+Headless defaults to the **battery** report. Single-arm:
 
 ```powershell
-dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 36 --war
+dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 48 --single
 ```
 
-## Interpretation of PASS/FAIL
+Static (no shock) single arm:
 
-| Check | Claim |
-|-------|--------|
-| identification | CF valid, war off, tax locked, twin balance at M1 |
-| ATT Alpha pop &lt; 0 | Primary causal: high tax cuts Alpha pop vs CF |
-| DID Alpha vs Beta growth | Twin contrast: Alpha grows slower / shrinks more than Beta |
-| ATT + twin pressure | Higher push vs CF and vs Beta post burn-in |
-| Gamma absorbs outflow | Haven destination mechanism |
-| early approval | Tax channel on civic approval (not ceiling L) |
+```powershell
+dotnet run --project d:\novolis\novolis-dogfooding\apps\avalonia\MobilityLab\MobilityLab.csproj -p:NovolisUseProjectReferences=true -- --headless 36 --single --static
+```
 
-Primary scientific claim is **ATT Alpha pop** with war off. Long horizons amplify outflow magnitude; use ATT/% of baseline, not only end-stock PASS.
+Desk: **Battery study** checked by default → Run; **Copy markdown report** for chat paste.
+
+## Study PASS/FAIL
+
+| Check | Pass when |
+|-------|-----------|
+| identification | CF valid, war/agents off, tax locked, twin balance |
+| ATT primary | ATT pop % &lt; −2% |
+| pre-trend | \|pre-shock DID\| small (shock design) |
+| dose responds | Higher tax → more negative ATT (monotonic) |
+| placebo symmetry | \|placebo DID\| ≪ \|primary DID\| |
+| fiscal tradeoff | ATT tax revenue &gt; 0 while ATT pop &lt; 0 |
+| ensemble sign | All seeds same ATT sign |
+
+Primary scientific claim remains **ATT primary** with war off. Dose/placebo/ensemble are what make the desk explore a policy surface instead of a single smoke test.

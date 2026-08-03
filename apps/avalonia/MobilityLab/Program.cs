@@ -25,19 +25,41 @@ internal static class Program
 
     static void RunHeadless(int months, string[] args)
     {
-        var spec = ExperimentSpec.Default with { Months = months };
-        if (args.Any(a => a.Equals("--war", StringComparison.OrdinalIgnoreCase)))
-            spec = spec with { WarShockOn = true };
-
+        var single = args.Any(a => a.Equals("--single", StringComparison.OrdinalIgnoreCase));
+        var war = args.Any(a => a.Equals("--war", StringComparison.OrdinalIgnoreCase));
         var sw = Stopwatch.StartNew();
-        var host = ExperimentHost.Run(spec);
+
+        if (single)
+        {
+            var spec = ExperimentSpec.ShockDefault with
+            {
+                Months = months,
+                WarShockOn = war,
+            };
+            if (args.Any(a => a.Equals("--static", StringComparison.OrdinalIgnoreCase)))
+            {
+                spec = ExperimentSpec.Default with { Months = months, WarShockOn = war };
+            }
+
+            var host = ExperimentHost.Run(spec);
+            sw.Stop();
+            Console.Write(MarkdownReport.Build(host.Result, host.Model, sw.Elapsed));
+            return;
+        }
+
+        var study = StudySpec.Default with
+        {
+            Months = months,
+            WarShockOn = war,
+        };
+        var battery = BatteryRunner.Run(study);
         sw.Stop();
-        Console.Write(MarkdownReport.Build(host.Result, host.Model, sw.Elapsed));
+        Console.Write(MarkdownReport.BuildBattery(battery, sw.Elapsed));
     }
 
     static bool TryParseHeadless(string[] args, out int months)
     {
-        months = 36;
+        months = 48;
         for (var i = 0; i < args.Length; i++)
         {
             if (!args[i].Equals("--headless", StringComparison.OrdinalIgnoreCase))

@@ -86,14 +86,15 @@ static class TaxMobilityWorld
         };
     }
 
-    /// <summary>Re-apply treatment taxes so agents / drift cannot confound identification.</summary>
+    /// <summary>Re-apply scheduled taxes so agents / drift cannot confound identification.</summary>
     public static void LockTreatmentTaxes(Model model)
     {
-        var spec = model.Spec;
-        SetTax(model.AlphaNation, model.World.Polity(new PolityId(0)), spec.AlphaTax);
-        SetTax(model.BetaNation, model.World.Polity(new PolityId(1)), spec.BetaTax);
-        model.World.Polity(new PolityId(2)).Policy.HouseholdTaxRate = spec.GammaTax;
-        model.World.Polity(new PolityId(2)).TaxRate = Math.Clamp(spec.GammaTax, 0, 0.6);
+        var monthIndex = model.History.Months.Count;
+        var alphaTax = model.Spec.EffectiveAlphaTax(monthIndex);
+        SetTax(model.AlphaNation, model.World.Polity(new PolityId(0)), alphaTax);
+        SetTax(model.BetaNation, model.World.Polity(new PolityId(1)), model.Spec.BetaTax);
+        model.World.Polity(new PolityId(2)).Policy.HouseholdTaxRate = model.Spec.GammaTax;
+        model.World.Polity(new PolityId(2)).TaxRate = Math.Clamp(model.Spec.GammaTax, 0, 0.6);
     }
 
     static void SetTax(NationState nation, Polity polity, double tax)
@@ -106,7 +107,7 @@ static class TaxMobilityWorld
     static WorldState TheatreWorld(ExperimentSpec spec)
     {
         var w = new WorldState { Seed = spec.Seed, SeedName = "mobility-lab", Day = 0 };
-        w.Polities.Add(MakePolity(0, "Alpha", GeoGov.Democracy, milShare: 0.28, land: 280, air: 70, naval: 55, tax: spec.AlphaTax));
+        w.Polities.Add(MakePolity(0, "Alpha", GeoGov.Democracy, milShare: 0.28, land: 280, air: 70, naval: 55, tax: spec.EffectiveAlphaTax(0)));
         w.Polities.Add(MakePolity(1, "Beta", GeoGov.Democracy, milShare: 0.28, land: 280, air: 70, naval: 55, tax: spec.BetaTax));
         w.Polities.Add(MakePolity(2, "Gamma", GeoGov.Multiparty, milShare: 0.22, land: 150, air: 40, naval: 80, tax: spec.GammaTax));
 

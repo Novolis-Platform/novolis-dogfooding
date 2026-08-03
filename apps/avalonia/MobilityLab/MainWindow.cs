@@ -18,39 +18,26 @@ internal sealed class MainWindow : Window
     static readonly Color Teal = Color.Parse("#3ecfaf");
     static readonly Color Copper = Color.Parse("#d4a04a");
     static readonly Color Ink = Color.Parse("#f0f4f8");
-    static readonly Color Muted = Color.Parse("#b7c6d4");
     static readonly Color Fail = Color.Parse("#e07070");
-    static readonly Color Pass = Color.Parse("#d4a04a");
+    static readonly Color PassMark = Color.Parse("#d4a04a");
     static readonly Color AlphaLine = Color.Parse("#f0845c");
     static readonly Color BetaLine = Color.Parse("#3ecfaf");
     static readonly Color ChartBg = Color.Parse("#0a1622");
+    static readonly Color ShockLine = Color.Parse("#e8eef4");
 
     readonly NumericUpDown _alphaTax = MakeTaxBox(0.38);
     readonly NumericUpDown _betaTax = MakeTaxBox(0.14);
-    readonly NumericUpDown _months = new()
-    {
-        Minimum = 6m,
-        Maximum = 120m,
-        Increment = 1m,
-        Value = 36m,
-        Width = 96,
-        FormatString = "0",
-        FontSize = 15,
-        MinHeight = 36,
-    };
-    readonly CheckBox _warShock = new()
-    {
-        Content = "War shock (confounder)",
-        IsChecked = false,
-        Foreground = new SolidColorBrush(Ink),
-        FontSize = 15,
-        MinHeight = 36,
-        VerticalContentAlignment = VerticalAlignment.Center,
-    };
+    readonly NumericUpDown _months = MakeIntBox(48, 12, 120);
+    readonly NumericUpDown _shockMonth = MakeIntBox(12, 0, 60);
+    readonly CheckBox _batteryMode = MakeCheck("Battery study (dose / placebo / ensemble)", true);
+    readonly CheckBox _includeDose = MakeCheck("Dose grid", true);
+    readonly CheckBox _includePlacebo = MakeCheck("Placebo twin", true);
+    readonly CheckBox _includeEnsemble = MakeCheck("Seed ensemble", true);
+    readonly CheckBox _warShock = MakeCheck("War shock (confounder)", false);
 
     readonly TextBlock _status = new()
     {
-        Text = "HardPause — set parameters, then Run.",
+        Text = "HardPause — Battery mode default. Run the science battery.",
         Foreground = new SolidColorBrush(Ink),
         FontSize = 16,
         FontWeight = FontWeight.SemiBold,
@@ -70,45 +57,35 @@ internal sealed class MainWindow : Window
         Foreground = new SolidColorBrush(Ink),
         Background = new SolidColorBrush(ChartBg),
         MinHeight = 280,
-        MaxHeight = 420,
+        MaxHeight = 480,
         IsReadOnly = true,
         BorderThickness = new Thickness(0),
     };
 
-    readonly Canvas _popSeries = new()
-    {
-        Height = 180,
-        Background = new SolidColorBrush(ChartBg),
-        ClipToBounds = true,
-    };
-    readonly Canvas _pushSeries = new()
-    {
-        Height = 140,
-        Background = new SolidColorBrush(ChartBg),
-        ClipToBounds = true,
-    };
+    readonly Canvas _popSeries = new() { Height = 170, Background = new SolidColorBrush(ChartBg), ClipToBounds = true };
+    readonly Canvas _pushSeries = new() { Height = 120, Background = new SolidColorBrush(ChartBg), ClipToBounds = true };
+    readonly Canvas _doseSeries = new() { Height = 140, Background = new SolidColorBrush(ChartBg), ClipToBounds = true };
     readonly TextBlock _popRaw = MakeReadable(13, mono: true);
     readonly TextBlock _pushRaw = MakeReadable(13, mono: true);
+    readonly TextBlock _doseRaw = MakeReadable(13, mono: true);
 
     TaxMobilityWorld.Model? _model;
+    BatteryResult? _battery;
     Queue<string> _log = new();
-    ExperimentSpec _spec = ExperimentSpec.Default;
-    DispatcherTimer? _timer;
+    ExperimentSpec _spec = ExperimentSpec.ShockDefault;
     string _lastMarkdown = "";
 
     public MainWindow()
     {
-        Title = "MobilityLab — tax–mobility lab";
-        Width = 1280;
-        Height = 960;
+        Title = "MobilityLab — science battery";
+        Width = 1320;
+        Height = 980;
         MinWidth = 1024;
         MinHeight = 720;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = new SolidColorBrush(Navy);
-
         Content = BuildLayout();
         ResetExperiment();
-        RefreshUi();
     }
 
     Control BuildLayout()
@@ -125,33 +102,16 @@ internal sealed class MainWindow : Window
         var hypothesis = new TextBlock
         {
             Text =
-                "RQ: Holding geography and initial stocks fixed, does raising Alpha’s household tax " +
-                "above Economy tax-push / Civics emigration thresholds cause outflow, higher pressure, " +
-                "and weaker early approval vs twin Beta, with Gamma as haven?\n" +
-                "Estimator: same-seed counterfactual (Alpha tax = Beta tax) → ATT; plus twin DID on pop growth. " +
-                "End L is diagnostic only (often ceiling-bound).",
+                "Science battery: shock design + ATT vs CF, dose–response, high-tax placebo twin, multi-seed ensemble, " +
+                "and fiscal/production estimands. Formulas stay in Wave 1 kernels — this harness explores the policy surface.\n" +
+                "Battery Run is the primary path; Single steps one treated world.",
             TextWrapping = TextWrapping.Wrap,
             Foreground = new SolidColorBrush(Ink),
             FontSize = 16,
             LineHeight = 24,
             Margin = new Thickness(0, 10, 0, 4),
-            MaxWidth = 1100,
+            MaxWidth = 1180,
         };
-
-        var runBtn = PrimaryButton("Run", (_, _) => RunAll());
-        var stepBtn = SecondaryButton("Step", (_, _) => StepOnce());
-        var resetBtn = SecondaryButton("Reset", (_, _) =>
-        {
-            StopTimer();
-            ResetExperiment();
-            RefreshUi();
-        });
-        var pauseBtn = SecondaryButton("Pause", (_, _) =>
-        {
-            StopTimer();
-            _status.Text = "HardPause — editing allowed.";
-        });
-        var copyBtn = PrimaryButton("Copy markdown report", async (_, _) => await CopyReportAsync());
 
         var controls = new WrapPanel
         {
@@ -161,12 +121,16 @@ internal sealed class MainWindow : Window
                 Labeled("α tax", _alphaTax),
                 Labeled("β tax", _betaTax),
                 Labeled("Months", _months),
+                Labeled("Shock M", _shockMonth),
+                _batteryMode,
+                _includeDose,
+                _includePlacebo,
+                _includeEnsemble,
                 _warShock,
-                runBtn,
-                stepBtn,
-                pauseBtn,
-                resetBtn,
-                copyBtn,
+                PrimaryButton("Run", (_, _) => RunStudy()),
+                SecondaryButton("Step (single)", (_, _) => StepOnce()),
+                SecondaryButton("Reset", (_, _) => ResetExperiment()),
+                PrimaryButton("Copy markdown report", async (_, _) => await CopyReportAsync()),
             },
         };
 
@@ -175,16 +139,17 @@ internal sealed class MainWindow : Window
             Spacing = 10,
             Children =
             {
-                ChartBlock("Population (α copper · β teal) — shared scale", _popSeries, _popRaw),
-                ChartBlock("Emigration pressure (α copper · β teal) — shared 0–1", _pushSeries, _pushRaw),
+                ChartBlock("Population (α copper · β teal) — vertical = shock", _popSeries, _popRaw),
+                ChartBlock("Emigration pressure (shared 0–1)", _pushSeries, _pushRaw),
+                ChartBlock("Dose curve: ATT pop % vs α tax", _doseSeries, _doseRaw),
             },
         };
 
         var mapPanel = Section(
-            "Province map",
+            "Province map (primary)",
             new ScrollViewer
             {
-                MaxHeight = 340,
+                MaxHeight = 360,
                 Content = _mapText,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             });
@@ -210,15 +175,15 @@ internal sealed class MainWindow : Window
             Spacing = 12,
             Children =
             {
-                Section("Coupling scorecard", _scoreRows),
-                Section("Effect sizes + horizon", _metricsText),
+                Section("Study scorecard", _scoreRows),
+                Section("Effect sizes", _metricsText),
             },
         };
         var right = Section(
             "Month feed (recent)",
             new ScrollViewer
             {
-                MaxHeight = 260,
+                MaxHeight = 280,
                 Content = _feedText,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             });
@@ -228,9 +193,7 @@ internal sealed class MainWindow : Window
         Grid.SetColumn(right, 1);
         right.Margin = new Thickness(14, 0, 0, 0);
 
-        var reportSection = Section(
-            "Markdown report — select all or use Copy markdown report",
-            _reportBox);
+        var reportSection = Section("Markdown report — Copy or select-all", _reportBox);
         reportSection.Margin = new Thickness(0, 14, 0, 0);
 
         return new ScrollViewer
@@ -240,16 +203,7 @@ internal sealed class MainWindow : Window
             {
                 Margin = new Thickness(28, 24, 28, 32),
                 Spacing = 6,
-                Children =
-                {
-                    brand,
-                    hypothesis,
-                    controls,
-                    _status,
-                    body,
-                    evidence,
-                    reportSection,
-                },
+                Children = { brand, hypothesis, controls, _status, body, evidence, reportSection },
             },
         };
     }
@@ -281,7 +235,7 @@ internal sealed class MainWindow : Window
         host.SizeChanged += (_, e) =>
         {
             canvas.Width = Math.Max(120, e.NewSize.Width - 24);
-            DrawSeries();
+            DrawAllCharts();
         };
         return host;
     }
@@ -312,7 +266,7 @@ internal sealed class MainWindow : Window
     {
         Orientation = Orientation.Horizontal,
         Spacing = 8,
-        Margin = new Thickness(0, 0, 18, 10),
+        Margin = new Thickness(0, 0, 16, 10),
         VerticalAlignment = VerticalAlignment.Center,
         Children =
         {
@@ -338,6 +292,29 @@ internal sealed class MainWindow : Window
         FormatString = "0.00",
         FontSize = 15,
         MinHeight = 36,
+    };
+
+    static NumericUpDown MakeIntBox(int value, int min, int max) => new()
+    {
+        Minimum = min,
+        Maximum = max,
+        Increment = 1m,
+        Value = value,
+        Width = 88,
+        FormatString = "0",
+        FontSize = 15,
+        MinHeight = 36,
+    };
+
+    static CheckBox MakeCheck(string content, bool on) => new()
+    {
+        Content = content,
+        IsChecked = on,
+        Foreground = new SolidColorBrush(Ink),
+        FontSize = 14,
+        MinHeight = 36,
+        Margin = new Thickness(0, 0, 12, 10),
+        VerticalContentAlignment = VerticalAlignment.Center,
     };
 
     static Button PrimaryButton(string text, EventHandler<Avalonia.Interactivity.RoutedEventArgs> onClick)
@@ -384,47 +361,99 @@ internal sealed class MainWindow : Window
         LineHeight = size + 6,
     };
 
-    ExperimentSpec ReadSpec() => new(
+    StudySpec ReadStudy() => new(
+        Months: (int)(_months.Value ?? 48m),
         AlphaTax: (double)(_alphaTax.Value ?? 0.38m),
         BetaTax: (double)(_betaTax.Value ?? 0.14m),
         GammaTax: 0.12,
-        Months: (int)(_months.Value ?? 36m),
-        Seed: 42,
+        BaselineMonths: (int)(_shockMonth.Value ?? 12m),
+        ShockMonth: (int)(_shockMonth.Value ?? 12m),
         WarShockOn: _warShock.IsChecked == true,
-        AgentsEnabled: false);
+        AgentsEnabled: false,
+        IncludeDose: _includeDose.IsChecked == true,
+        IncludePlacebo: _includePlacebo.IsChecked == true,
+        IncludeEnsemble: _includeEnsemble.IsChecked == true,
+        Seeds: StudySpec.Default.Seeds,
+        DoseGrid: StudySpec.Default.DoseGrid);
+
+    ExperimentSpec ReadSingleSpec()
+    {
+        var shock = (int)(_shockMonth.Value ?? 12m);
+        return new ExperimentSpec(
+            AlphaTax: (double)(_alphaTax.Value ?? 0.38m),
+            BetaTax: (double)(_betaTax.Value ?? 0.14m),
+            GammaTax: 0.12,
+            Months: (int)(_months.Value ?? 48m),
+            Seed: 42,
+            WarShockOn: _warShock.IsChecked == true,
+            AgentsEnabled: false,
+            BaselineMonths: shock,
+            ShockMonth: shock);
+    }
 
     void ResetExperiment()
     {
-        _spec = ReadSpec();
+        _spec = ReadSingleSpec();
         _model = ExperimentHost.CreateFresh(_spec);
+        _battery = null;
         _log = new Queue<string>();
-        _log.Enqueue(
-            $"Reset · α tax={_spec.AlphaTax:0.00} β={_spec.BetaTax:0.00} γ={_spec.GammaTax:0.00} " +
-            $"warShock={_spec.WarShockOn}");
+        _log.Enqueue($"Reset · battery={_batteryMode.IsChecked == true} shockM={_spec.ShockMonth}");
         _status.Text = "HardPause — ready.";
         _lastMarkdown = "";
-        _reportBox.Text = "(Run the experiment to generate a markdown report you can copy.)";
+        _reportBox.Text = "(Run the science battery to generate a markdown report.)";
+        _scoreRows.Children.Clear();
+        _metricsText.Text = "";
+        _doseRaw.Text = "";
+        DrawMap();
+        DrawAllCharts();
+        RebuildFeed();
     }
 
-    void RunAll()
+    void RunStudy()
     {
-        StopTimer();
-        _spec = ReadSpec();
+        if (_batteryMode.IsChecked == true)
+            RunBattery();
+        else
+            RunSingle();
+    }
+
+    void RunBattery()
+    {
+        var study = ReadStudy();
+        _status.Text = "Running science battery…";
+        var sw = Stopwatch.StartNew();
+        _battery = BatteryRunner.Run(study);
+        sw.Stop();
+        _model = _battery.Primary.Model;
+        _spec = _battery.Primary.Spec;
+        _log = new Queue<string>();
+        _log.Enqueue(
+            $"Battery done {sw.Elapsed.TotalSeconds:0.00}s · checks {_battery.PassCount}/{_battery.CheckCount}");
+        _status.Text =
+            $"Battery complete — {_battery.PassCount}/{_battery.CheckCount} " +
+            $"{(_battery.AllPass ? "PASS" : "MIXED")}.";
+        _status.Foreground = new SolidColorBrush(_battery.AllPass ? PassMark : Ink);
+        ApplyBattery(_battery, sw.Elapsed);
+    }
+
+    void RunSingle()
+    {
+        _spec = ReadSingleSpec();
         var sw = Stopwatch.StartNew();
         var host = ExperimentHost.Run(_spec);
         sw.Stop();
         _model = host.Model;
+        _battery = null;
         _log = host.Log;
         _status.Text =
-            $"Complete — {host.Result.PassCount}/{host.Result.CheckCount} scientific checks " +
-            $"{(host.Result.AllPass ? "PASS" : "MIXED")} (treated + CF).";
-        _status.Foreground = new SolidColorBrush(host.Result.AllPass ? Pass : Ink);
-        ApplyResult(host.Result, sw.Elapsed);
+            $"Single complete — {host.Result.PassCount}/{host.Result.CheckCount} " +
+            $"{(host.Result.AllPass ? "PASS" : "MIXED")}.";
+        _status.Foreground = new SolidColorBrush(host.Result.AllPass ? PassMark : Ink);
+        ApplySingle(host.Result, sw.Elapsed);
     }
 
     void StepOnce()
     {
-        StopTimer();
         if (_model is null)
             ResetExperiment();
         if (_model is null)
@@ -432,113 +461,77 @@ internal sealed class MainWindow : Window
 
         if (_model.History.Months.Count == 0)
         {
-            _spec = ReadSpec();
-            _model.Spec = _spec;
-            _model.AgentsEnabled = _spec.AgentsEnabled;
+            _spec = ReadSingleSpec();
+            _model = ExperimentHost.CreateFresh(_spec);
             TaxMobilityWorld.LockTreatmentTaxes(_model);
         }
 
         var monthIndex = _model.History.Months.Count;
         if (monthIndex >= _spec.Months)
         {
-            FinishRun(TimeSpan.Zero);
+            var result = ExperimentHost.EvaluateAgainstCounterfactual(_model);
+            ApplySingle(result, TimeSpan.Zero);
             return;
         }
 
         TaxMobilityMonth.MaybeApplyWarShock(_model, _log, monthIndex);
         TaxMobilityMonth.Advance(_model, _log);
         _status.Text = $"Stepped to M{_model.History.Months.Count} / {_spec.Months}";
-        RefreshUi();
-        if (_model.History.Months.Count >= _spec.Months)
-            FinishRun(TimeSpan.Zero);
+        var live = ExperimentHost.EvaluateAgainstCounterfactual(_model);
+        ApplySingle(live, null);
     }
 
-    void FinishRun(TimeSpan elapsed)
+    void ApplyBattery(BatteryResult battery, TimeSpan elapsed)
     {
-        StopTimer();
-        if (_model is null)
-            return;
-        var result = ExperimentHost.EvaluateAgainstCounterfactual(_model);
-        _status.Text =
-            $"Complete — {result.PassCount}/{result.CheckCount} scientific checks " +
-            $"{(result.AllPass ? "PASS" : "MIXED")}.";
-        _status.Foreground = new SolidColorBrush(result.AllPass ? Pass : Ink);
-        ApplyResult(result, elapsed);
-    }
-
-    void StopTimer()
-    {
-        _timer?.Stop();
-        _timer = null;
-    }
-
-    async Task CopyReportAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_lastMarkdown))
-        {
-            _status.Text = "No report yet — press Run first.";
-            return;
-        }
-
-        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-        if (clipboard is null)
-        {
-            _status.Text = "Clipboard unavailable — select the markdown box and copy manually.";
-            _reportBox.Focus();
-            _reportBox.SelectAll();
-            return;
-        }
-
-        await clipboard.SetTextAsync(_lastMarkdown);
-        _status.Text = "Markdown report copied to clipboard.";
-        _reportBox.Focus();
-        _reportBox.SelectAll();
-    }
-
-    void RefreshUi(TimeSpan? elapsed = null)
-    {
-        if (_model is null)
-            return;
-
-        DrawSeries();
+        RebuildScorecard(battery.StudyChecks, battery.PassCount, battery.CheckCount, battery.AllPass);
+        var e = battery.Primary.Result.Effects;
+        var a = battery.Aggregates;
+        _metricsText.Text =
+            $"ATT pop %  {e.AttAlphaPopPct:+0.0%;-0.0%}   DID {e.DidPopGrowth:+0.0%;-0.0%}   ATT push {e.AttMeanPush:+0.000;-0.000}\n" +
+            $"ATT tax rev {e.AttCumTaxRevenue:+0.0;-0.0}   ATT prod {e.AttMeanProduction:+0.00;-0.00}   absorb {e.GammaAbsorbShare:0.0%}\n" +
+            $"Placebo DID {a.PlaceboDid:+0.0%;-0.0%}   dose mono {a.DoseMonotonic}   tax@-5% {a.TaxAtAttMinus5Pct?.ToString("0.00") ?? "n/a"}\n" +
+            $"Ensemble ATT% mean/min/max  {a.EnsembleMeanAttPct:+0.0%;-0.0%} / {a.EnsembleMinAttPct:+0.0%;-0.0%} / {a.EnsembleMaxAttPct:+0.0%;-0.0%}\n" +
+            (e.HasEventStudy
+                ? $"Event pre DID {e.PreShockDidGrowth:+0.0%;-0.0%}   pre/post net mig {e.PreShockMeanNetMig:0} / {e.PostShockMeanNetMig:0}"
+                : "Event study: n/a (static)");
         DrawMap();
+        DrawAllCharts();
         RebuildFeed();
-
-        if (_model.History.Months.Count == 0)
-            return;
-
-        var result = ExperimentHost.EvaluateAgainstCounterfactual(_model);
-        ApplyResult(result, elapsed);
-    }
-
-    void ApplyResult(ExperimentResult result, TimeSpan? elapsed)
-    {
-        if (_model is null)
-            return;
-
-        DrawSeries();
-        DrawMap();
-        RebuildScorecard(result);
-        RebuildMetrics(result);
-        RebuildFeed();
-        _lastMarkdown = MarkdownReport.Build(result, _model, elapsed);
+        _lastMarkdown = MarkdownReport.BuildBattery(battery, elapsed);
         _reportBox.Text = _lastMarkdown;
     }
 
-    void RebuildScorecard(ExperimentResult result)
+    void ApplySingle(ExperimentResult result, TimeSpan? elapsed)
+    {
+        RebuildScorecard(result.Checks, result.PassCount, result.CheckCount, result.AllPass);
+        var e = result.Effects;
+        _metricsText.Text =
+            $"ATT pop %  {e.AttAlphaPopPct:+0.0%;-0.0%}   DID {e.DidPopGrowth:+0.0%;-0.0%}\n" +
+            $"ATT push {e.AttMeanPush:+0.000;-0.000}   ATT tax {e.AttCumTaxRevenue:+0.0;-0.0}   ATT prod {e.AttMeanProduction:+0.00;-0.00}\n" +
+            $"α {result.AlphaPopStart:0} → {result.AlphaPopEnd:0}   β {result.BetaPopStart:0} → {result.BetaPopEnd:0}";
+        DrawMap();
+        DrawAllCharts();
+        RebuildFeed();
+        if (_model is not null && _model.History.Months.Count > 0)
+        {
+            _lastMarkdown = MarkdownReport.Build(result, _model, elapsed);
+            _reportBox.Text = _lastMarkdown;
+        }
+    }
+
+    void RebuildScorecard(IReadOnlyList<CouplingCheck> checks, int pass, int total, bool allPass)
     {
         _scoreRows.Children.Clear();
         _scoreRows.Children.Add(new TextBlock
         {
-            Text = $"Scientific checks {result.PassCount}/{result.CheckCount}" +
-                   (result.AllPass ? " — all PASS" : " — review FAILs"),
+            Text = $"Checks {pass}/{total}" + (allPass ? " — all PASS" : " — review FAILs"),
             FontSize = 18,
             FontWeight = FontWeight.Bold,
-            Foreground = new SolidColorBrush(result.AllPass ? Pass : Ink),
+            Foreground = new SolidColorBrush(allPass ? PassMark : Ink),
             Margin = new Thickness(0, 0, 0, 4),
         });
 
-        foreach (var c in result.Checks)
+        foreach (var c in checks)
         {
             _scoreRows.Children.Add(new Border
             {
@@ -555,7 +548,7 @@ internal sealed class MainWindow : Window
                             Text = $"{(c.Pass ? "PASS" : "FAIL")}  ·  {c.Claim}",
                             FontSize = 16,
                             FontWeight = FontWeight.Bold,
-                            Foreground = new SolidColorBrush(c.Pass ? Pass : Fail),
+                            Foreground = new SolidColorBrush(c.Pass ? PassMark : Fail),
                         },
                         new TextBlock
                         {
@@ -570,35 +563,49 @@ internal sealed class MainWindow : Window
         }
     }
 
-    void RebuildMetrics(ExperimentResult result)
-    {
-        var e = result.Effects;
-        _metricsText.Text =
-            $"ATT Alpha pop   {e.AttAlphaPop:+0;-0}  ({e.AttAlphaPopPct:+0.0%;-0.0%})   CF end {e.CounterfactualAlphaPopEnd:0}\n" +
-            $"DID growth A-B  {e.DidPopGrowth:+0.0%;-0.0%}    push gap {e.MeanPushGapVsBeta:+0.000;-0.000}   ATT push {e.AttMeanPush:+0.000;-0.000}\n" +
-            $"Gamma absorb    {e.GammaAbsorbShare:0.0%} of Alpha loss\n" +
-            $"Early App A-B   {e.EarlyApprovalGap:+0.000;-0.000}   ATT early App {e.AttEarlyApproval:+0.000;-0.000}\n" +
-            $"Early L A-B     {e.EarlyLegitimacyGap:+0.000;-0.000} (diagnostic)\n" +
-            $"α pop {result.AlphaPopStart:0} → {result.AlphaPopEnd:0}   β {result.BetaPopStart:0} → {result.BetaPopEnd:0}   γ {result.GammaPopStart:0} → {result.GammaPopEnd:0}";
-    }
-
     void RebuildFeed()
     {
-        var recent = _log.Reverse().Take(14).Reverse();
+        var recent = _log.Reverse().Take(16).Reverse();
         _feedText.Text = string.Join('\n', recent);
+    }
+
+    async Task CopyReportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_lastMarkdown))
+        {
+            _status.Text = "No report yet — press Run first.";
+            return;
+        }
+
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard is null)
+        {
+            _reportBox.Focus();
+            _reportBox.SelectAll();
+            return;
+        }
+
+        await clipboard.SetTextAsync(_lastMarkdown);
+        _status.Text = "Markdown report copied to clipboard.";
+        _reportBox.Focus();
+        _reportBox.SelectAll();
     }
 
     void DrawMap()
     {
         if (_model is null)
+        {
+            _mapText.Text = "";
             return;
+        }
+
         var lines = _model.World.Provinces
             .OrderBy(p => p.Id.Value)
             .Select(p =>
             {
                 var home = PolityTag(p.HomePolityId);
                 var own = PolityTag(p.OwnerId);
-                var occ = p.OwnerId == p.HomePolityId ? "" : $"  OCC {home}→{own}";
+                var occ = p.OwnerId == p.HomePolityId ? "" : $"  OCC {home}->{own}";
                 return $"{p.Name,-4}  owner {own}   pop {p.Population,10:0}{occ}";
             });
         _mapText.Text = string.Join('\n', lines);
@@ -606,13 +613,19 @@ internal sealed class MainWindow : Window
 
     static string PolityTag(PolityId id) => id.Value switch { 0 => "α", 1 => "β", _ => "γ" };
 
-    void DrawSeries()
+    void DrawAllCharts()
+    {
+        DrawPopPush();
+        DrawDose();
+    }
+
+    void DrawPopPush()
     {
         _popSeries.Children.Clear();
         _pushSeries.Children.Clear();
         if (_model is null || _model.History.Months.Count < 2)
         {
-            _popRaw.Text = "Raw: (need ≥2 months)";
+            _popRaw.Text = "Raw: (need >=2 months)";
             _pushRaw.Text = "";
             return;
         }
@@ -623,15 +636,33 @@ internal sealed class MainWindow : Window
         var aPush = months.Select(m => m.Alpha.EmigrationPressure).ToList();
         var bPush = months.Select(m => m.Beta.EmigrationPressure).ToList();
 
-        DrawShared(_popSeries, aPop, bPop, AlphaLine, BetaLine);
-        DrawShared(_pushSeries, aPush, bPush, AlphaLine, BetaLine, fixedMin: 0, fixedMax: 1);
+        DrawShared(_popSeries, aPop, bPop, AlphaLine, BetaLine, shockMonth: _model.Spec.ShockMonth);
+        DrawShared(_pushSeries, aPush, bPush, AlphaLine, BetaLine, fixedMin: 0, fixedMax: 1,
+            shockMonth: _model.Spec.ShockMonth);
 
         var last = months[^1];
         _popRaw.Text =
-            $"Raw end  α {last.Alpha.Population:0}   β {last.Beta.Population:0}   γ {last.Gamma.Population:0}";
+            $"Raw end  α {last.Alpha.Population:0}   β {last.Beta.Population:0}   γ {last.Gamma.Population:0}   tax {last.Alpha.HouseholdTaxRate:0.00}";
         _pushRaw.Text =
-            $"Raw end  α push {last.Alpha.EmigrationPressure:0.00}   β push {last.Beta.EmigrationPressure:0.00}   " +
-            $"α L {last.Alpha.Legitimacy:0.00}   β L {last.Beta.Legitimacy:0.00}";
+            $"Raw end  α push {last.Alpha.EmigrationPressure:0.00}   β push {last.Beta.EmigrationPressure:0.00}   α App {last.Alpha.Approval:0.00}";
+    }
+
+    void DrawDose()
+    {
+        _doseSeries.Children.Clear();
+        if (_battery is null || _battery.DoseCurve.Count < 2)
+        {
+            _doseRaw.Text = _battery is null ? "Dose: run Battery to plot ATT pop % vs tax." : "Dose: need >=2 grid points.";
+            return;
+        }
+
+        var xs = _battery.DoseCurve.Select(d => d.Tax).ToList();
+        var ys = _battery.DoseCurve.Select(d => d.AttPopPct).ToList();
+        DrawXY(_doseSeries, xs, ys, Copper);
+        var a = _battery.Aggregates;
+        _doseRaw.Text =
+            $"ATT@0.22 {a.DoseAttAt022:+0.0%;-0.0%}   ATT@0.45 {a.DoseAttAt045:+0.0%;-0.0%}   " +
+            $"mono={a.DoseMonotonic}   tax@-5%={a.TaxAtAttMinus5Pct?.ToString("0.00") ?? "n/a"}";
     }
 
     void DrawShared(
@@ -641,7 +672,8 @@ internal sealed class MainWindow : Window
         Color aColor,
         Color bColor,
         double? fixedMin = null,
-        double? fixedMax = null)
+        double? fixedMax = null,
+        int shockMonth = 0)
     {
         var w = canvas.Bounds.Width > 10 ? canvas.Bounds.Width : canvas.Width;
         var h = canvas.Height;
@@ -655,9 +687,72 @@ internal sealed class MainWindow : Window
         canvas.Children.Add(MakeGridLine(w, h * 0.25));
         canvas.Children.Add(MakeGridLine(w, h * 0.5));
         canvas.Children.Add(MakeGridLine(w, h * 0.75));
+        canvas.Children.Add(MakePoly(a, aColor, w, h, min, span, 3));
+        canvas.Children.Add(MakePoly(b, bColor, w, h, min, span, 3));
 
-        canvas.Children.Add(MakePoly(a, aColor, w, h, min, span, thickness: 3));
-        canvas.Children.Add(MakePoly(b, bColor, w, h, min, span, thickness: 3));
+        if (shockMonth > 0 && shockMonth <= a.Count)
+        {
+            const double pad = 10;
+            var x = pad + (w - 2 * pad) * (shockMonth - 1) / Math.Max(1, a.Count - 1);
+            canvas.Children.Add(new Avalonia.Controls.Shapes.Line
+            {
+                StartPoint = new Point(x, pad),
+                EndPoint = new Point(x, h - pad),
+                Stroke = new SolidColorBrush(ShockLine),
+                StrokeThickness = 1.5,
+                StrokeDashArray = [4, 3],
+                Opacity = 0.7,
+            });
+        }
+    }
+
+    void DrawXY(Canvas canvas, IReadOnlyList<double> xs, IReadOnlyList<double> ys, Color color)
+    {
+        var w = canvas.Bounds.Width > 10 ? canvas.Bounds.Width : canvas.Width;
+        var h = canvas.Height;
+        if (w < 40 || h < 40 || xs.Count < 2)
+            return;
+
+        var xmin = xs.Min();
+        var xmax = xs.Max();
+        var ymin = Math.Min(0, ys.Min());
+        var ymax = Math.Max(0, ys.Max());
+        var xspan = Math.Max(1e-9, xmax - xmin);
+        var yspan = Math.Max(1e-9, ymax - ymin);
+        const double pad = 10;
+
+        // zero line
+        var y0 = h - pad - (0 - ymin) / yspan * (h - 2 * pad);
+        canvas.Children.Add(new Avalonia.Controls.Shapes.Line
+        {
+            StartPoint = new Point(pad, y0),
+            EndPoint = new Point(w - pad, y0),
+            Stroke = new SolidColorBrush(Color.Parse("#24384c")),
+            StrokeThickness = 1,
+        });
+
+        var geo = new StreamGeometry();
+        using (var ctx = geo.Open())
+        {
+            for (var i = 0; i < xs.Count; i++)
+            {
+                var x = pad + (w - 2 * pad) * (xs[i] - xmin) / xspan;
+                var y = h - pad - (ys[i] - ymin) / yspan * (h - 2 * pad);
+                if (i == 0)
+                    ctx.BeginFigure(new Point(x, y), false);
+                else
+                    ctx.LineTo(new Point(x, y));
+            }
+        }
+
+        canvas.Children.Add(new Avalonia.Controls.Shapes.Path
+        {
+            Data = geo,
+            Stroke = new SolidColorBrush(color),
+            StrokeThickness = 3,
+            StrokeLineCap = PenLineCap.Round,
+            StrokeJoin = PenLineJoin.Round,
+        });
     }
 
     static Avalonia.Controls.Shapes.Line MakeGridLine(double w, double y) => new()

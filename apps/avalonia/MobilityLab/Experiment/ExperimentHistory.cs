@@ -35,7 +35,7 @@ sealed class MonthSample
 
 readonly record struct CouplingCheck(bool Pass, string Claim, string Detail);
 
-/// <summary>Causal / twin contrasts for the tax-mobility lab.</summary>
+/// <summary>Causal / twin contrasts for one treated vs CF pair.</summary>
 sealed class EffectSizes
 {
     public double AttAlphaPop { get; init; }
@@ -58,6 +58,21 @@ sealed class EffectSizes
     public double GammaPopDelta { get; init; }
     public double CounterfactualAlphaPopEnd { get; init; }
     public double TreatedAlphaPopEnd { get; init; }
+
+    // Economy / fiscal ATT
+    public double AttCumTaxRevenue { get; init; }
+    public double AttMeanProduction { get; init; }
+    public double AttEndStateCash { get; init; }
+
+    // Event study (shock design)
+    public double PreShockDidGrowth { get; init; }
+    public double PreShockMeanNetMig { get; init; }
+    public double PostShockMeanNetMig { get; init; }
+    public double PreShockMeanPush { get; init; }
+    public double PostShockMeanPush { get; init; }
+    public double PreShockMeanApproval { get; init; }
+    public double PostShockMeanApproval { get; init; }
+    public bool HasEventStudy { get; init; }
 }
 
 sealed class IdentificationDiagnostics
@@ -71,6 +86,8 @@ sealed class IdentificationDiagnostics
     public int BurnInMonths { get; init; }
     public int EarlyCivicWindow { get; init; }
     public int PostSampleMonths { get; init; }
+    public int ShockMonth { get; init; }
+    public bool UsesShock { get; init; }
 }
 
 sealed class ExperimentResult
@@ -108,12 +125,13 @@ sealed class ExperimentHost
     public static ExperimentHost Run(ExperimentSpec spec)
     {
         var treated = Simulate(spec, "treated");
-        // Counterfactual: Alpha tax = Beta tax (no treatment differential), same seed / horizon.
         var cfSpec = spec with
         {
             AlphaTax = spec.BetaTax,
             WarShockOn = false,
             AgentsEnabled = false,
+            BaselineMonths = 0,
+            ShockMonth = 0,
         };
         var counterfactual = Simulate(cfSpec, "counterfactual");
         var result = ScientificEvaluator.Evaluate(treated.Model, counterfactual.Model);
@@ -139,6 +157,8 @@ sealed class ExperimentHost
             Months = monthsDone,
             WarShockOn = false,
             AgentsEnabled = false,
+            BaselineMonths = 0,
+            ShockMonth = 0,
         };
         var cf = Simulate(cfSpec, "counterfactual");
         return ScientificEvaluator.Evaluate(treated, cf.Model);
@@ -147,13 +167,13 @@ sealed class ExperimentHost
     public static TaxMobilityWorld.Model CreateFresh(ExperimentSpec spec) =>
         TaxMobilityWorld.Create(spec);
 
-    static (TaxMobilityWorld.Model Model, Queue<string> Log) Simulate(ExperimentSpec spec, string tag)
+    public static (TaxMobilityWorld.Model Model, Queue<string> Log) Simulate(ExperimentSpec spec, string tag)
     {
         var model = TaxMobilityWorld.Create(spec);
         var log = new Queue<string>();
         log.Enqueue(
-            $"{tag}: Alpha tax={spec.AlphaTax:0.00} Beta={spec.BetaTax:0.00} Gamma={spec.GammaTax:0.00} " +
-            $"months={spec.Months} war={spec.WarShockOn} seed={spec.Seed}");
+            $"{tag}: Alpha tax={spec.AlphaTax:0.00} (sched) Beta={spec.BetaTax:0.00} Gamma={spec.GammaTax:0.00} " +
+            $"months={spec.Months} shock={spec.ShockMonth} seed={spec.Seed}");
 
         for (var i = 0; i < spec.Months; i++)
         {
