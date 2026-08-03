@@ -1,11 +1,12 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using MobilityLab.Experiment;
-using Novolis.Avalonia.Briefing;
 using Novolis.Geopolitics.Core;
 
 namespace MobilityLab;
@@ -13,13 +14,16 @@ namespace MobilityLab;
 internal sealed class MainWindow : Window
 {
     static readonly Color Navy = Color.Parse("#0b1c2c");
-    static readonly Color Panel = Color.Parse("#12263a");
-    static readonly Color Teal = Color.Parse("#2a9d8f");
-    static readonly Color Copper = Color.Parse("#c98b3a");
-    static readonly Color Ink = Color.Parse("#e8eef4");
-    static readonly Color Muted = Color.Parse("#8aa0b5");
-    static readonly Color AlphaLine = Color.Parse("#e76f51");
-    static readonly Color BetaLine = Color.Parse("#2a9d8f");
+    static readonly Color Panel = Color.Parse("#152a3d");
+    static readonly Color Teal = Color.Parse("#3ecfaf");
+    static readonly Color Copper = Color.Parse("#d4a04a");
+    static readonly Color Ink = Color.Parse("#f0f4f8");
+    static readonly Color Muted = Color.Parse("#b7c6d4");
+    static readonly Color Fail = Color.Parse("#e07070");
+    static readonly Color Pass = Color.Parse("#d4a04a");
+    static readonly Color AlphaLine = Color.Parse("#f0845c");
+    static readonly Color BetaLine = Color.Parse("#3ecfaf");
+    static readonly Color ChartBg = Color.Parse("#0a1622");
 
     readonly NumericUpDown _alphaTax = MakeTaxBox(0.38);
     readonly NumericUpDown _betaTax = MakeTaxBox(0.14);
@@ -29,43 +33,76 @@ internal sealed class MainWindow : Window
         Maximum = 120m,
         Increment = 1m,
         Value = 36m,
-        Width = 88,
+        Width = 96,
         FormatString = "0",
+        FontSize = 15,
+        MinHeight = 36,
     };
     readonly CheckBox _warShock = new()
     {
         Content = "War shock (confounder)",
         IsChecked = false,
         Foreground = new SolidColorBrush(Ink),
+        FontSize = 15,
+        MinHeight = 36,
+        VerticalContentAlignment = VerticalAlignment.Center,
     };
 
     readonly TextBlock _status = new()
     {
         Text = "HardPause — set parameters, then Run.",
-        Foreground = new SolidColorBrush(Muted),
-        FontSize = 13,
+        Foreground = new SolidColorBrush(Ink),
+        FontSize = 16,
+        FontWeight = FontWeight.SemiBold,
+        Margin = new Thickness(0, 4, 0, 0),
     };
-    readonly TextBlock _mapText = MakeMono(12);
-    readonly Canvas _series = new()
+
+    readonly TextBlock _mapText = MakeReadable(15, mono: true);
+    readonly TextBlock _metricsText = MakeReadable(15);
+    readonly StackPanel _scoreRows = new() { Spacing = 10 };
+    readonly TextBlock _feedText = MakeReadable(14, mono: true);
+    readonly TextBox _reportBox = new()
     {
-        Height = 220,
-        Background = new SolidColorBrush(Color.Parse("#0a1622")),
+        AcceptsReturn = true,
+        TextWrapping = TextWrapping.Wrap,
+        FontFamily = new FontFamily("Consolas, 'Courier New', monospace"),
+        FontSize = 14,
+        Foreground = new SolidColorBrush(Ink),
+        Background = new SolidColorBrush(ChartBg),
+        MinHeight = 280,
+        MaxHeight = 420,
+        IsReadOnly = true,
+        BorderThickness = new Thickness(0),
+    };
+
+    readonly Canvas _popSeries = new()
+    {
+        Height = 180,
+        Background = new SolidColorBrush(ChartBg),
         ClipToBounds = true,
     };
-    readonly ScorecardView _scorecard = new();
-    readonly MetricTableView _metrics = new() { Height = 160 };
-    readonly FeedPanel _feed = new() { Height = 140 };
+    readonly Canvas _pushSeries = new()
+    {
+        Height = 140,
+        Background = new SolidColorBrush(ChartBg),
+        ClipToBounds = true,
+    };
+    readonly TextBlock _popRaw = MakeReadable(13, mono: true);
+    readonly TextBlock _pushRaw = MakeReadable(13, mono: true);
 
     TaxMobilityWorld.Model? _model;
     Queue<string> _log = new();
     ExperimentSpec _spec = ExperimentSpec.Default;
     DispatcherTimer? _timer;
+    string _lastMarkdown = "";
 
     public MainWindow()
     {
-        Title = "MobilityLab — tax–mobility lab";
-        Width = 1180;
-        Height = 860;
+        Title = "MobilityLab — tax–mobility desk";
+        Width = 1280;
+        Height = 960;
+        MinWidth = 1024;
+        MinHeight = 720;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = new SolidColorBrush(Navy);
 
@@ -79,7 +116,7 @@ internal sealed class MainWindow : Window
         var brand = new TextBlock
         {
             Text = "MobilityLab",
-            FontSize = 36,
+            FontSize = 42,
             FontWeight = FontWeight.Bold,
             Foreground = new SolidColorBrush(Copper),
             FontFamily = new FontFamily("Georgia, 'Times New Roman', serif"),
@@ -88,17 +125,20 @@ internal sealed class MainWindow : Window
         var hypothesis = new TextBlock
         {
             Text =
-                "RQ: Holding geography and initial stocks fixed, does raising polity Alpha’s household tax " +
-                "above Economy tax-push / Civics emigration thresholds cause (1) net population outflow, " +
-                "(2) higher emigration pressure, and (3) weaker legitimacy vs low-tax twin Beta, " +
-                "with Gamma as a low-tax destination?  Expected: α pop net < 0, α pressure > β, α L < β L.",
+                "RQ: Holding geography and initial stocks fixed, does raising Alpha’s household tax " +
+                "above Economy tax-push / Civics emigration thresholds cause outflow, higher pressure, " +
+                "and weaker early approval vs twin Beta, with Gamma as haven?\n" +
+                "Estimator: same-seed counterfactual (Alpha tax = Beta tax) → ATT; plus twin DID on pop growth. " +
+                "End L is diagnostic only (often ceiling-bound).",
             TextWrapping = TextWrapping.Wrap,
             Foreground = new SolidColorBrush(Ink),
-            FontSize = 14,
-            Margin = new Thickness(0, 8, 0, 0),
+            FontSize = 16,
+            LineHeight = 24,
+            Margin = new Thickness(0, 10, 0, 4),
+            MaxWidth = 1100,
         };
 
-        var runBtn = PrimaryButton("Run", (_, _) => StartRun());
+        var runBtn = PrimaryButton("Run", (_, _) => RunAll());
         var stepBtn = SecondaryButton("Step", (_, _) => StepOnce());
         var resetBtn = SecondaryButton("Reset", (_, _) =>
         {
@@ -111,6 +151,7 @@ internal sealed class MainWindow : Window
             StopTimer();
             _status.Text = "HardPause — editing allowed.";
         });
+        var copyBtn = PrimaryButton("Copy markdown report", async (_, _) => await CopyReportAsync());
 
         var controls = new WrapPanel
         {
@@ -125,84 +166,80 @@ internal sealed class MainWindow : Window
                 stepBtn,
                 pauseBtn,
                 resetBtn,
+                copyBtn,
             },
         };
 
-        var seriesLegend = new TextBlock
+        var charts = new StackPanel
         {
-            Text = "Series: α pop / pressure (copper-red) · β pop / pressure (teal) — normalized polylines",
-            Foreground = new SolidColorBrush(Muted),
-            FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 4),
+            Spacing = 10,
+            Children =
+            {
+                ChartBlock("Population (α copper · β teal) — shared scale", _popSeries, _popRaw),
+                ChartBlock("Emigration pressure (α copper · β teal) — shared 0–1", _pushSeries, _pushRaw),
+            },
         };
+
+        var mapPanel = Section(
+            "Province map",
+            new ScrollViewer
+            {
+                MaxHeight = 340,
+                Content = _mapText,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            });
 
         var body = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("2*,*"),
-            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("2.2*,*"),
             Margin = new Thickness(0, 12, 0, 0),
         };
-        body.Children.Add(seriesLegend);
-        Grid.SetColumn(seriesLegend, 0);
-        Grid.SetRow(seriesLegend, 0);
-
-        var seriesHost = new Border
-        {
-            Background = new SolidColorBrush(Panel),
-            Padding = new Thickness(8),
-            CornerRadius = new CornerRadius(2),
-            Child = _series,
-        };
-        body.Children.Add(seriesHost);
-        Grid.SetColumn(seriesHost, 0);
-        Grid.SetRow(seriesHost, 1);
-        seriesHost.SizeChanged += (_, e) =>
-        {
-            _series.Width = Math.Max(100, e.NewSize.Width - 16);
-            DrawSeries();
-        };
-
-        var mapBorder = new Border
-        {
-            Background = new SolidColorBrush(Panel),
-            Padding = new Thickness(10),
-            CornerRadius = new CornerRadius(2),
-            Margin = new Thickness(12, 0, 0, 0),
-            Child = new StackPanel
-            {
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = "Province map",
-                        FontWeight = FontWeight.SemiBold,
-                        Foreground = new SolidColorBrush(Teal),
-                        Margin = new Thickness(0, 0, 0, 6),
-                    },
-                    _mapText,
-                },
-            },
-        };
-        body.Children.Add(mapBorder);
-        Grid.SetColumn(mapBorder, 1);
-        Grid.SetRow(mapBorder, 0);
-        Grid.SetRowSpan(mapBorder, 2);
+        body.Children.Add(charts);
+        Grid.SetColumn(charts, 0);
+        body.Children.Add(mapPanel);
+        Grid.SetColumn(mapPanel, 1);
+        mapPanel.Margin = new Thickness(14, 0, 0, 0);
 
         var evidence = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,*,*"),
-            Margin = new Thickness(0, 12, 0, 0),
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Margin = new Thickness(0, 14, 0, 0),
         };
-        evidence.Children.Add(PanelBox("Scorecard", _scorecard, 0));
-        evidence.Children.Add(PanelBox("Horizon metrics", _metrics, 1));
-        evidence.Children.Add(PanelBox("Month feed", _feed, 2));
+        var left = new StackPanel
+        {
+            Spacing = 12,
+            Children =
+            {
+                Section("Coupling scorecard", _scoreRows),
+                Section("Effect sizes + horizon", _metricsText),
+            },
+        };
+        var right = Section(
+            "Month feed (recent)",
+            new ScrollViewer
+            {
+                MaxHeight = 260,
+                Content = _feedText,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            });
+        evidence.Children.Add(left);
+        Grid.SetColumn(left, 0);
+        evidence.Children.Add(right);
+        Grid.SetColumn(right, 1);
+        right.Margin = new Thickness(14, 0, 0, 0);
+
+        var reportSection = Section(
+            "Markdown report — select all or use Copy markdown report",
+            _reportBox);
+        reportSection.Margin = new Thickness(0, 14, 0, 0);
 
         return new ScrollViewer
         {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Content = new StackPanel
             {
-                Margin = new Thickness(24),
-                Spacing = 8,
+                Margin = new Thickness(28, 24, 28, 32),
+                Spacing = 6,
                 Children =
                 {
                     brand,
@@ -211,50 +248,80 @@ internal sealed class MainWindow : Window
                     _status,
                     body,
                     evidence,
+                    reportSection,
                 },
             },
         };
     }
 
-    static Border PanelBox(string title, Control child, int column)
+    Border ChartBlock(string title, Canvas canvas, TextBlock raw)
     {
-        var box = new Border
+        var host = new Border
         {
             Background = new SolidColorBrush(Panel),
-            Padding = new Thickness(10),
-            CornerRadius = new CornerRadius(2),
-            Margin = new Thickness(column == 0 ? 0 : 8, 0, 0, 0),
+            Padding = new Thickness(12),
+            CornerRadius = new CornerRadius(3),
             Child = new StackPanel
             {
+                Spacing = 6,
                 Children =
                 {
                     new TextBlock
                     {
                         Text = title,
+                        FontSize = 15,
                         FontWeight = FontWeight.SemiBold,
-                        Foreground = new SolidColorBrush(Copper),
-                        Margin = new Thickness(0, 0, 0, 6),
+                        Foreground = new SolidColorBrush(Ink),
                     },
-                    child,
+                    canvas,
+                    raw,
                 },
             },
         };
-        Grid.SetColumn(box, column);
-        return box;
+        host.SizeChanged += (_, e) =>
+        {
+            canvas.Width = Math.Max(120, e.NewSize.Width - 24);
+            DrawSeries();
+        };
+        return host;
     }
+
+    static Border Section(string title, Control child) => new()
+    {
+        Background = new SolidColorBrush(Panel),
+        Padding = new Thickness(14),
+        CornerRadius = new CornerRadius(3),
+        Child = new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = title,
+                    FontSize = 17,
+                    FontWeight = FontWeight.SemiBold,
+                    Foreground = new SolidColorBrush(Copper),
+                },
+                child,
+            },
+        },
+    };
 
     static StackPanel Labeled(string label, Control control) => new()
     {
         Orientation = Orientation.Horizontal,
-        Spacing = 6,
-        Margin = new Thickness(0, 0, 16, 8),
+        Spacing = 8,
+        Margin = new Thickness(0, 0, 18, 10),
         VerticalAlignment = VerticalAlignment.Center,
         Children =
         {
             new TextBlock
             {
                 Text = label,
-                Foreground = new SolidColorBrush(Muted),
+                FontSize = 15,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = new SolidColorBrush(Ink),
                 VerticalAlignment = VerticalAlignment.Center,
             },
             control,
@@ -267,8 +334,10 @@ internal sealed class MainWindow : Window
         Maximum = 0.55m,
         Increment = 0.01m,
         Value = (decimal)value,
-        Width = 88,
+        Width = 96,
         FormatString = "0.00",
+        FontSize = 15,
+        MinHeight = 36,
     };
 
     static Button PrimaryButton(string text, EventHandler<Avalonia.Interactivity.RoutedEventArgs> onClick)
@@ -276,11 +345,13 @@ internal sealed class MainWindow : Window
         var b = new Button
         {
             Content = text,
-            Margin = new Thickness(0, 0, 8, 8),
-            Padding = new Thickness(16, 8),
+            Margin = new Thickness(0, 0, 10, 10),
+            Padding = new Thickness(18, 10),
             Background = new SolidColorBrush(Copper),
             Foreground = new SolidColorBrush(Navy),
-            FontWeight = FontWeight.SemiBold,
+            FontWeight = FontWeight.Bold,
+            FontSize = 15,
+            MinHeight = 40,
         };
         b.Click += onClick;
         return b;
@@ -291,21 +362,26 @@ internal sealed class MainWindow : Window
         var b = new Button
         {
             Content = text,
-            Margin = new Thickness(0, 0, 8, 8),
-            Padding = new Thickness(14, 8),
-            Background = new SolidColorBrush(Color.Parse("#1a3348")),
+            Margin = new Thickness(0, 0, 10, 10),
+            Padding = new Thickness(16, 10),
+            Background = new SolidColorBrush(Color.Parse("#1e3a52")),
             Foreground = new SolidColorBrush(Ink),
+            FontSize = 15,
+            MinHeight = 40,
         };
         b.Click += onClick;
         return b;
     }
 
-    static TextBlock MakeMono(double size) => new()
+    static TextBlock MakeReadable(double size, bool mono = false) => new()
     {
-        FontFamily = new FontFamily("Consolas, 'Courier New', monospace"),
+        FontFamily = mono
+            ? new FontFamily("Consolas, 'Courier New', monospace")
+            : new FontFamily("Segoe UI, Candara, Calibri, sans-serif"),
         FontSize = size,
         Foreground = new SolidColorBrush(Ink),
         TextWrapping = TextWrapping.Wrap,
+        LineHeight = size + 6,
     };
 
     ExperimentSpec ReadSpec() => new(
@@ -326,30 +402,24 @@ internal sealed class MainWindow : Window
             $"Reset · α tax={_spec.AlphaTax:0.00} β={_spec.BetaTax:0.00} γ={_spec.GammaTax:0.00} " +
             $"warShock={_spec.WarShockOn}");
         _status.Text = "HardPause — ready.";
+        _lastMarkdown = "";
+        _reportBox.Text = "(Run the experiment to generate a markdown report you can copy.)";
     }
 
-    void StartRun()
+    void RunAll()
     {
         StopTimer();
-        ResetExperiment();
-        _status.Text = $"Running {_spec.Months} months…";
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
-        _timer.Tick += (_, _) =>
-        {
-            if (_model is null)
-                return;
-            var monthIndex = _model.History.Months.Count;
-            if (monthIndex >= _spec.Months)
-            {
-                FinishRun();
-                return;
-            }
-
-            TaxMobilityMonth.MaybeApplyWarShock(_model, _log, monthIndex);
-            TaxMobilityMonth.Advance(_model, _log);
-            RefreshUi();
-        };
-        _timer.Start();
+        _spec = ReadSpec();
+        var sw = Stopwatch.StartNew();
+        var host = ExperimentHost.Run(_spec);
+        sw.Stop();
+        _model = host.Model;
+        _log = host.Log;
+        _status.Text =
+            $"Complete — {host.Result.PassCount}/{host.Result.CheckCount} scientific checks " +
+            $"{(host.Result.AllPass ? "PASS" : "MIXED")} (treated + CF).";
+        _status.Foreground = new SolidColorBrush(host.Result.AllPass ? Pass : Ink);
+        ApplyResult(host.Result, sw.Elapsed);
     }
 
     void StepOnce()
@@ -360,7 +430,6 @@ internal sealed class MainWindow : Window
         if (_model is null)
             return;
 
-        // If params changed while paused, rebuild unless mid-horizon
         if (_model.History.Months.Count == 0)
         {
             _spec = ReadSpec();
@@ -372,7 +441,7 @@ internal sealed class MainWindow : Window
         var monthIndex = _model.History.Months.Count;
         if (monthIndex >= _spec.Months)
         {
-            FinishRun();
+            FinishRun(TimeSpan.Zero);
             return;
         }
 
@@ -381,19 +450,20 @@ internal sealed class MainWindow : Window
         _status.Text = $"Stepped to M{_model.History.Months.Count} / {_spec.Months}";
         RefreshUi();
         if (_model.History.Months.Count >= _spec.Months)
-            FinishRun();
+            FinishRun(TimeSpan.Zero);
     }
 
-    void FinishRun()
+    void FinishRun(TimeSpan elapsed)
     {
         StopTimer();
         if (_model is null)
             return;
-        var result = _model.History.Evaluate(_model);
+        var result = ExperimentHost.EvaluateAgainstCounterfactual(_model);
         _status.Text =
-            $"Complete — {result.PassCount}/{result.CheckCount} coupling checks " +
-            $"{(result.AllPass ? "PASS" : "mixed")}.";
-        RefreshUi();
+            $"Complete — {result.PassCount}/{result.CheckCount} scientific checks " +
+            $"{(result.AllPass ? "PASS" : "MIXED")}.";
+        _status.Foreground = new SolidColorBrush(result.AllPass ? Pass : Ink);
+        ApplyResult(result, elapsed);
     }
 
     void StopTimer()
@@ -402,42 +472,121 @@ internal sealed class MainWindow : Window
         _timer = null;
     }
 
-    void RefreshUi()
+    async Task CopyReportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_lastMarkdown))
+        {
+            _status.Text = "No report yet — press Run first.";
+            return;
+        }
+
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard is null)
+        {
+            _status.Text = "Clipboard unavailable — select the markdown box and copy manually.";
+            _reportBox.Focus();
+            _reportBox.SelectAll();
+            return;
+        }
+
+        await clipboard.SetTextAsync(_lastMarkdown);
+        _status.Text = "Markdown report copied to clipboard.";
+        _reportBox.Focus();
+        _reportBox.SelectAll();
+    }
+
+    void RefreshUi(TimeSpan? elapsed = null)
     {
         if (_model is null)
             return;
 
         DrawSeries();
         DrawMap();
-        var result = _model.History.Evaluate(_model);
-        _scorecard.SetRows(
-            result.Checks.Select(c => new ScorecardRow(
-                c.Claim,
-                c.Pass ? 1 : 0,
-                c.Detail,
-                filled: c.Pass)).ToList(),
-            $"Coupling {result.PassCount}/{result.CheckCount}");
+        RebuildFeed();
 
-        _metrics.SetRows(
-        [
-            new MetricRow("α pop", $"{result.AlphaPopStart:0} → {result.AlphaPopEnd:0}",
-                $"netΣ {result.AlphaNetMigrationSum:0}"),
-            new MetricRow("β pop", $"{result.BetaPopStart:0} → {result.BetaPopEnd:0}"),
-            new MetricRow("γ pop", $"{result.GammaPopStart:0} → {result.GammaPopEnd:0}"),
-            new MetricRow("α peak push", $"{result.AlphaPeakPressure:0.00}",
-                $"β {result.BetaPeakPressure:0.00}"),
-            new MetricRow("α L end", $"{result.AlphaLegitimacyEnd:0.00}",
-                $"β {result.BetaLegitimacyEnd:0.00}"),
-            new MetricRow("migrated", $"{result.PopulationMigrated:0}", "telemetry"),
-        ]);
+        if (_model.History.Months.Count == 0)
+            return;
 
-        _feed.SetLines(_log.Select(line => new FeedLine("lab", Escape(line))).ToList());
+        var result = ExperimentHost.EvaluateAgainstCounterfactual(_model);
+        ApplyResult(result, elapsed);
     }
 
-    static string Escape(string text) =>
-        text.Replace("&", "&amp;", StringComparison.Ordinal)
-            .Replace("<", "&lt;", StringComparison.Ordinal)
-            .Replace(">", "&gt;", StringComparison.Ordinal);
+    void ApplyResult(ExperimentResult result, TimeSpan? elapsed)
+    {
+        if (_model is null)
+            return;
+
+        DrawSeries();
+        DrawMap();
+        RebuildScorecard(result);
+        RebuildMetrics(result);
+        RebuildFeed();
+        _lastMarkdown = MarkdownReport.Build(result, _model, elapsed);
+        _reportBox.Text = _lastMarkdown;
+    }
+
+    void RebuildScorecard(ExperimentResult result)
+    {
+        _scoreRows.Children.Clear();
+        _scoreRows.Children.Add(new TextBlock
+        {
+            Text = $"Scientific checks {result.PassCount}/{result.CheckCount}" +
+                   (result.AllPass ? " — all PASS" : " — review FAILs"),
+            FontSize = 18,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(result.AllPass ? Pass : Ink),
+            Margin = new Thickness(0, 0, 0, 4),
+        });
+
+        foreach (var c in result.Checks)
+        {
+            _scoreRows.Children.Add(new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#0f2030")),
+                Padding = new Thickness(12, 10),
+                CornerRadius = new CornerRadius(3),
+                Child = new StackPanel
+                {
+                    Spacing = 4,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = $"{(c.Pass ? "PASS" : "FAIL")}  ·  {c.Claim}",
+                            FontSize = 16,
+                            FontWeight = FontWeight.Bold,
+                            Foreground = new SolidColorBrush(c.Pass ? Pass : Fail),
+                        },
+                        new TextBlock
+                        {
+                            Text = c.Detail,
+                            FontSize = 14,
+                            Foreground = new SolidColorBrush(Ink),
+                            TextWrapping = TextWrapping.Wrap,
+                        },
+                    },
+                },
+            });
+        }
+    }
+
+    void RebuildMetrics(ExperimentResult result)
+    {
+        var e = result.Effects;
+        _metricsText.Text =
+            $"ATT Alpha pop   {e.AttAlphaPop:+0;-0}  ({e.AttAlphaPopPct:+0.0%;-0.0%})   CF end {e.CounterfactualAlphaPopEnd:0}\n" +
+            $"DID growth A-B  {e.DidPopGrowth:+0.0%;-0.0%}    push gap {e.MeanPushGapVsBeta:+0.000;-0.000}   ATT push {e.AttMeanPush:+0.000;-0.000}\n" +
+            $"Gamma absorb    {e.GammaAbsorbShare:0.0%} of Alpha loss\n" +
+            $"Early App A-B   {e.EarlyApprovalGap:+0.000;-0.000}   ATT early App {e.AttEarlyApproval:+0.000;-0.000}\n" +
+            $"Early L A-B     {e.EarlyLegitimacyGap:+0.000;-0.000} (diagnostic)\n" +
+            $"α pop {result.AlphaPopStart:0} → {result.AlphaPopEnd:0}   β {result.BetaPopStart:0} → {result.BetaPopEnd:0}   γ {result.GammaPopStart:0} → {result.GammaPopEnd:0}";
+    }
+
+    void RebuildFeed()
+    {
+        var recent = _log.Reverse().Take(14).Reverse();
+        _feedText.Text = string.Join('\n', recent);
+    }
 
     void DrawMap()
     {
@@ -449,8 +598,8 @@ internal sealed class MainWindow : Window
             {
                 var home = PolityTag(p.HomePolityId);
                 var own = PolityTag(p.OwnerId);
-                var occ = p.OwnerId == p.HomePolityId ? "" : $" OCC {home}→{own}";
-                return $"{p.Name,-3} own={own} pop={p.Population,10:0}{occ}";
+                var occ = p.OwnerId == p.HomePolityId ? "" : $"  OCC {home}→{own}";
+                return $"{p.Name,-4}  owner {own}   pop {p.Population,10:0}{occ}";
             });
         _mapText.Text = string.Join('\n', lines);
     }
@@ -459,39 +608,76 @@ internal sealed class MainWindow : Window
 
     void DrawSeries()
     {
-        _series.Children.Clear();
+        _popSeries.Children.Clear();
+        _pushSeries.Children.Clear();
         if (_model is null || _model.History.Months.Count < 2)
+        {
+            _popRaw.Text = "Raw: (need ≥2 months)";
+            _pushRaw.Text = "";
             return;
-
-        var w = _series.Bounds.Width > 10 ? _series.Bounds.Width : _series.Width;
-        var h = _series.Height;
-        if (w < 40 || h < 40)
-            return;
+        }
 
         var months = _model.History.Months;
-        DrawPoly(months.Select(m => m.Alpha.Population).ToList(), AlphaLine, w, h, 0.55);
-        DrawPoly(months.Select(m => m.Beta.Population).ToList(), BetaLine, w, h, 0.55);
-        DrawPoly(months.Select(m => m.Alpha.EmigrationPressure).ToList(), Copper, w, h, 0.35, dashed: true);
-        DrawPoly(months.Select(m => m.Beta.EmigrationPressure).ToList(), Teal, w, h, 0.35, dashed: true);
+        var aPop = months.Select(m => m.Alpha.Population).ToList();
+        var bPop = months.Select(m => m.Beta.Population).ToList();
+        var aPush = months.Select(m => m.Alpha.EmigrationPressure).ToList();
+        var bPush = months.Select(m => m.Beta.EmigrationPressure).ToList();
+
+        DrawShared(_popSeries, aPop, bPop, AlphaLine, BetaLine);
+        DrawShared(_pushSeries, aPush, bPush, AlphaLine, BetaLine, fixedMin: 0, fixedMax: 1);
+
+        var last = months[^1];
+        _popRaw.Text =
+            $"Raw end  α {last.Alpha.Population:0}   β {last.Beta.Population:0}   γ {last.Gamma.Population:0}";
+        _pushRaw.Text =
+            $"Raw end  α push {last.Alpha.EmigrationPressure:0.00}   β push {last.Beta.EmigrationPressure:0.00}   " +
+            $"α L {last.Alpha.Legitimacy:0.00}   β L {last.Beta.Legitimacy:0.00}";
     }
 
-    void DrawPoly(
+    void DrawShared(
+        Canvas canvas,
+        IReadOnlyList<double> a,
+        IReadOnlyList<double> b,
+        Color aColor,
+        Color bColor,
+        double? fixedMin = null,
+        double? fixedMax = null)
+    {
+        var w = canvas.Bounds.Width > 10 ? canvas.Bounds.Width : canvas.Width;
+        var h = canvas.Height;
+        if (w < 40 || h < 40 || a.Count < 2)
+            return;
+
+        var min = fixedMin ?? Math.Min(a.Min(), b.Min());
+        var max = fixedMax ?? Math.Max(a.Max(), b.Max());
+        var span = Math.Max(1e-9, max - min);
+
+        canvas.Children.Add(MakeGridLine(w, h * 0.25));
+        canvas.Children.Add(MakeGridLine(w, h * 0.5));
+        canvas.Children.Add(MakeGridLine(w, h * 0.75));
+
+        canvas.Children.Add(MakePoly(a, aColor, w, h, min, span, thickness: 3));
+        canvas.Children.Add(MakePoly(b, bColor, w, h, min, span, thickness: 3));
+    }
+
+    static Avalonia.Controls.Shapes.Line MakeGridLine(double w, double y) => new()
+    {
+        StartPoint = new Point(0, y),
+        EndPoint = new Point(w, y),
+        Stroke = new SolidColorBrush(Color.Parse("#24384c")),
+        StrokeThickness = 1,
+    };
+
+    static Avalonia.Controls.Shapes.Path MakePoly(
         IReadOnlyList<double> series,
         Color color,
         double w,
         double h,
-        double verticalShare,
-        bool dashed = false)
+        double min,
+        double span,
+        double thickness)
     {
-        if (series.Count < 2)
-            return;
-        var min = series.Min();
-        var max = series.Max();
-        var span = Math.Max(1e-9, max - min);
-        var pad = 8.0;
-        var usableH = (h - 2 * pad) * verticalShare;
-        var yBase = dashed ? h - pad : pad + usableH;
-
+        const double pad = 10;
         var geo = new StreamGeometry();
         using (var ctx = geo.Open())
         {
@@ -499,9 +685,7 @@ internal sealed class MainWindow : Window
             {
                 var x = pad + (w - 2 * pad) * i / (series.Count - 1);
                 var t = (series[i] - min) / span;
-                var y = dashed
-                    ? yBase - t * usableH
-                    : yBase - t * usableH;
+                var y = h - pad - t * (h - 2 * pad);
                 if (i == 0)
                     ctx.BeginFigure(new Point(x, y), false);
                 else
@@ -509,12 +693,13 @@ internal sealed class MainWindow : Window
             }
         }
 
-        _series.Children.Add(new Avalonia.Controls.Shapes.Path
+        return new Avalonia.Controls.Shapes.Path
         {
             Data = geo,
             Stroke = new SolidColorBrush(color),
-            StrokeThickness = dashed ? 1.5 : 2.2,
-            StrokeDashArray = dashed ? [4, 3] : null,
-        });
+            StrokeThickness = thickness,
+            StrokeLineCap = PenLineCap.Round,
+            StrokeJoin = PenLineJoin.Round,
+        };
     }
 }

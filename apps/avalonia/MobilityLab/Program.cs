@@ -32,7 +32,7 @@ internal static class Program
         var sw = Stopwatch.StartNew();
         var host = ExperimentHost.Run(spec);
         sw.Stop();
-        host.Result.WriteToConsole(sw.Elapsed);
+        Console.Write(MarkdownReport.Build(host.Result, host.Model, sw.Elapsed));
     }
 
     static bool TryParseHeadless(string[] args, out int months)
