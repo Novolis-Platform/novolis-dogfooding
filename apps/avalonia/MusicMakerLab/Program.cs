@@ -1,5 +1,4 @@
 using Avalonia;
-using Novolis.Audio.Midi;
 
 namespace MusicMakerLab;
 
@@ -10,8 +9,7 @@ internal static class Program
     {
         try
         {
-ScorePdfExporter.EnsureCommunityLicense();
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)
         {

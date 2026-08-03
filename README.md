@@ -112,6 +112,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `TrampFreighterPlay` | `apps/economy/TrampFreighterPlay` | Economy logistics — interactive Spectre |
 | `TrampFreighterSim` | `apps/economy/TrampFreighterSim` | Economy logistics — observer Spectre |
 | `NearSolPolity` | `apps/economy/NearSolPolity` | Astro catalog bridged to Economy |
+| `PolityTriad` | `apps/civics/PolityTriad` | Civics + Economy + Geopolitics composed month |
 | `IoSmoke` | `apps/io/IoSmoke` | IO.Paths, Recovery, Watching, Processes, Git |
 | `AdbLab` | `apps/io/AdbLab` | IO.Mobile.Android — ADB protocol |
 | `ManuscriptSmoke` | `apps/manuscript/ManuscriptSmoke` | Markup.Manuscript, Voice.Manuscript |

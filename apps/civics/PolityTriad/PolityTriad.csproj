@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PolityTriad</RootNamespace>
+    <Description>
+      Dogfood triad theatre: dual industrial Economies → Civics delivery (α/β), Gamma geo civic,
+      trade clearing, treaties, fiscal agents, and ConflictResolver battles on a 3-polity frontier.
+    </Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Novolis.Civics.Agents" />
+    <PackageReference Include="Novolis.Civics.Core" />
+    <PackageReference Include="Novolis.Civics.EconomyBridge" />
+    <PackageReference Include="Novolis.Economy.Core" />
+    <PackageReference Include="Novolis.Geopolitics.Conflict" />
+    <PackageReference Include="Novolis.Geopolitics.Core" />
+    <PackageReference Include="Novolis.Geopolitics.Diplomacy" />
+    <PackageReference Include="Novolis.Geopolitics.Trade" />
+  </ItemGroup>
+</Project>

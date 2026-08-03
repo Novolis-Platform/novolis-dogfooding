@@ -22,9 +22,12 @@ dotnet run --project apps/economy/NearSolPolity
 
 Scenarios are intentionally independent. **NearSolPolity** is the Astro↔Economy bridge at the dogfood layer.
 
+For **Civics + Economy + Geopolitics** composition, see [PolityTriad](../civics/PolityTriad/).
+
 ## Related
 
 | Repo | Role |
 |------|------|
 | [novolis-economy](https://github.com/Novolis-Platform/novolis-economy) | Published economy packages |
 | [AstroSmoke](../astro/AstroSmoke/) | Stellar catalog smoke (feeds NearSolPolity) |
+| [PolityTriad](../civics/PolityTriad/) | Civics ↔ Economy ↔ Geopolitics triad |

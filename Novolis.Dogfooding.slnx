@@ -98,6 +98,9 @@
     <Project Path="apps/economy/TrampFreighterSim/TrampFreighterSim.csproj" />
     <Project Path="apps/economy/NearSolPolity/NearSolPolity.csproj" />
   </Folder>
+  <Folder Name="/civics/">
+    <Project Path="apps/civics/PolityTriad/PolityTriad.csproj" />
+  </Folder>
   <Folder Name="/io/">
     <Project Path="apps/io/IoSmoke/IoSmoke.csproj" />
     <Project Path="apps/io/AdbLab/AdbLab.csproj" />

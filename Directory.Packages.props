@@ -22,6 +22,7 @@
     <PackageVersion Include="ModelContextProtocol" Version="0.8.0-preview.1" />
     <PackageVersion Include="MessagePack" Version="3.1.8" />
     <PackageVersion Include="NAudio" Version="2.3.0" />
+    <PackageVersion Include="QuestPDF" Version="2025.7.4" />
     <PackageVersion Include="Novolis.Audio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Runtime" Version="2026.1.*" />
@@ -106,6 +107,13 @@
     <PackageVersion Include="Novolis.Economy.Simulation" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Finance" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Economy.Agents" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Civics.Agents" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Civics.Core" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Civics.EconomyBridge" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Geopolitics.Conflict" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Geopolitics.Core" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Geopolitics.Diplomacy" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Geopolitics.Trade" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Identity" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Identity.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Game.Identity.AspNetCore" Version="2026.1.*" />

@@ -23,7 +23,7 @@ internal sealed class MainWindow : Window
         };
         _piano = new MidiPianoWorkspace(musicProject: project)
         {
-            HeaderTitle = "Piano score — roll · grand staff · sounds · QuestPDF",
+            HeaderTitle = "Piano Score",
         };
 
         var tabs = new TabControl
