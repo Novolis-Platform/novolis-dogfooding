@@ -10,6 +10,11 @@ cached under `%LOCALAPPDATA%\Novolis\MusicMakerLab\`.
 
 For production/commercial use, license the track via Artlist (or your deal with the composer)—the preview is for local dogfood listening only.
 
+## Catalog tab
+
+`MediaCatalogWorkspace` browses free Mutopia / Mixkit collections and an **Inspired · cinematic / space opera** stand-in list.
+Paste an Artlist collection URL → **Map inspiration** bookmarks it and jumps to the free stand-in (Artlist files are never scraped/downloaded).
+
 ## Run
 
 ```powershell

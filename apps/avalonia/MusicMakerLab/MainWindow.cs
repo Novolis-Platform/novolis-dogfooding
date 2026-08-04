@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
+using Novolis.Audio.Catalog;
+using Novolis.Audio.Edit;
 using Novolis.Audio.Midi;
 using Novolis.Avalonia.Audio;
 
@@ -9,12 +11,13 @@ internal sealed class MainWindow : Window
 {
     readonly AudioEditWorkspace _arrangement;
     readonly MidiPianoWorkspace _piano;
+    readonly MediaCatalogWorkspace _catalog;
 
     public MainWindow()
     {
         Title = "Music Maker Lab";
-        Width = 1280;
-        Height = 820;
+        Width = 1360;
+        Height = 860;
         Background = AudioEditPalette.Pane;
 
         var project = FullDemoBuilder.Build();
@@ -26,6 +29,34 @@ internal sealed class MainWindow : Window
         {
             HeaderTitle = "Orchestral Score — demos + free MIDI",
         };
+        _catalog = new MediaCatalogWorkspace();
+        _catalog.ScoreProduced += score =>
+        {
+            _piano.ApplyScore(score, toast: "From catalog explore");
+            Console.WriteLine($"Catalog → score: {score.Title}");
+        };
+        _catalog.ItemDownloaded += (item, path) =>
+        {
+            Console.WriteLine($"Cached {item.Title} → {path}");
+            if (item.Kind == MediaKind.Audio)
+            {
+                try
+                {
+                    var pcm = DecodePcmTransformer.Decode(path, 44_100, TimeSpan.FromSeconds(12));
+                    if (pcm is not null
+                        && !_arrangement.Project.Assets.Any(a =>
+                            string.Equals(a.Name, item.Title, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        AudioEditOps.AddPcm(_arrangement.Project, item.Title, pcm);
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => _arrangement.Refresh());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex.Message);
+                }
+            }
+        };
 
         WireFreeMedia(_piano);
         _piano.RefreshFreeMidiList();
@@ -34,6 +65,12 @@ internal sealed class MainWindow : Window
         {
             Background = AudioEditPalette.Pane,
         };
+        tabs.Items.Add(new TabItem
+        {
+            Header = "Catalog",
+            Content = _catalog,
+            Foreground = Brushes.White,
+        });
         tabs.Items.Add(new TabItem
         {
             Header = "Arrangement",
@@ -48,9 +85,9 @@ internal sealed class MainWindow : Window
         });
         tabs.SelectionChanged += (_, _) =>
         {
-            if (tabs.SelectedIndex == 0)
+            if (tabs.SelectedIndex == 1)
                 _arrangement.Refresh();
-            else
+            else if (tabs.SelectedIndex == 2)
                 _piano.Focus();
         };
 
@@ -84,7 +121,6 @@ internal sealed class MainWindow : Window
 
         piano.CreateFreeAudioSketch = () =>
         {
-            // Prefer a mid-length Mixkit clip for a more interesting sketch.
             foreach (var id in new[] { "mixkit-2563", "mixkit-3003", "mixkit-2004", "mixkit-2573" })
             {
                 var entry = FreeMediaCatalog.All.FirstOrDefault(e => e.Id == id);
