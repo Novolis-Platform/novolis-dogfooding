@@ -26,15 +26,12 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: Novolis-Platform/novolis-workflows/actions/setup-dotnet@main
         with:
           dotnet-version: '10.0.x'
-      - name: Auth GitHub Packages
-        shell: bash
-        run: |
-          dotnet nuget update source github --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text || \
-          dotnet nuget add source "https://nuget.pkg.github.com/Novolis-Platform/index.json" \
-            --name github --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
+      - uses: Novolis-Platform/novolis-workflows/actions/authenticate-github-packages@main
+        with:
+          token: ${{ github.token }}
       - name: Publish
         run: >
           dotnet publish apps/raylib/PulseStrip/PulseStrip.csproj
