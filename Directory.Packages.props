@@ -130,6 +130,12 @@
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Topology" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Math.Measure" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Documents" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Documents.Layout" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Documents.Skia" Version="2026.1.*" />
+    <PackageVersion Include="SkiaSharp" Version="3.116.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.116.1" />
     <PackageVersion Include="Novolis.Messaging.Channels" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Physics.Astro" Version="2026.1.*" />

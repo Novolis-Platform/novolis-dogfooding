@@ -40,6 +40,9 @@
   <Folder Name="/math/">
     <Project Path="apps/MathGridDemo/MathGridDemo.csproj" />
   </Folder>
+  <Folder Name="/documents/">
+    <Project Path="apps/documents/HelloBook/HelloBook.csproj" />
+  </Folder>
   <Folder Name="/simulation/">
     <Project Path="apps/DoomLite3D/DoomLite3D.csproj" />
     <Project Path="apps/BouncingBall/BouncingBall.csproj" />

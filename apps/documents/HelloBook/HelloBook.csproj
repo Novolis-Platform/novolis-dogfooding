@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>HelloBook</RootNamespace>
+    <Description>Dogfood Novolis.Documents.Skia — write a sample trade-paperback PDF.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Documents" />
+    <PackageReference Include="Novolis.Documents.Layout" />
+    <PackageReference Include="Novolis.Documents.Skia" />
+    <PackageReference Include="Novolis.Math.Measure" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" />
+  </ItemGroup>
+</Project>
