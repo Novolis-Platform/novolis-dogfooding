@@ -12,7 +12,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
-    <PackageReference Include="Novolis.Avalonia.Controls" />
+    <PackageReference Include="Novolis.Avalonia.Torrent" />
     <PackageReference Include="Novolis.Transports.Torrent" />
   </ItemGroup>
   <ItemGroup>

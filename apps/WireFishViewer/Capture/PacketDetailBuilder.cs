@@ -1,4 +1,4 @@
-using Novolis.Avalonia.Layout;
+using Novolis.Avalonia.Controls;
 using Novolis.Transports.WireFish;
 
 namespace WireFishViewer.Capture;

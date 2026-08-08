@@ -6,7 +6,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Novolis.Avalonia.Controls;
+using Novolis.Avalonia.Controls.Sketch;
 using Optris.Icons.Avalonia;
 
 namespace SketchLab;

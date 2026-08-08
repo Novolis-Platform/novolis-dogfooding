@@ -13,7 +13,6 @@ using MeshBench.Ui;
 using Novolis.Avalonia.Raylib;
 using Novolis.Avalonia.Rendering;
 using Novolis.Avalonia.Studio;
-using Novolis.Avalonia.Timeline;
 using Novolis.Timeline.Presentation.GitGraph;
 namespace MeshBench;
 

@@ -55,8 +55,10 @@
     <PackageVersion Include="Novolis.Avalonia.Studio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.StarMap" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Voice" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Avalonia.Timeline" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Controls" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Controls.Sketch" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Torrent" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Avalonia.Cad.Ship" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Layout" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Agent" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Avalonia.Agent.Protocol" Version="2026.1.*" />

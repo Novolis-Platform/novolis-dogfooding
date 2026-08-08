@@ -48,6 +48,7 @@ internal sealed class MainWindow : Window
             ExportRoot = Path.Combine(settings.DataRoot, "generated", "exports"),
             Preview = _preview,
         };
+        Novolis.Avalonia.Cad.Ship.CadShipChrome.Attach(_cad);
         _cad.AsyncExportHook = async cmd =>
         {
             var root = cmd.ExportRoot ?? _session.GeneratedDirectory;

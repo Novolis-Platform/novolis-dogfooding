@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Novolis.Avalonia.Controls;
+using Novolis.Avalonia.Torrent;
 
 namespace TorrentLab;
 
