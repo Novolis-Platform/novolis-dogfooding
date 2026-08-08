@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>HelloBook</RootNamespace>
-    <Description>Dogfood Novolis.Documents.Skia — write a sample trade-paperback PDF.</Description>
+    <RootNamespace>HelloDocument</RootNamespace>
+    <Description>Dogfood Novolis.Documents.Skia — write a sample paged PDF.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Novolis.Documents" />
