@@ -42,7 +42,7 @@ dotnet run --project apps/cad/CalypsoCad -- --generate-only
 
 ## FreightWing
 
-X-Wing Alliance–inspired dual-role campaign (freighter → X-wing transfer). Bake content from a local Steam install via `novolis-experimental` `Xwa.Cli`, then run the app (no Steam/experimental at runtime).
+X-Wing Alliance–inspired dual-role campaign (freighter → X-wing transfer). Bake content from a local Steam install via the **local-only** `novolis-experimental` `Xwa.Cli` tree (not on GitHub), then run the app (no Steam/experimental at runtime).
 
 ```powershell
 $env:XWA_INSTALL_DIR = "D:\Steam\steamapps\common\Star Wars X-Wing Alliance"
