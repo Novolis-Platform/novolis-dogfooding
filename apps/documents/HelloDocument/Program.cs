@@ -41,11 +41,19 @@ var document = Document.Create("Duckville Harbor")
         .Rights("© 2026 Novolis-Platform. All rights reserved."))
     .Page(p => p
         .Trade6x9()
-        .Header("{title}", 9f)
-        .Footer("{page} / {pages}", 9f)
-        .Chrome(c => c.PageNumbersOnFrontMatter()))
+        .Header(h => h
+            .Template("{title}")
+            .FontSize(9f)
+            .IncludeBody()
+            .UseChapterTitle())
+        .Footer(f => f
+            .Template("{page} / {pages}")
+            .FontSize(9f)
+            .IncludeFirstPage()
+            .IncludeToc()
+            .IncludeBody()
+            .IncludeLastPage()))
     .Watermark(w => w.Text("SAMPLE").Color(DocumentColor.Red).Opacity(0.10f).On(WatermarkPages.All))
-    .SuppressHeaderOnLevel1Open()
     .Body(b => b
         .First(f => f.Lines("Trade paperback sample", "Printed via Novolis.Documents.Skia"))
         .Content(c => c
@@ -64,9 +72,24 @@ var document = Document.Create("Duckville Harbor")
                 .SceneBreak()
                 .Paragraph(Lorem(100)))
             .Chapter("Chapter 2 - Manifest", ch => ch
-                .Paragraph(Lorem(160))
+                .Paragraph(Lorem(80))
                 .H2("Bonded cargo")
-                .Paragraph(Lorem(120)))
+                .Paragraph("The bonded list runs long enough to prove table page breaks with a repeated header.")
+                .Table(t => t
+                    .Headers("#", "Cargo", "Tons", "Bond")
+                    .Rows(Enumerable.Range(1, 48).Select(i => (IReadOnlyList<string>)
+                    [
+                        $"{i}",
+                        i % 3 == 0 ? "Grain" : i % 3 == 1 ? "Timber" : "Ore",
+                        $"{10 + (i % 9) * 5}",
+                        i % 2 == 0 ? "Yes" : "No",
+                    ]))
+                    .ColumnWidths(0.1f, 0.45f, 0.2f, 0.25f)
+                    .Align(CellAlign.Left, CellAlign.Left, CellAlign.Right, CellAlign.Center)
+                    .Rules(TableRuleStyle.Horizontal)
+                    .HeaderBackground()
+                    .RepeatHeaderOnPageBreak())
+                .Paragraph(Lorem(60)))
             .Chapter("Chapter 3 - Departure", ch => ch
                 .Paragraph(Lorem(180))))
         .Last(l => l
