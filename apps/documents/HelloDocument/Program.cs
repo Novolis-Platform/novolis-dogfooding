@@ -44,7 +44,7 @@ var document = Document.Create("Duckville Harbor")
         .Header("{title}", 9f)
         .Footer("{page} / {pages}", 9f)
         .Chrome(c => c.PageNumbersOnFrontMatter()))
-    .Watermark(w => w.Text("SAMPLE").Opacity(0.10f).On(WatermarkPages.All))
+    .Watermark(w => w.Text("SAMPLE").Color(DocumentColor.Red).Opacity(0.10f).On(WatermarkPages.All))
     .SuppressHeaderOnLevel1Open()
     .Body(b => b
         .First(f => f.Lines("Trade paperback sample", "Printed via Novolis.Documents.Skia"))
