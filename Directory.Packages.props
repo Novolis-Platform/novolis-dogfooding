@@ -46,7 +46,6 @@
     <PackageVersion Include="Novolis.Astro.Routing" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Abstractions" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Audio.Voice.Manuscript" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Profiles" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.SherpaOnnx" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Voice.Kokoro" Version="2026.1.*" />
@@ -88,7 +87,6 @@
     <PackageVersion Include="Novolis.IO.Processes" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Recovery" Version="2026.1.*" />
     <PackageVersion Include="Novolis.IO.Watching" Version="2026.1.*" />
-    <PackageVersion Include="Novolis.Markup.Manuscript" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Audio.Output.NAudio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Snapshots.Abstractions" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Timeline.Abstractions" Version="2026.1.*" />
@@ -127,6 +125,8 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.8" />
     <PackageVersion Include="Novolis.MachineLearning.Neural" Version="2026.1.*" />
     <PackageVersion Include="Novolis.MachineLearning.Neural.Abstractions" Version="2026.1.*" />
+        <PackageVersion Include="Novolis.Manuscript" Version="2026.1.*" />
+    <PackageVersion Include="Novolis.Manuscript.Export.Audio" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Arrays" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Geometry" Version="2026.1.*" />
     <PackageVersion Include="Novolis.Math.Topology" Version="2026.1.*" />

@@ -2,10 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>ManuscriptSmoke</RootNamespace>
-    <Description>Dogfood Novolis.Markup.Manuscript + Novolis.Audio.Voice.Manuscript — metadata parse and speech plan dry-run.</Description>
+    <Description>Dogfood Novolis.Manuscript + Novolis.Manuscript.Export.Audio — metadata parse and speech plan dry-run.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Novolis.Audio.Voice.Manuscript" />
-    <PackageReference Include="Novolis.Markup.Manuscript" />
+    <PackageReference Include="Novolis.Manuscript" />
+    <PackageReference Include="Novolis.Manuscript.Export.Audio" />
   </ItemGroup>
 </Project>

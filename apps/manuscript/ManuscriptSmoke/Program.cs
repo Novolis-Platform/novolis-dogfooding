@@ -1,5 +1,5 @@
-using Novolis.Audio.Voice.Manuscript;
-using Novolis.Markup.Manuscript;
+using Novolis.Manuscript;
+using Novolis.Manuscript.Export.Audio;
 
 const string chapter = """
     # Chapter 3 - Quiet Harbor
@@ -22,7 +22,7 @@ var words = ManuscriptMetadata.CountWords(chapter);
 Console.WriteLine($"Metadata: format={format} title={meta.Title} date={meta.Date} pov={meta.Pov} system={meta.System} status={meta.Status}");
 Console.WriteLine($"Words: {words}");
 
-var plan = SpeechPlanner.Create(chapter, new ManuscriptSpeechOptions
+var plan = SpeechPlanner.Create(chapter, new SpeechOptions
 {
     SceneBreakMs = 900,
     MaxChunkChars = 2800,
