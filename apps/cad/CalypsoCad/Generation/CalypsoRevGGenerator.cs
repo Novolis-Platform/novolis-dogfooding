@@ -90,9 +90,30 @@ internal static class CalypsoRevGGenerator
     {
         var dir = outputDirectory ?? DefaultOutputDirectory;
         var stamp = DateTime.UtcNow.ToString("o");
+        // Hand-authored exterior solids/meshes (Draft Studio / Cad Studio Save) survive regenerate.
+        List<CadEntity>? preservedExterior = null;
+        var existingCad = Path.Combine(dir, "calypso.cadjson");
+        if (File.Exists(existingCad))
+        {
+            try
+            {
+                var prev = JsonSerializer.Deserialize<CadDocument>(File.ReadAllText(existingCad), CadJson.Options);
+                preservedExterior = prev?.Entities
+                    .Where(Novolis.Avalonia.Cad.Ship.Services.CadShipExterior.IsPreservedExterior)
+                    .Select(CloneEntity)
+                    .ToList();
+            }
+            catch
+            {
+                // Corrupt prior file — regenerate decks only.
+            }
+        }
+
         var layers = BuildLayers(stamp);
         var shapes = BuildShapes(stamp);
         var cad = BuildCad(stamp);
+        if (preservedExterior is { Count: > 0 })
+            cad.Entities.AddRange(preservedExterior);
         CadDocumentStore.WriteAll(dir, layers, shapes, cad);
         return dir;
     }
@@ -182,7 +203,8 @@ internal static class CalypsoRevGGenerator
         AddHull(entities, -1);
         AddHull(entities, 0);
         AddHull(entities, 1);
-        AddNacelles(entities);
+        // Exterior hull/pods/meshes are authored in Draft Studio / Cad Studio and saved into .cadjson —
+        // not emitted here. Regenerate preserves entities tagged exterior (see Generate).
 
         AddCirculationShafts(entities);
         AddDeckMinus1(entities);
@@ -258,39 +280,12 @@ internal static class CalypsoRevGGenerator
         }
     }
 
-    private static void AddNacelles(List<CadEntity> entities)
+    private static CadEntity CloneEntity(CadEntity src)
     {
-        // Side engine / FTL pods — orbit silhouette is owned by CalypsoRenderer.DrawOrbitSidePods;
-        // keep lightweight CAD boxes for plan/cutaway reference only.
-        foreach (var deck in new[] { -1, 0 })
-        {
-            var y = DeckY(deck) + RoomHeight * 0.45f;
-            foreach (var (sx, name) in new[] { (48f, "nacelle-port"), (272f, "nacelle-stbd") })
-            {
-                var c = SvgCoords.ToWorld(sx, 520f, y);
-                entities.Add(new CadEntity
-                {
-                    Kind = "box",
-                    Name = $"{name}-d{deck}",
-                    LayerId = LayerHull,
-                    Deck = deck,
-                    ShapeId = ShapeNacelle,
-                    Color = [0.38f, 0.42f, 0.48f],
-                    Points =
-                    [
-                        SvgCoords.ToArray(c),
-                        [1.1f, RoomHeight * 0.28f, 3.25f], // half-extents
-                    ],
-                    Height = RoomHeight * 0.55f,
-                    Thickness = 2.2f,
-                    Properties = new Dictionary<string, JsonElement>
-                    {
-                        ["role"] = JsonSerializer.SerializeToElement("side-pod"),
-                        ["systems"] = JsonSerializer.SerializeToElement(new[] { "main-drive", "ftl-graviton" }),
-                    },
-                });
-            }
-        }
+        // Round-trip clone so regenerate cannot alias previous document instances.
+        var json = JsonSerializer.Serialize(src, CadJson.Options);
+        return JsonSerializer.Deserialize<CadEntity>(json, CadJson.Options)
+               ?? throw new InvalidOperationException("Failed to clone preserved exterior entity");
     }
 
     private static void AddCirculationShafts(List<CadEntity> entities)

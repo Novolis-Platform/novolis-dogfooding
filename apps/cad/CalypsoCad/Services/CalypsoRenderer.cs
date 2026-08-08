@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Numerics;
+using Novolis.Avalonia.Cad.Ship.Services;
 using Novolis.Avalonia.Raylib;
 using Novolis.Cad.Primitives;
 using Novolis.Raylib.Colors;
@@ -525,13 +526,11 @@ internal sealed class CalypsoRenderer
         if (cutaway)
             DrawCutFaceCue();
 
-        // Solid orbit: sealed freighter shell only — no dollhouse partitions / cargo peeking out.
+        // Solid orbit: authored CAD solids/meshes from the document (Draft Studio / Cad Studio Save).
+        // No hardcoded freighter shell — empty until exterior geometry exists in .cadjson.
         if (solidOrbit)
         {
-            DrawOrbitShipShell();
-            // Side pods (engines + FTL graviton manipulators) are drawn in DrawOrbitSidePods —
-            // skip CAD nacelle boxes so they don't double up as tiny midships bricks.
-            DrawOrbitExteriorGreebles();
+            CadShipExterior.Draw(_session.Document);
         }
         else
         {
@@ -574,11 +573,15 @@ internal sealed class CalypsoRenderer
                     case "box":
                         DrawSolidBox(entity);
                         break;
+                    case "sphere":
+                    case "cylinder":
+                    case "cone":
+                    case "wedge":
+                    case "mesh":
+                        CadShipExterior.DrawOne(entity);
+                        break;
                 }
             }
-
-            if (_session.ViewMode == CalypsoViewMode.Orbit && cutaway)
-                DrawOrbitShipShell(cutawayRim: true);
         }
 
         if (_session.ViewMode == CalypsoViewMode.Interior && _session.SelectedHook is { Position: { } hp } && hp.Length >= 3)
@@ -720,169 +723,6 @@ internal sealed class CalypsoRenderer
         }
     }
 
-    /// <summary>
-    /// Sealed freighter silhouette for solid orbit (full OAH ≈12 m). Optional cutaway rim for half-hull cue.
-    /// Massing is tiered (keel / cargo / hab / bridge) so it does not read as one grey brick.
-    /// </summary>
-    private void DrawOrbitShipShell(bool cutawayRim = false)
-    {
-        const float halfBeam = 9.9f;
-        const float zBow = 32.5f;
-        const float zStern = -32.5f;
-        const float yKeel = -0.15f;
-        const float yCrown = 11.95f;
-        var midZ = (zBow + zStern) * 0.5f;
-        var len = zBow - zStern;
-        var oah = yCrown - yKeel;
-        var midY = (yKeel + yCrown) * 0.5f;
-
-        var hull = ShadeColor(Color.FromArgb(255, 78, 84, 94), 0.42f, 0.55f, Vector3.UnitY, LightDir);
-        var hullDark = ShadeColor(Color.FromArgb(255, 42, 46, 54), 0.5f, 0.45f, Vector3.UnitY, LightDir);
-        var cargoBand = ShadeColor(Color.FromArgb(255, 58, 64, 72), 0.48f, 0.5f, Vector3.UnitY, LightDir);
-        var hab = ShadeColor(Color.FromArgb(255, 110, 118, 128), 0.45f, 0.4f, Vector3.UnitY, LightDir);
-        var accentPlate = ShadeColor(Color.FromArgb(255, 145, 150, 160), 0.5f, 0.35f, Vector3.UnitY, LightDir);
-        var glass = Color.FromArgb(240, 18, 32, 48);
-
-        if (cutawayRim)
-        {
-            // Skin on the FAR side of the cut (opposite camera), not the near face.
-            GetCutPlane(true, out _, out var cutN);
-            var far = cutN.LengthSquared() > 1e-6f ? -Vector3.Normalize(cutN) : -Vector3.UnitX;
-            var sideX = far.X >= 0f ? halfBeam * 0.96f : -halfBeam * 0.96f;
-            World.DrawCube(new Vector3(sideX, midY, midZ), 0.35f, oah * 0.98f, len * 0.96f, hullDark);
-            World.DrawCube(new Vector3(0f, yCrown - 0.05f, midZ), halfBeam * 1.4f, 0.14f, len * 0.7f, hull);
-            World.DrawCube(new Vector3(0f, yKeel + 0.05f, midZ), halfBeam * 1.3f, 0.12f, len * 0.7f, hullDark);
-            World.DrawCube(new Vector3(0f, midY, zStern), halfBeam * 1.2f, oah * 0.85f, 0.22f, hullDark);
-            return;
-        }
-
-        // Tiered massing: cargo lower / hab upper (not one grey brick).
-        World.DrawCube(new Vector3(0f, 3.2f, midZ), halfBeam * 2f * 1.02f, 6.6f, len * 0.97f, cargoBand);
-        World.DrawCube(new Vector3(0f, 8.6f, midZ + 2f), halfBeam * 2f * 0.88f, 4.4f, len * 0.72f, hab);
-        World.DrawCube(new Vector3(0f, yKeel + 0.35f, midZ), halfBeam * 2f * 0.92f, 0.7f, len * 0.95f, hullDark);
-        World.DrawCube(new Vector3(0f, yCrown - 0.2f, midZ + 2f), halfBeam * 2f * 0.9f, 0.4f, len * 0.74f, accentPlate);
-
-        // Bridge tower + glass brow
-        World.DrawCube(new Vector3(0f, 9.8f, zBow - 12f), 11.5f, 3.6f, 14f, accentPlate);
-        World.DrawCube(new Vector3(0f, 10.6f, zBow - 5f), 9.5f, 2.2f, 6f, hab);
-        World.DrawCube(new Vector3(0f, 6.0f, zBow - 1.2f), 12.5f, 4.2f, 3.2f, hull);
-        World.DrawCube(new Vector3(0f, 6.2f, zBow - 0.15f), 10.5f, 2.2f, 0.22f, glass);
-        for (var i = -3; i <= 3; i++)
-            World.DrawCube(new Vector3(i * 1.45f, 6.2f, zBow - 0.05f), 0.1f, 2.2f, 0.12f, AccentCyan);
-
-        // Aft: cargo hatch-ramp house (no main engines — those live on the side pods).
-        World.DrawCube(new Vector3(0f, 5.2f, zStern + 7f), halfBeam * 2f * 0.92f, 8.8f, 10f, hullDark);
-        // Hatch throat / roll-out aperture (dark bay)
-        World.DrawCube(new Vector3(0f, 2.6f, zStern + 0.35f), 14.5f, 5.0f, 0.55f, Color.FromArgb(255, 22, 24, 28));
-        // Outer coaming
-        World.DrawCube(new Vector3(0f, 5.2f, zStern + 0.15f), 15.2f, 0.35f, 0.35f, accentPlate);
-        World.DrawCube(new Vector3(-7.4f, 2.6f, zStern + 0.15f), 0.35f, 5.0f, 0.35f, accentPlate);
-        World.DrawCube(new Vector3(7.4f, 2.6f, zStern + 0.15f), 0.35f, 5.0f, 0.35f, accentPlate);
-        World.DrawCube(new Vector3(0f, 0.2f, zStern + 0.15f), 15.2f, 0.35f, 0.35f, accentPlate);
-        // Closed ramp leaf (large hatch face) + hinge knuckle at keel
-        var rampFace = ShadeColor(Color.FromArgb(255, 118, 108, 72), 0.5f, 0.35f, -Vector3.UnitZ, LightDir);
-        var rampDark = ShadeColor(Color.FromArgb(255, 70, 64, 48), 0.55f, 0.3f, -Vector3.UnitZ, LightDir);
-        World.DrawCube(new Vector3(0f, 2.55f, zStern + 0.55f), 13.8f, 4.7f, 0.28f, rampFace);
-        World.DrawCube(new Vector3(0f, 2.55f, zStern + 0.72f), 12.6f, 3.6f, 0.12f, rampDark);
-        // Center seam + latch bars
-        World.DrawCube(new Vector3(0f, 2.55f, zStern + 0.78f), 0.12f, 4.2f, 0.1f, Steel);
-        World.DrawCube(new Vector3(-4.2f, 2.55f, zStern + 0.78f), 0.18f, 3.4f, 0.1f, Steel);
-        World.DrawCube(new Vector3(4.2f, 2.55f, zStern + 0.78f), 0.18f, 3.4f, 0.1f, Steel);
-        World.DrawCube(new Vector3(0f, 0.45f, zStern + 0.9f), 14.2f, 0.45f, 0.7f, hullDark); // hinge knuckle
-        // Partial deploy cue: first ramp step peeking aft of the sill
-        var amber = ShadeColor(Color.FromArgb(255, 140, 110, 55), 0.55f, 0.25f, Vector3.UnitY, LightDir);
-        World.DrawCube(new Vector3(0f, 0.25f, zStern - 0.55f), 13.0f, 0.18f, 1.1f, amber);
-        World.DrawCube(new Vector3(0f, 0.55f, zStern - 1.35f), 12.2f, 0.16f, 0.9f, amber);
-
-        for (var i = -5; i <= 5; i++)
-        {
-            var z = midZ + i * (len * 0.08f);
-            World.DrawCube(new Vector3(-halfBeam * 1.02f, 3.2f, z), 0.12f, 5.8f, 0.1f, hullDark);
-            World.DrawCube(new Vector3(halfBeam * 1.02f, 3.2f, z), 0.12f, 5.8f, 0.1f, hullDark);
-        }
-        World.DrawCube(new Vector3(-halfBeam * 1.03f, 4.5f, midZ + 4f), 0.18f, 0.55f, 28f, AccentLight);
-        World.DrawCube(new Vector3(halfBeam * 1.03f, 4.5f, midZ + 4f), 0.14f, 0.35f, 28f, AccentCyan);
-        World.DrawCube(new Vector3(0f, 6.6f, midZ - 4f), halfBeam * 2.05f, 0.18f, 0.35f, AccentLight);
-
-        World.DrawCylinder(new Vector3(0f, yCrown + 1.8f, zBow - 12f), 0.16f, 0.16f, 3.4f, 8, Steel);
-        World.DrawSphere(new Vector3(0f, yCrown + 3.6f, zBow - 12f), 0.55f, AccentCyan);
-        World.DrawCube(new Vector3(0f, yCrown + 0.4f, zBow - 12f), 2.2f, 0.45f, 2.2f, accentPlate);
-
-        DrawOrbitSidePods(halfBeam, midZ, zStern, zBow);
-    }
-
-    /// <summary>
-    /// Port/starboard pods: main drive nozzles aft + FTL graviton field manipulators mid/fore.
-    /// </summary>
-    private void DrawOrbitSidePods(float halfBeam, float midZ, float zStern, float zBow)
-    {
-        _ = zBow;
-        var pod = ShadeColor(Color.FromArgb(255, 88, 94, 104), 0.4f, 0.55f, Vector3.UnitX, LightDir);
-        var podDark = ShadeColor(Color.FromArgb(255, 40, 44, 52), 0.45f, 0.5f, Vector3.UnitX, LightDir);
-        var strut = ShadeColor(Steel, 0.4f, 0.55f, Vector3.UnitY, LightDir);
-        var nozzle = ShadeColor(Color.FromArgb(255, 48, 52, 58), 0.35f, 0.65f, -Vector3.UnitZ, LightDir);
-        var glow = Color.FromArgb(255, 255, 130, 40);
-        var glowCore = Color.FromArgb(255, 255, 210, 120);
-        var graviton = ShadeColor(Color.FromArgb(255, 70, 120, 160), 0.35f, 0.55f, Vector3.UnitX, LightDir);
-        var gravitonCore = Color.FromArgb(220, 120, 210, 255);
-        var coil = ShadeColor(AccentCyan, 0.3f, 0.6f, Vector3.UnitZ, LightDir);
-
-        foreach (var side in new[] { -1f, 1f })
-        {
-            var x = side * halfBeam * 1.28f;
-            // Pylon into the hull
-            World.DrawCube(new Vector3(side * halfBeam * 1.08f, 3.6f, midZ - 2f), 1.6f, 1.4f, 8f, strut);
-            // Main pod body (along LOA)
-            World.DrawCube(new Vector3(x, 3.4f, midZ - 2f), 3.4f, 4.2f, 18f, pod);
-            World.DrawCube(new Vector3(x, 5.6f, midZ - 2f), 2.8f, 0.3f, 16f, AccentLight);
-
-            // --- Main engines (aft of each pod) ---
-            var engZ = zStern + 4.5f;
-            World.DrawCube(new Vector3(x, 3.2f, engZ + 1.2f), 3.0f, 3.6f, 4.5f, podDark);
-            foreach (var (dy, dz) in new (float, float)[] { (-0.85f, 0f), (0.85f, 0f), (0f, 0f) })
-            {
-                World.DrawCube(new Vector3(x, 3.2f + dy, engZ - 0.4f + dz), 1.35f, 1.35f, 1.1f, nozzle);
-                World.DrawCube(new Vector3(x, 3.2f + dy, engZ - 1.25f + dz), 1.0f, 1.0f, 0.7f, glow);
-                World.DrawSphere(new Vector3(x, 3.2f + dy, engZ - 1.7f + dz), 0.32f, glowCore);
-            }
-
-            // --- FTL graviton field manipulators (mid-fore of each pod) ---
-            var ftlZ = midZ + 6f;
-            World.DrawCube(new Vector3(x, 3.6f, ftlZ), 3.6f, 3.8f, 5.5f, podDark);
-            // Nested emitter rings (cubes as faceted rings — Raylib cylinders are Y-up).
-            World.DrawCube(new Vector3(x + side * 1.55f, 3.6f, ftlZ), 0.35f, 2.8f, 2.8f, graviton);
-            World.DrawCube(new Vector3(x + side * 1.85f, 3.6f, ftlZ), 0.22f, 2.1f, 2.1f, coil);
-            World.DrawCube(new Vector3(x + side * 2.05f, 3.6f, ftlZ), 0.18f, 1.4f, 1.4f, gravitonCore);
-            // Field-coil bands along the pod
-            for (var i = -2; i <= 2; i++)
-            {
-                World.DrawCube(new Vector3(x, 3.6f, ftlZ + i * 0.85f), 3.75f, 0.18f, 0.22f, coil);
-                World.DrawCube(new Vector3(x, 3.6f + i * 0.55f, ftlZ), 3.75f, 0.16f, 0.16f, graviton);
-            }
-            // Emitter tip glow
-            World.DrawSphere(new Vector3(x + side * 2.35f, 3.6f, ftlZ), 0.45f, gravitonCore);
-            World.DrawSphere(new Vector3(x + side * 2.55f, 3.6f, ftlZ), 0.22f, AccentCyan);
-        }
-    }
-
-    private void DrawOrbitExteriorGreebles()
-    {
-        const float zBow = 32.5f;
-        const float zStern = -32.5f;
-        var midZ = (zBow + zStern) * 0.5f;
-        var plate = ShadeColor(Color.FromArgb(255, 120, 126, 136), 0.5f, 0.4f, Vector3.UnitY, LightDir);
-        var dark = ShadeColor(Color.FromArgb(255, 36, 40, 48), 0.45f, 0.5f, Vector3.UnitY, LightDir);
-
-        World.DrawCube(new Vector3(0f, 11.4f, midZ + 6f), 7.5f, 1.6f, 10f, plate);
-
-        // Sensor masts / dorsal antennae (not drive hardware)
-        World.DrawCube(new Vector3(3.2f, 13.2f, zBow - 16f), 0.1f, 2.4f, 0.1f, Steel);
-        World.DrawCube(new Vector3(-3.2f, 12.8f, zBow - 18f), 0.1f, 1.8f, 0.1f, Steel);
-        World.DrawSphere(new Vector3(3.2f, 14.5f, zBow - 16f), 0.28f, AccentLight);
-        // Aft ramp-house roof fairing
-        World.DrawCube(new Vector3(0f, 10.2f, zStern + 8f), 8f, 0.7f, 6f, dark);
-        World.DrawCube(new Vector3(0f, 10.6f, zStern + 6f), 3.5f, 0.45f, 2.5f, AccentLight);
-    }
     private bool IsNarrowInteriorSpace()
     {
         var space = _session.SelectedSpace;
