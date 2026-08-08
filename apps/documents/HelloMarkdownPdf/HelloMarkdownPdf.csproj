@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>HelloMarkdownPdf</RootNamespace>
+    <Description>Dogfood Novolis.Markup.Markdown.Documents — fluent Markdown to Skia PDF.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Novolis.Markup.Markdown" />
+    <PackageReference Include="Novolis.Markup.Markdown.Documents" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" />
+  </ItemGroup>
+</Project>
