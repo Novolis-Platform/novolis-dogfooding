@@ -1,5 +1,6 @@
 using Avalonia;
 using CalypsoCad.Generation;
+using CalypsoCad.Models;
 using CalypsoCad.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +18,13 @@ internal static class Program
         var headless = args.Any(a => string.Equals(a, "--headless", StringComparison.OrdinalIgnoreCase));
         var walkthrough = args.Any(a => string.Equals(a, "--walkthrough", StringComparison.OrdinalIgnoreCase));
         var jsonOnly = args.Any(a => string.Equals(a, "--json-only", StringComparison.OrdinalIgnoreCase));
+        var acceptance = args.Any(a => string.Equals(a, "--acceptance", StringComparison.OrdinalIgnoreCase));
+
+        if (acceptance)
+        {
+            Environment.ExitCode = RunAcceptance();
+            return;
+        }
 
         if (generateOnly || headless || walkthrough)
         {
@@ -48,6 +56,55 @@ internal static class Program
         {
             ApplicationHost.StopAsync().GetAwaiter().GetResult();
         }
+    }
+
+    /// <summary>Seed generate → inject exterior → regenerate → assert exterior preserved.</summary>
+    private static int RunAcceptance()
+    {
+        Console.WriteLine("CalypsoCad acceptance");
+        var failures = 0;
+        void Check(string name, bool ok, string detail = "")
+        {
+            if (ok)
+            {
+                Console.WriteLine($"  OK  {name}");
+                return;
+            }
+
+            failures++;
+            Console.WriteLine($"  FAIL {name}{(string.IsNullOrEmpty(detail) ? "" : ": " + detail)}");
+        }
+
+        var dir = CalypsoRevGGenerator.Generate();
+        var cadPath = Path.Combine(dir, "calypso.cadjson");
+        Check("generate calypso.cadjson", File.Exists(cadPath));
+
+        var doc = System.Text.Json.JsonSerializer.Deserialize<Novolis.Cad.Primitives.CadDocument>(
+            File.ReadAllText(cadPath), CadJson.Options)
+            ?? throw new InvalidOperationException("Failed to deserialize calypso.cadjson");
+        doc.Entities.Add(new Novolis.Cad.Primitives.CadEntity
+        {
+            Kind = "box",
+            Name = "ext-acceptance-hull",
+            Center = [0, 6, 32],
+            HalfExtents = [10f, 3f, 5f],
+            Properties = new Dictionary<string, System.Text.Json.JsonElement>
+            {
+                ["exterior"] = System.Text.Json.JsonSerializer.SerializeToElement(true),
+            },
+        });
+        File.WriteAllText(cadPath, System.Text.Json.JsonSerializer.Serialize(doc, CadJson.Options));
+
+        CalypsoRevGGenerator.Generate();
+        var after = System.Text.Json.JsonSerializer.Deserialize<Novolis.Cad.Primitives.CadDocument>(
+            File.ReadAllText(cadPath), CadJson.Options)
+            ?? throw new InvalidOperationException("Failed to deserialize after regenerate");
+        Check(
+            "regenerate preserves exterior",
+            after.Entities.Any(e => string.Equals(e.Name, "ext-acceptance-hull", StringComparison.OrdinalIgnoreCase)));
+
+        Console.WriteLine(failures == 0 ? "CalypsoCad acceptance OK" : $"CalypsoCad acceptance FAILED ({failures})");
+        return failures == 0 ? 0 : 1;
     }
 
     /// <summary>Generate CAD companions and optionally export plan/orbit/interior PNGs or a walkthrough via hidden Raylib.</summary>

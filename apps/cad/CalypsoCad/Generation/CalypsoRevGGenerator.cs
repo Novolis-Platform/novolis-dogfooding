@@ -815,8 +815,12 @@ internal static class CalypsoRevGGenerator
                 ["W_open"] = JsonSerializer.SerializeToElement(widthM),
                 ["H_open"] = JsonSerializer.SerializeToElement(heightM),
                 ["H_sill"] = JsonSerializer.SerializeToElement(HSill),
+                ["clearWidth"] = JsonSerializer.SerializeToElement(clearW),
+                ["clearHeight"] = JsonSerializer.SerializeToElement(clearH),
                 ["ClearWidth"] = JsonSerializer.SerializeToElement(clearW),
                 ["ClearHeight"] = JsonSerializer.SerializeToElement(clearH),
+                ["airtightWhenClosed"] = JsonSerializer.SerializeToElement(true),
+                ["leafState"] = JsonSerializer.SerializeToElement("Closed"),
                 ["connects"] = JsonSerializer.SerializeToElement(connects),
             },
         });

@@ -1,6 +1,6 @@
 # Calypso CAD
 
-Dogfood app that hand-ports the **Calypso** transport (RevE / RevG + Chapter 16 canon) into `novolis.cad` companions and renders plan / orbit / interior exploration.
+Dogfood app that generates **Calypso** Rev G companions and explores plan / orbit / interior. **Author freighters in [Ship Designer](https://github.com/Novolis-Platform/novolis-apps)** (`d:\novolis\novolis-apps\src\ShipDesigner`) — Open/Save `.cadjson`, hatches, airtight validation. This app stays generate / headless PNG / walkthrough.
 
 ## Canon lock
 
@@ -50,8 +50,10 @@ Immediate-mode cubes/lines/cylinders (no DrawTriangle3D):
 
 ## Run
 
-```bash
-dotnet run --project apps/cad/CalypsoCad
+```powershell
+dotnet run --project d:\novolis\novolis-dogfooding\apps\cad\CalypsoCad
+dotnet run --project d:\novolis\novolis-dogfooding\apps\cad\CalypsoCad -- --generate-only --json-only
+dotnet run --project d:\novolis\novolis-dogfooding\apps\cad\CalypsoCad -- --acceptance
 ```
 
 On startup regenerates under `%LocalAppData%\Novolis\CalypsoCad\generated\`:
@@ -60,10 +62,12 @@ On startup regenerates under `%LocalAppData%\Novolis\CalypsoCad\generated\`:
 - `calypso.cadshapejson`
 - `calypso.cadjson`
 
+Import that seed into Ship Designer via **File → Import Calypso seed…**.
+
 Headless Raylib PNG tour:
 
-```bash
-dotnet run --project apps/cad/CalypsoCad -- --headless
+```powershell
+dotnet run --project d:\novolis\novolis-dogfooding\apps\cad\CalypsoCad -- --headless
 ```
 
 Camera walkthrough via **`Novolis.Raylib.Capture`** `FrameCaptureSession` (PNG frame stream after each `EndDrawing`; ffmpeg assembles MP4/GIF — no BeginVideo binding in this Raylib stack):
