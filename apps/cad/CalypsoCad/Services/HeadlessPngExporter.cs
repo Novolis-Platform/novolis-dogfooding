@@ -87,32 +87,33 @@ internal static class HeadlessPngExporter
                 // Interior tour spaces (solid; bridge + cargo also cutaway section).
                 var tourNames = new[]
                 {
-                    ("Bridge", "bridge"),
-                    ("Crossing Hallway", "crossing"),
-                    ("Crew Cabin 1", "cabin1"),
-                    ("Galley", "galley"),
-                    ("Infirmary", "infirmary"),
-                    ("Stairs", "stairs"),
-                    ("Engineering", "engineering"),
-                    ("Cargo Void", "cargoVoid"),
-                    ("Passenger Lounge", "lounge"),
-                    ("Airlock Port", "airlockPort"),
-                    ("Airlock Starboard", "airlockStbd"),
-                    ("Port Corridor", "portCorridor"),
-                    ("Starboard Corridor", "stbdCorridor"),
+                    ("BRIDGE", "bridge"),
+                    ("CROSSING", "crossing"),
+                    ("CABIN_1", "cabin1"),
+                    ("CABIN_2", "cabin2"),
+                    ("CABIN_3", "cabin3"),
+                    ("GALLEY", "galley"),
+                    ("INFIRMARY", "infirmary"),
+                    ("STAIRS_P", "stairs"),
+                    ("ENG", "engineering"),
+                    ("HOLD", "cargoVoid"),
+                    ("LOUNGE", "lounge"),
+                    ("AIRLOCK_A_port", "airlockPort"),
+                    ("AIRLOCK_A_stbd", "airlockStbd"),
+                    ("CORR_P", "portCorridor"),
+                    ("CORR_S", "stbdCorridor"),
                 };
 
                 foreach (var (spaceName, label) in tourNames)
                 {
                     var space = session.Spaces.FirstOrDefault(s =>
                         string.Equals(s.Name, spaceName, StringComparison.OrdinalIgnoreCase)
-                        && (spaceName != "Cargo Void" || s.Flags?.Hollow == true)
-                        && (spaceName != "Crossing Hallway" || s.Deck == 0)
-                        && (spaceName != "Bridge" || s.Deck == 0)
-                        && (spaceName != "Engineering" || s.Deck == -1)
-                        && (spaceName != "Stairs" || s.Deck == 0)
-                        && (spaceName != "Port Corridor" || s.Deck == 0)
-                        && (spaceName != "Starboard Corridor" || s.Deck == 0));
+                        && (spaceName != "CROSSING" || s.Deck == 0)
+                        && (spaceName != "BRIDGE" || s.Deck == 0)
+                        && (spaceName != "STAIRS_P" || s.Deck == 0)
+                        && (spaceName != "CORR_P" || s.Deck == 0)
+                        && (spaceName != "CORR_S" || s.Deck == 0)
+                        && (spaceName is not ("CABIN_1" or "CABIN_2" or "CABIN_3") || s.Deck == 1));
                     space ??= session.Spaces.FirstOrDefault(s =>
                         string.Equals(s.Name, spaceName, StringComparison.OrdinalIgnoreCase));
 

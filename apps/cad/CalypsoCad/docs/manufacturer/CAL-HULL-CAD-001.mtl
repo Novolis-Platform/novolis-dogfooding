@@ -1,0 +1,9 @@
+# CAL-HULL-CAD-001
+newmtl Steel316L
+Ka 0.15 0.15 0.16
+Kd 0.55 0.56 0.58
+Ks 0.35 0.35 0.35
+Ns 40
+d 1.0
+illum 2
+# density 8000 kg/m3 · t=0.008 m

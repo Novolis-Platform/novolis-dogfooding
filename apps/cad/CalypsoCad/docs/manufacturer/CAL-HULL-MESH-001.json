@@ -1,0 +1,1821 @@
+{
+  "drawing": "CAL-HULL-MESH-001",
+  "rev": "B",
+  "units": "meters",
+  "coordinateSystem": {
+    "origo": {
+      "id": "O",
+      "xyz": [
+        0,
+        0,
+        0
+      ],
+      "description": "Ventral-aft-port of outer AABB, offset PAD outside so all hull points are positive"
+    },
+    "pad": 0.5,
+    "axes": {
+      "X": "+forward (toward stem)",
+      "Y": "+starboard",
+      "Z": "+up (dorsal)"
+    },
+    "fromStemConvention": "GA canvas uses zFromStem=0 at stem; mesh X = PAD + (LOA - zFromStem)"
+  },
+  "envelope": {
+    "LOA": 69,
+    "BEAM": 20,
+    "OAH": 12,
+    "L_FORE": 17,
+    "L_MID": 48,
+    "L_AFT": 4,
+    "CHAMFER": 2.5,
+    "PAD": 0.5
+  },
+  "door": {
+    "DOOR_W": 14,
+    "DOOR_H": 8.5,
+    "SILL": 0.25,
+    "x": 0.5
+  },
+  "rings": [
+    {
+      "id": "ST0",
+      "zFromStem": 0,
+      "x": 69.5,
+      "group": "fore",
+      "aliasOf": null,
+      "verts": [
+        "ST0.D-P",
+        "ST0.D-S",
+        "ST0.S-U",
+        "ST0.S-L",
+        "ST0.V-S",
+        "ST0.V-P",
+        "ST0.P-L",
+        "ST0.P-U"
+      ]
+    },
+    {
+      "id": "ST1",
+      "zFromStem": 3.25,
+      "x": 66.25,
+      "group": "fore",
+      "aliasOf": null,
+      "verts": [
+        "ST1.D-P",
+        "ST1.D-S",
+        "ST1.S-U",
+        "ST1.S-L",
+        "ST1.V-S",
+        "ST1.V-P",
+        "ST1.P-L",
+        "ST1.P-U"
+      ]
+    },
+    {
+      "id": "ST2",
+      "zFromStem": 10,
+      "x": 59.5,
+      "group": "fore",
+      "aliasOf": null,
+      "verts": [
+        "ST2.D-P",
+        "ST2.D-S",
+        "ST2.S-U",
+        "ST2.S-L",
+        "ST2.V-S",
+        "ST2.V-P",
+        "ST2.P-L",
+        "ST2.P-U"
+      ]
+    },
+    {
+      "id": "ST3",
+      "zFromStem": 17,
+      "x": 52.5,
+      "group": "fore",
+      "aliasOf": null,
+      "verts": [
+        "ST3.D-P",
+        "ST3.D-S",
+        "ST3.S-U",
+        "ST3.S-L",
+        "ST3.V-S",
+        "ST3.V-P",
+        "ST3.P-L",
+        "ST3.P-U"
+      ]
+    },
+    {
+      "id": "MB0",
+      "zFromStem": 17,
+      "x": 52.5,
+      "group": "midbody",
+      "aliasOf": "ST3",
+      "verts": [
+        "ST3.D-P",
+        "ST3.D-S",
+        "ST3.S-U",
+        "ST3.S-L",
+        "ST3.V-S",
+        "ST3.V-P",
+        "ST3.P-L",
+        "ST3.P-U"
+      ]
+    },
+    {
+      "id": "MB1",
+      "zFromStem": 41,
+      "x": 28.5,
+      "group": "midbody",
+      "aliasOf": null,
+      "verts": [
+        "MB1.D-P",
+        "MB1.D-S",
+        "MB1.S-U",
+        "MB1.S-L",
+        "MB1.V-S",
+        "MB1.V-P",
+        "MB1.P-L",
+        "MB1.P-U"
+      ]
+    },
+    {
+      "id": "MB2",
+      "zFromStem": 65,
+      "x": 4.5,
+      "group": "midbody",
+      "aliasOf": null,
+      "verts": [
+        "MB2.D-P",
+        "MB2.D-S",
+        "MB2.S-U",
+        "MB2.S-L",
+        "MB2.V-S",
+        "MB2.V-P",
+        "MB2.P-L",
+        "MB2.P-U"
+      ]
+    },
+    {
+      "id": "AFT",
+      "zFromStem": 69,
+      "x": 0.5,
+      "group": "aft",
+      "aliasOf": null,
+      "verts": [
+        "AFT.D-P",
+        "AFT.D-S",
+        "AFT.S-U",
+        "AFT.S-L",
+        "AFT.V-S",
+        "AFT.V-P",
+        "AFT.P-L",
+        "AFT.P-U"
+      ]
+    }
+  ],
+  "points": [
+    {
+      "id": "O",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "group": "origo",
+      "note": "ventral-aft-port, outside hull AABB"
+    },
+    {
+      "id": "AABB-AFT-P-V",
+      "x": 0.5,
+      "y": 0.5,
+      "z": 0.5,
+      "group": "aabb",
+      "note": "aft port ventral"
+    },
+    {
+      "id": "AABB-AFT-S-V",
+      "x": 0.5,
+      "y": 20.5,
+      "z": 0.5,
+      "group": "aabb",
+      "note": "aft stbd ventral"
+    },
+    {
+      "id": "AABB-AFT-P-D",
+      "x": 0.5,
+      "y": 0.5,
+      "z": 12.5,
+      "group": "aabb",
+      "note": "aft port dorsal"
+    },
+    {
+      "id": "AABB-AFT-S-D",
+      "x": 0.5,
+      "y": 20.5,
+      "z": 12.5,
+      "group": "aabb",
+      "note": "aft stbd dorsal"
+    },
+    {
+      "id": "AABB-BOW-P-V",
+      "x": 69.5,
+      "y": 0.5,
+      "z": 0.5,
+      "group": "aabb",
+      "note": "bow port ventral"
+    },
+    {
+      "id": "AABB-BOW-S-V",
+      "x": 69.5,
+      "y": 20.5,
+      "z": 0.5,
+      "group": "aabb",
+      "note": "bow stbd ventral"
+    },
+    {
+      "id": "AABB-BOW-P-D",
+      "x": 69.5,
+      "y": 0.5,
+      "z": 12.5,
+      "group": "aabb",
+      "note": "bow port dorsal"
+    },
+    {
+      "id": "AABB-BOW-S-D",
+      "x": 69.5,
+      "y": 20.5,
+      "z": 12.5,
+      "group": "aabb",
+      "note": "bow stbd dorsal"
+    },
+    {
+      "id": "ST0.D-P",
+      "x": 69.5,
+      "y": 9.188,
+      "z": 8.5,
+      "group": "fore",
+      "note": "stem · D-P"
+    },
+    {
+      "id": "ST0.D-S",
+      "x": 69.5,
+      "y": 11.813,
+      "z": 8.5,
+      "group": "fore",
+      "note": "stem · D-S"
+    },
+    {
+      "id": "ST0.S-U",
+      "x": 69.5,
+      "y": 12.25,
+      "z": 7.667,
+      "group": "fore",
+      "note": "stem · S-U"
+    },
+    {
+      "id": "ST0.S-L",
+      "x": 69.5,
+      "y": 12.25,
+      "z": 5.333,
+      "group": "fore",
+      "note": "stem · S-L"
+    },
+    {
+      "id": "ST0.V-S",
+      "x": 69.5,
+      "y": 11.813,
+      "z": 4.5,
+      "group": "fore",
+      "note": "stem · V-S"
+    },
+    {
+      "id": "ST0.V-P",
+      "x": 69.5,
+      "y": 9.188,
+      "z": 4.5,
+      "group": "fore",
+      "note": "stem · V-P"
+    },
+    {
+      "id": "ST0.P-L",
+      "x": 69.5,
+      "y": 8.75,
+      "z": 5.333,
+      "group": "fore",
+      "note": "stem · P-L"
+    },
+    {
+      "id": "ST0.P-U",
+      "x": 69.5,
+      "y": 8.75,
+      "z": 7.667,
+      "group": "fore",
+      "note": "stem · P-U"
+    },
+    {
+      "id": "ST1.D-P",
+      "x": 66.25,
+      "y": 6.75,
+      "z": 10.25,
+      "group": "fore",
+      "note": "fore-1 · D-P"
+    },
+    {
+      "id": "ST1.D-S",
+      "x": 66.25,
+      "y": 14.25,
+      "z": 10.25,
+      "group": "fore",
+      "note": "fore-1 · D-S"
+    },
+    {
+      "id": "ST1.S-U",
+      "x": 66.25,
+      "y": 15.5,
+      "z": 8.688,
+      "group": "fore",
+      "note": "fore-1 · S-U"
+    },
+    {
+      "id": "ST1.S-L",
+      "x": 66.25,
+      "y": 15.5,
+      "z": 4.313,
+      "group": "fore",
+      "note": "fore-1 · S-L"
+    },
+    {
+      "id": "ST1.V-S",
+      "x": 66.25,
+      "y": 14.25,
+      "z": 2.75,
+      "group": "fore",
+      "note": "fore-1 · V-S"
+    },
+    {
+      "id": "ST1.V-P",
+      "x": 66.25,
+      "y": 6.75,
+      "z": 2.75,
+      "group": "fore",
+      "note": "fore-1 · V-P"
+    },
+    {
+      "id": "ST1.P-L",
+      "x": 66.25,
+      "y": 5.5,
+      "z": 4.313,
+      "group": "fore",
+      "note": "fore-1 · P-L"
+    },
+    {
+      "id": "ST1.P-U",
+      "x": 66.25,
+      "y": 5.5,
+      "z": 8.688,
+      "group": "fore",
+      "note": "fore-1 · P-U"
+    },
+    {
+      "id": "ST2.D-P",
+      "x": 59.5,
+      "y": 4.125,
+      "z": 11.75,
+      "group": "fore",
+      "note": "fore-2 · D-P"
+    },
+    {
+      "id": "ST2.D-S",
+      "x": 59.5,
+      "y": 16.875,
+      "z": 11.75,
+      "group": "fore",
+      "note": "fore-2 · D-S"
+    },
+    {
+      "id": "ST2.S-U",
+      "x": 59.5,
+      "y": 19,
+      "z": 9.563,
+      "group": "fore",
+      "note": "fore-2 · S-U"
+    },
+    {
+      "id": "ST2.S-L",
+      "x": 59.5,
+      "y": 19,
+      "z": 3.438,
+      "group": "fore",
+      "note": "fore-2 · S-L"
+    },
+    {
+      "id": "ST2.V-S",
+      "x": 59.5,
+      "y": 16.875,
+      "z": 1.25,
+      "group": "fore",
+      "note": "fore-2 · V-S"
+    },
+    {
+      "id": "ST2.V-P",
+      "x": 59.5,
+      "y": 4.125,
+      "z": 1.25,
+      "group": "fore",
+      "note": "fore-2 · V-P"
+    },
+    {
+      "id": "ST2.P-L",
+      "x": 59.5,
+      "y": 2,
+      "z": 3.438,
+      "group": "fore",
+      "note": "fore-2 · P-L"
+    },
+    {
+      "id": "ST2.P-U",
+      "x": 59.5,
+      "y": 2,
+      "z": 9.563,
+      "group": "fore",
+      "note": "fore-2 · P-U"
+    },
+    {
+      "id": "ST3.D-P",
+      "x": 52.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "fore",
+      "note": "shoulder · D-P"
+    },
+    {
+      "id": "ST3.D-S",
+      "x": 52.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "fore",
+      "note": "shoulder · D-S"
+    },
+    {
+      "id": "ST3.S-U",
+      "x": 52.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "fore",
+      "note": "shoulder · S-U"
+    },
+    {
+      "id": "ST3.S-L",
+      "x": 52.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "fore",
+      "note": "shoulder · S-L"
+    },
+    {
+      "id": "ST3.V-S",
+      "x": 52.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "fore",
+      "note": "shoulder · V-S"
+    },
+    {
+      "id": "ST3.V-P",
+      "x": 52.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "fore",
+      "note": "shoulder · V-P"
+    },
+    {
+      "id": "ST3.P-L",
+      "x": 52.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "fore",
+      "note": "shoulder · P-L"
+    },
+    {
+      "id": "ST3.P-U",
+      "x": 52.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "fore",
+      "note": "shoulder · P-U"
+    },
+    {
+      "id": "MB1.D-P",
+      "x": 28.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "midbody",
+      "note": "midbody mid · D-P"
+    },
+    {
+      "id": "MB1.D-S",
+      "x": 28.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "midbody",
+      "note": "midbody mid · D-S"
+    },
+    {
+      "id": "MB1.S-U",
+      "x": 28.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "midbody",
+      "note": "midbody mid · S-U"
+    },
+    {
+      "id": "MB1.S-L",
+      "x": 28.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "midbody",
+      "note": "midbody mid · S-L"
+    },
+    {
+      "id": "MB1.V-S",
+      "x": 28.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "midbody",
+      "note": "midbody mid · V-S"
+    },
+    {
+      "id": "MB1.V-P",
+      "x": 28.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "midbody",
+      "note": "midbody mid · V-P"
+    },
+    {
+      "id": "MB1.P-L",
+      "x": 28.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "midbody",
+      "note": "midbody mid · P-L"
+    },
+    {
+      "id": "MB1.P-U",
+      "x": 28.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "midbody",
+      "note": "midbody mid · P-U"
+    },
+    {
+      "id": "MB2.D-P",
+      "x": 4.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · D-P"
+    },
+    {
+      "id": "MB2.D-S",
+      "x": 4.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · D-S"
+    },
+    {
+      "id": "MB2.S-U",
+      "x": 4.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · S-U"
+    },
+    {
+      "id": "MB2.S-L",
+      "x": 4.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · S-L"
+    },
+    {
+      "id": "MB2.V-S",
+      "x": 4.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · V-S"
+    },
+    {
+      "id": "MB2.V-P",
+      "x": 4.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · V-P"
+    },
+    {
+      "id": "MB2.P-L",
+      "x": 4.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · P-L"
+    },
+    {
+      "id": "MB2.P-U",
+      "x": 4.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "midbody",
+      "note": "midbody aft / aft-band fore · P-U"
+    },
+    {
+      "id": "AFT.D-P",
+      "x": 0.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "aft",
+      "note": "aft face outer · D-P"
+    },
+    {
+      "id": "AFT.D-S",
+      "x": 0.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "aft",
+      "note": "aft face outer · D-S"
+    },
+    {
+      "id": "AFT.S-U",
+      "x": 0.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "aft",
+      "note": "aft face outer · S-U"
+    },
+    {
+      "id": "AFT.S-L",
+      "x": 0.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "aft",
+      "note": "aft face outer · S-L"
+    },
+    {
+      "id": "AFT.V-S",
+      "x": 0.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "aft",
+      "note": "aft face outer · V-S"
+    },
+    {
+      "id": "AFT.V-P",
+      "x": 0.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "aft",
+      "note": "aft face outer · V-P"
+    },
+    {
+      "id": "AFT.P-L",
+      "x": 0.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "aft",
+      "note": "aft face outer · P-L"
+    },
+    {
+      "id": "AFT.P-U",
+      "x": 0.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "aft",
+      "note": "aft face outer · P-U"
+    },
+    {
+      "id": "DOOR.P-V",
+      "x": 0.5,
+      "y": 3.5,
+      "z": 0.75,
+      "group": "door",
+      "note": "door port sill"
+    },
+    {
+      "id": "DOOR.S-V",
+      "x": 0.5,
+      "y": 17.5,
+      "z": 0.75,
+      "group": "door",
+      "note": "door stbd sill"
+    },
+    {
+      "id": "DOOR.S-D",
+      "x": 0.5,
+      "y": 17.5,
+      "z": 9.25,
+      "group": "door",
+      "note": "door stbd lintel"
+    },
+    {
+      "id": "DOOR.P-D",
+      "x": 0.5,
+      "y": 3.5,
+      "z": 9.25,
+      "group": "door",
+      "note": "door port lintel"
+    },
+    {
+      "id": "PACK.P-V",
+      "x": 0.5,
+      "y": 4.005,
+      "z": 0.75,
+      "group": "pack",
+      "note": "C40 pack port sill"
+    },
+    {
+      "id": "PACK.S-V",
+      "x": 0.5,
+      "y": 16.995,
+      "z": 0.75,
+      "group": "pack",
+      "note": "C40 pack stbd sill"
+    },
+    {
+      "id": "PACK.S-D",
+      "x": 0.5,
+      "y": 16.995,
+      "z": 8.523,
+      "group": "pack",
+      "note": "C40 pack stbd top"
+    },
+    {
+      "id": "PACK.P-D",
+      "x": 0.5,
+      "y": 4.005,
+      "z": 8.523,
+      "group": "pack",
+      "note": "C40 pack port top"
+    }
+  ],
+  "edges": [
+    {
+      "a": "ST0.D-P",
+      "b": "ST0.D-S",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.D-S",
+      "b": "ST0.S-U",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.S-U",
+      "b": "ST0.S-L",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.S-L",
+      "b": "ST0.V-S",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.V-S",
+      "b": "ST0.V-P",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.V-P",
+      "b": "ST0.P-L",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.P-L",
+      "b": "ST0.P-U",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST0.P-U",
+      "b": "ST0.D-P",
+      "group": "ring:ST0"
+    },
+    {
+      "a": "ST1.D-P",
+      "b": "ST1.D-S",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.D-S",
+      "b": "ST1.S-U",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.S-U",
+      "b": "ST1.S-L",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.S-L",
+      "b": "ST1.V-S",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.V-S",
+      "b": "ST1.V-P",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.V-P",
+      "b": "ST1.P-L",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.P-L",
+      "b": "ST1.P-U",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST1.P-U",
+      "b": "ST1.D-P",
+      "group": "ring:ST1"
+    },
+    {
+      "a": "ST2.D-P",
+      "b": "ST2.D-S",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.D-S",
+      "b": "ST2.S-U",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.S-U",
+      "b": "ST2.S-L",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.S-L",
+      "b": "ST2.V-S",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.V-S",
+      "b": "ST2.V-P",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.V-P",
+      "b": "ST2.P-L",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.P-L",
+      "b": "ST2.P-U",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST2.P-U",
+      "b": "ST2.D-P",
+      "group": "ring:ST2"
+    },
+    {
+      "a": "ST3.D-P",
+      "b": "ST3.D-S",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.D-S",
+      "b": "ST3.S-U",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.S-U",
+      "b": "ST3.S-L",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.S-L",
+      "b": "ST3.V-S",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.V-S",
+      "b": "ST3.V-P",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.V-P",
+      "b": "ST3.P-L",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.P-L",
+      "b": "ST3.P-U",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "ST3.P-U",
+      "b": "ST3.D-P",
+      "group": "ring:ST3"
+    },
+    {
+      "a": "MB1.D-P",
+      "b": "MB1.D-S",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.D-S",
+      "b": "MB1.S-U",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.S-U",
+      "b": "MB1.S-L",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.S-L",
+      "b": "MB1.V-S",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.V-S",
+      "b": "MB1.V-P",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.V-P",
+      "b": "MB1.P-L",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.P-L",
+      "b": "MB1.P-U",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB1.P-U",
+      "b": "MB1.D-P",
+      "group": "ring:MB1"
+    },
+    {
+      "a": "MB2.D-P",
+      "b": "MB2.D-S",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.D-S",
+      "b": "MB2.S-U",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.S-U",
+      "b": "MB2.S-L",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.S-L",
+      "b": "MB2.V-S",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.V-S",
+      "b": "MB2.V-P",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.V-P",
+      "b": "MB2.P-L",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.P-L",
+      "b": "MB2.P-U",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "MB2.P-U",
+      "b": "MB2.D-P",
+      "group": "ring:MB2"
+    },
+    {
+      "a": "AFT.D-P",
+      "b": "AFT.D-S",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.D-S",
+      "b": "AFT.S-U",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.S-U",
+      "b": "AFT.S-L",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.S-L",
+      "b": "AFT.V-S",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.V-S",
+      "b": "AFT.V-P",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.V-P",
+      "b": "AFT.P-L",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.P-L",
+      "b": "AFT.P-U",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "AFT.P-U",
+      "b": "AFT.D-P",
+      "group": "ring:AFT"
+    },
+    {
+      "a": "ST0.D-P",
+      "b": "ST1.D-P",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.D-S",
+      "b": "ST1.D-S",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.S-U",
+      "b": "ST1.S-U",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.S-L",
+      "b": "ST1.S-L",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.V-S",
+      "b": "ST1.V-S",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.V-P",
+      "b": "ST1.V-P",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.P-L",
+      "b": "ST1.P-L",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST0.P-U",
+      "b": "ST1.P-U",
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "a": "ST1.D-P",
+      "b": "ST2.D-P",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.D-S",
+      "b": "ST2.D-S",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.S-U",
+      "b": "ST2.S-U",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.S-L",
+      "b": "ST2.S-L",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.V-S",
+      "b": "ST2.V-S",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.V-P",
+      "b": "ST2.V-P",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.P-L",
+      "b": "ST2.P-L",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST1.P-U",
+      "b": "ST2.P-U",
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "a": "ST2.D-P",
+      "b": "ST3.D-P",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.D-S",
+      "b": "ST3.D-S",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.S-U",
+      "b": "ST3.S-U",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.S-L",
+      "b": "ST3.S-L",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.V-S",
+      "b": "ST3.V-S",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.V-P",
+      "b": "ST3.V-P",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.P-L",
+      "b": "ST3.P-L",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST2.P-U",
+      "b": "ST3.P-U",
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "a": "ST3.D-P",
+      "b": "MB1.D-P",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.D-S",
+      "b": "MB1.D-S",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.S-U",
+      "b": "MB1.S-U",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.S-L",
+      "b": "MB1.S-L",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.V-S",
+      "b": "MB1.V-S",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.V-P",
+      "b": "MB1.V-P",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.P-L",
+      "b": "MB1.P-L",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "ST3.P-U",
+      "b": "MB1.P-U",
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "a": "MB1.D-P",
+      "b": "MB2.D-P",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.D-S",
+      "b": "MB2.D-S",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.S-U",
+      "b": "MB2.S-U",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.S-L",
+      "b": "MB2.S-L",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.V-S",
+      "b": "MB2.V-S",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.V-P",
+      "b": "MB2.V-P",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.P-L",
+      "b": "MB2.P-L",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB1.P-U",
+      "b": "MB2.P-U",
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "a": "MB2.D-P",
+      "b": "AFT.D-P",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.D-S",
+      "b": "AFT.D-S",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.S-U",
+      "b": "AFT.S-U",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.S-L",
+      "b": "AFT.S-L",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.V-S",
+      "b": "AFT.V-S",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.V-P",
+      "b": "AFT.V-P",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.P-L",
+      "b": "AFT.P-L",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "MB2.P-U",
+      "b": "AFT.P-U",
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "a": "DOOR.P-V",
+      "b": "DOOR.S-V",
+      "group": "door"
+    },
+    {
+      "a": "DOOR.S-V",
+      "b": "DOOR.S-D",
+      "group": "door"
+    },
+    {
+      "a": "DOOR.S-D",
+      "b": "DOOR.P-D",
+      "group": "door"
+    },
+    {
+      "a": "DOOR.P-D",
+      "b": "DOOR.P-V",
+      "group": "door"
+    }
+  ],
+  "faces": [
+    {
+      "id": "F.ST0.D-P",
+      "verts": [
+        "ST0.D-P",
+        "ST0.D-S",
+        "ST1.D-S",
+        "ST1.D-P"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.D-S",
+      "verts": [
+        "ST0.D-S",
+        "ST0.S-U",
+        "ST1.S-U",
+        "ST1.D-S"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.S-U",
+      "verts": [
+        "ST0.S-U",
+        "ST0.S-L",
+        "ST1.S-L",
+        "ST1.S-U"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.S-L",
+      "verts": [
+        "ST0.S-L",
+        "ST0.V-S",
+        "ST1.V-S",
+        "ST1.S-L"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.V-S",
+      "verts": [
+        "ST0.V-S",
+        "ST0.V-P",
+        "ST1.V-P",
+        "ST1.V-S"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.V-P",
+      "verts": [
+        "ST0.V-P",
+        "ST0.P-L",
+        "ST1.P-L",
+        "ST1.V-P"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.P-L",
+      "verts": [
+        "ST0.P-L",
+        "ST0.P-U",
+        "ST1.P-U",
+        "ST1.P-L"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST0.P-U",
+      "verts": [
+        "ST0.P-U",
+        "ST0.D-P",
+        "ST1.D-P",
+        "ST1.P-U"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "F.ST1.D-P",
+      "verts": [
+        "ST1.D-P",
+        "ST1.D-S",
+        "ST2.D-S",
+        "ST2.D-P"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.D-S",
+      "verts": [
+        "ST1.D-S",
+        "ST1.S-U",
+        "ST2.S-U",
+        "ST2.D-S"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.S-U",
+      "verts": [
+        "ST1.S-U",
+        "ST1.S-L",
+        "ST2.S-L",
+        "ST2.S-U"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.S-L",
+      "verts": [
+        "ST1.S-L",
+        "ST1.V-S",
+        "ST2.V-S",
+        "ST2.S-L"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.V-S",
+      "verts": [
+        "ST1.V-S",
+        "ST1.V-P",
+        "ST2.V-P",
+        "ST2.V-S"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.V-P",
+      "verts": [
+        "ST1.V-P",
+        "ST1.P-L",
+        "ST2.P-L",
+        "ST2.V-P"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.P-L",
+      "verts": [
+        "ST1.P-L",
+        "ST1.P-U",
+        "ST2.P-U",
+        "ST2.P-L"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST1.P-U",
+      "verts": [
+        "ST1.P-U",
+        "ST1.D-P",
+        "ST2.D-P",
+        "ST2.P-U"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "F.ST2.D-P",
+      "verts": [
+        "ST2.D-P",
+        "ST2.D-S",
+        "ST3.D-S",
+        "ST3.D-P"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.D-S",
+      "verts": [
+        "ST2.D-S",
+        "ST2.S-U",
+        "ST3.S-U",
+        "ST3.D-S"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.S-U",
+      "verts": [
+        "ST2.S-U",
+        "ST2.S-L",
+        "ST3.S-L",
+        "ST3.S-U"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.S-L",
+      "verts": [
+        "ST2.S-L",
+        "ST2.V-S",
+        "ST3.V-S",
+        "ST3.S-L"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.V-S",
+      "verts": [
+        "ST2.V-S",
+        "ST2.V-P",
+        "ST3.V-P",
+        "ST3.V-S"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.V-P",
+      "verts": [
+        "ST2.V-P",
+        "ST2.P-L",
+        "ST3.P-L",
+        "ST3.V-P"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.P-L",
+      "verts": [
+        "ST2.P-L",
+        "ST2.P-U",
+        "ST3.P-U",
+        "ST3.P-L"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST2.P-U",
+      "verts": [
+        "ST2.P-U",
+        "ST2.D-P",
+        "ST3.D-P",
+        "ST3.P-U"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "F.ST3.D-P",
+      "verts": [
+        "ST3.D-P",
+        "ST3.D-S",
+        "MB1.D-S",
+        "MB1.D-P"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.D-S",
+      "verts": [
+        "ST3.D-S",
+        "ST3.S-U",
+        "MB1.S-U",
+        "MB1.D-S"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.S-U",
+      "verts": [
+        "ST3.S-U",
+        "ST3.S-L",
+        "MB1.S-L",
+        "MB1.S-U"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.S-L",
+      "verts": [
+        "ST3.S-L",
+        "ST3.V-S",
+        "MB1.V-S",
+        "MB1.S-L"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.V-S",
+      "verts": [
+        "ST3.V-S",
+        "ST3.V-P",
+        "MB1.V-P",
+        "MB1.V-S"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.V-P",
+      "verts": [
+        "ST3.V-P",
+        "ST3.P-L",
+        "MB1.P-L",
+        "MB1.V-P"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.P-L",
+      "verts": [
+        "ST3.P-L",
+        "ST3.P-U",
+        "MB1.P-U",
+        "MB1.P-L"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.ST3.P-U",
+      "verts": [
+        "ST3.P-U",
+        "ST3.D-P",
+        "MB1.D-P",
+        "MB1.P-U"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "F.MB1.D-P",
+      "verts": [
+        "MB1.D-P",
+        "MB1.D-S",
+        "MB2.D-S",
+        "MB2.D-P"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.D-S",
+      "verts": [
+        "MB1.D-S",
+        "MB1.S-U",
+        "MB2.S-U",
+        "MB2.D-S"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.S-U",
+      "verts": [
+        "MB1.S-U",
+        "MB1.S-L",
+        "MB2.S-L",
+        "MB2.S-U"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.S-L",
+      "verts": [
+        "MB1.S-L",
+        "MB1.V-S",
+        "MB2.V-S",
+        "MB2.S-L"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.V-S",
+      "verts": [
+        "MB1.V-S",
+        "MB1.V-P",
+        "MB2.V-P",
+        "MB2.V-S"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.V-P",
+      "verts": [
+        "MB1.V-P",
+        "MB1.P-L",
+        "MB2.P-L",
+        "MB2.V-P"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.P-L",
+      "verts": [
+        "MB1.P-L",
+        "MB1.P-U",
+        "MB2.P-U",
+        "MB2.P-L"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB1.P-U",
+      "verts": [
+        "MB1.P-U",
+        "MB1.D-P",
+        "MB2.D-P",
+        "MB2.P-U"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "F.MB2.D-P",
+      "verts": [
+        "MB2.D-P",
+        "MB2.D-S",
+        "AFT.D-S",
+        "AFT.D-P"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.D-S",
+      "verts": [
+        "MB2.D-S",
+        "MB2.S-U",
+        "AFT.S-U",
+        "AFT.D-S"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.S-U",
+      "verts": [
+        "MB2.S-U",
+        "MB2.S-L",
+        "AFT.S-L",
+        "AFT.S-U"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.S-L",
+      "verts": [
+        "MB2.S-L",
+        "MB2.V-S",
+        "AFT.V-S",
+        "AFT.S-L"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.V-S",
+      "verts": [
+        "MB2.V-S",
+        "MB2.V-P",
+        "AFT.V-P",
+        "AFT.V-S"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.V-P",
+      "verts": [
+        "MB2.V-P",
+        "MB2.P-L",
+        "AFT.P-L",
+        "AFT.V-P"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.P-L",
+      "verts": [
+        "MB2.P-L",
+        "MB2.P-U",
+        "AFT.P-U",
+        "AFT.P-L"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.MB2.P-U",
+      "verts": [
+        "MB2.P-U",
+        "MB2.D-P",
+        "AFT.D-P",
+        "AFT.P-U"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "F.STEM",
+      "verts": [
+        "ST0.D-P",
+        "ST0.D-S",
+        "ST0.S-U",
+        "ST0.S-L",
+        "ST0.V-S",
+        "ST0.V-P",
+        "ST0.P-L",
+        "ST0.P-U"
+      ],
+      "group": "cap:stem"
+    },
+    {
+      "id": "F.AFT_OUTER",
+      "verts": [
+        "AFT.D-P",
+        "AFT.D-S",
+        "AFT.S-U",
+        "AFT.S-L",
+        "AFT.V-S",
+        "AFT.V-P",
+        "AFT.P-L",
+        "AFT.P-U"
+      ],
+      "group": "cap:aft",
+      "hole": [
+        "DOOR.P-V",
+        "DOOR.S-V",
+        "DOOR.S-D",
+        "DOOR.P-D"
+      ]
+    }
+  ]
+}

@@ -58,7 +58,7 @@ internal static class Program
         }
     }
 
-    /// <summary>Seed generate → inject exterior → regenerate → assert exterior preserved.</summary>
+    /// <summary>Seed generate → inject exterior → regenerate → assert exterior preserved + lock metrics.</summary>
     private static int RunAcceptance()
     {
         Console.WriteLine("CalypsoCad acceptance");
@@ -75,13 +75,56 @@ internal static class Program
             Console.WriteLine($"  FAIL {name}{(string.IsNullOrEmpty(detail) ? "" : ": " + detail)}");
         }
 
-        var dir = CalypsoRevGGenerator.Generate();
+        var dir = CalypsoLockGenerator.Generate();
         var cadPath = Path.Combine(dir, "calypso.cadjson");
         Check("generate calypso.cadjson", File.Exists(cadPath));
 
         var doc = System.Text.Json.JsonSerializer.Deserialize<Novolis.Cad.Primitives.CadDocument>(
             File.ReadAllText(cadPath), CadJson.Options)
             ?? throw new InvalidOperationException("Failed to deserialize calypso.cadjson");
+
+        var loa = Novolis.Ship.Primitives.ShipDocumentMetrics.GetLoaMeters(doc);
+        Check("LOA 69", Math.Abs(loa - 69f) < 0.01f, $"got {loa}");
+
+        var cabins = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
+            .Where(s => s.Name is not null && s.Name.StartsWith("CABIN_", StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.Name!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Check("five crew cabins", cabins.Count == 5, string.Join(",", cabins));
+
+        var corrP = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
+            .FirstOrDefault(s => s.Name == "CORR_P" && s.Deck == 0);
+        if (corrP?.Points is { Count: >= 4 } pts)
+        {
+            var xs = pts.Select(p => p[0]).ToList();
+            var clear = xs.Max() - xs.Min();
+            Check("CORR_P clear ≥ 2 m", clear >= 1.99f, $"got {clear:0.###}");
+        }
+        else
+        {
+            Check("CORR_P present", false);
+        }
+
+        Check("structure mass attached", Novolis.Ship.Structure.ShipStructureDocument.TryGetMass(doc, out var mass)
+                                         && mass is not null && mass.MassKg > 240_000f);
+
+        var d3 = Novolis.Ship.Primitives.ShipCad.Openings(doc)
+            .FirstOrDefault(o => o.Name is not null && o.Name.StartsWith("D3-", StringComparison.OrdinalIgnoreCase));
+        Check("D3 vacuum-assisted", d3 is not null && Novolis.Ship.Primitives.ShipCad.IsVacuumAssisted(d3!));
+
+        var topo = Novolis.Ship.Topology.ShipTopology.Analyze(doc);
+        Check("topology has spaces", topo.SpaceIds.Count > 0, $"count={topo.SpaceIds.Count}");
+        Novolis.Ship.Topology.ShipTopology.ApplySpaceFlags(doc, topo);
+
+        var validation = Novolis.Ship.Validation.ShipValidator.Validate(doc, topo);
+        var hardErrors = validation.Issues
+            .Where(i => i.Severity == Novolis.Ship.Validation.ShipValidationSeverity.Error)
+            .ToList();
+        // Orphan openings / clear-width must not fail the lock seed; report only true Errors.
+        Check("validator no errors", hardErrors.Count == 0,
+            string.Join("; ", hardErrors.Select(i => $"{i.Code}:{i.Message}")));
+
         doc.Entities.Add(new Novolis.Cad.Primitives.CadEntity
         {
             Kind = "box",
@@ -95,7 +138,7 @@ internal static class Program
         });
         File.WriteAllText(cadPath, System.Text.Json.JsonSerializer.Serialize(doc, CadJson.Options));
 
-        CalypsoRevGGenerator.Generate();
+        CalypsoLockGenerator.Generate();
         var after = System.Text.Json.JsonSerializer.Deserialize<Novolis.Cad.Primitives.CadDocument>(
             File.ReadAllText(cadPath), CadJson.Options)
             ?? throw new InvalidOperationException("Failed to deserialize after regenerate");
@@ -111,7 +154,7 @@ internal static class Program
     private static int RunHeadless(bool exportPng, bool walkthrough)
     {
         var dir = CalypsoRevGGenerator.Generate();
-        Console.WriteLine($"Wrote Calypso Rev G CAD companions to:{Environment.NewLine}{dir}");
+        Console.WriteLine($"Wrote Calypso Rev H (lock LOA 69) CAD companions to:{Environment.NewLine}{dir}");
 
         if (!exportPng && !walkthrough)
             return 0;

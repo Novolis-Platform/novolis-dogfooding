@@ -1,21 +1,22 @@
 # Calypso CAD
 
-Dogfood app that generates **Calypso** Rev G companions and explores plan / orbit / interior. **Author freighters in [Ship Designer](https://github.com/Novolis-Platform/novolis-apps)** (`d:\novolis\novolis-apps\src\ShipDesigner`) — Open/Save `.cadjson`, hatches, airtight validation. This app stays generate / headless PNG / walkthrough.
+Dogfood app that generates **Calypso** Rev H lock companions (from `docs/internals/CAL-INT-GA-001.json`) and explores plan / orbit / interior. **Author freighters in [Ship Designer](https://github.com/Novolis-Platform/novolis-apps)** (`d:\novolis\novolis-apps\src\ShipDesigner`) — Open/Save `.cadjson`, hatches, airtight validation. This app stays generate / headless PNG / walkthrough / Ship.* API dogfood.
 
 ## Canon lock
 
 | Spec | Value |
 |------|-------|
-| Hull | **65 m LOA · 20 m beam · 12 m height** |
-| Hold | **22 × 19 × 9 m** claim · geometry **~18 × 19 × 9** (STN 47→AP) · HILS-C40 **5×1×3** |
-| Engineering | **Full OAH (~12 m)** continuous machinery void (STN ≈ 38.8–47) |
-| Decks | **−1 utilities · 0 ops/crew · +1 passengers** (hab stack fwd/mid only) |
-| WT bulkheads | `wt-bh-eng` @ STN **38.8** · `wt-bh-hold` @ STN **47.0** |
-| Corridors | Twin port/stbd + cross · ClearWidth **2.0 m** · T-junctions = vestibules · PD ≥ **1.0 m** |
-| Registry | ST-7749-63325116 |
-| Source | `calypso-deckplans_revG.svg` + `calypso-three-deck-c40` packing |
+| Hull | **69 m LOA · 20 m beam · 12 m OAH** (midbody stretch; `L_fore=17` / `L_aft=4` fixed) |
+| Shell | **AISI 316L · t=8 mm** flat-plate pepakura (`Novolis.Ship.Structure` BOM/mass ~243 t skin) |
+| Hold | HILS-C40 **5×1×3** · pack length **19.692 m** · aft door **14×8.5** |
+| Engineering | Full-height atrium **8.25 m** F–A |
+| Decks | **−1 @ 0.5 · 0 @ 4.0 · +1 @ 8.0** · room clear ~3.2 m |
+| Corridors | Twin port/stbd clear **2.0 m** (inner edge ±5 from CL) |
+| Cabins | **5** discrete crew cabins on deck +1 (`CABIN_1`…`CABIN_5`) |
+| Airlocks | Port/stbd L-airlocks DK0 · D3 vacuum-assisted (pressure-assist seal) |
+| Source | `docs/internals/calypso-lock.mjs` + `CAL-INT-GA-001.json` |
 
-Out of scope for this dogfood: RevF ~90 m hull stretch, 160 m legacy, maritime PKG drawings. Full Boolean ring/sill/seal mesh remains blueprint-spec → future; openings use baseline splits + leaf geometry.
+Out of scope for this dogfood: uniform isotropic rescale (midbody stretch only), full Boolean ring/sill BREP, replacing manufacturer HTML/OBJ generators.
 
 ## Arrangement (engineering)
 

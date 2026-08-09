@@ -1,0 +1,2669 @@
+{
+  "drawing": "CAL-HULL-CAD-001",
+  "rev": "B",
+  "units": "meters",
+  "process": {
+    "construction": "faceted flat-plate weldment (pepakura)",
+    "bending": false,
+    "stock_sheet_m": [
+      2,
+      6
+    ],
+    "thickness_m": 0.008
+  },
+  "material": {
+    "designation": "AISI 316L",
+    "uns": "S31603",
+    "en": "1.4404 / X2CrNiMo17-12-2",
+    "product": "Annealed flat plate / sheet (cut to facet nets)",
+    "form": "flat only — no bending, no roll-forming",
+    "density_kg_m3": 8000,
+    "E_GPa": 193,
+    "nu": 0.29,
+    "Sy_MPa": 170,
+    "Su_MPa": 485,
+    "CTE_1e6_K": 16,
+    "melt_C": 1375,
+    "weld": {
+      "process": "GTAW / GMAW per ECSS-Q-ST-70-39 class welding (or NASA-STD-5006 analogue)",
+      "filler": "ER316L / ISO 14343 19 12 3 L",
+      "condition": "as-welded (L-grade; no PWHT required for sensitization control)",
+      "notes": "Avoid unstabilized 316 (C>0.03%). Control ferrite in deposit to limit hot cracking."
+    },
+    "space": {
+      "spacematdb": "AISI 316L — space experience: Good",
+      "vacuum": "No atmospheric corrosion in vacuum; oxide does not self-heal if abraded",
+      "coldWeld": "Risk of cold welding metal-to-metal in vacuum — separate faying surfaces / coatings at mechanisms",
+      "whyNot301": "301 is for cold-worked formed sheet; this hull is explicitly not bent",
+      "whyNotCarbon": "Carbon/HSLA needs coatings and has poor vacuum/outgas + corrosion story for long dwell",
+      "whyNotTi": "Ti-6Al-4V better specific strength but costly/slow for large flat pepakura sheet weldments",
+      "why316Lvs304L": "Both L-grades weld as-welded; 316L Mo improves ground-assembly / hangar pitting margin and is the usual structural plate pick in SPACEMATDB-class lists"
+    },
+    "stock": {
+      "sheet_m": [
+        2,
+        6
+      ],
+      "thickness_m": 0.008,
+      "thickness_mm": 8,
+      "tolerance_mm": "±0.3 plate thickness (EN 10029/ASTM A480 class; confirm PO)"
+    }
+  },
+  "coordinateSystem": {
+    "origo": [
+      0,
+      0,
+      0
+    ],
+    "pad": 0.5,
+    "axes": {
+      "X": "+forward",
+      "Y": "+starboard",
+      "Z": "+up"
+    },
+    "moldLines": {
+      "OML": "outer mold line — exterior of 316L skin",
+      "IML": "inner mold line — OML inset by t=0.008 m along section (half-extents − t; aft/stem faces ±t in X)"
+    }
+  },
+  "envelope": {
+    "LOA": 69,
+    "BEAM": 20,
+    "OAH": 12,
+    "L_FORE": 17,
+    "L_MID": 48,
+    "L_AFT": 4,
+    "CHAMFER": 2.5,
+    "PAD": 0.5,
+    "T": 0.008
+  },
+  "door": {
+    "DOOR_W": 14,
+    "DOOR_H": 8.5,
+    "SILL": 0.25,
+    "clearIsTo": "finished opening (through OML)"
+  },
+  "massProperties": {
+    "outerSkinArea_m2": 3796.055,
+    "thickness_m": 0.008,
+    "volume_m3": 30.36844,
+    "mass_kg": 242947.52,
+    "mass_t": 242.948,
+    "note": "OML loft facet area × t × density only — excludes frames, door gear, apron, coatings, fasteners",
+    "arealDensity_kg_m2": 64
+  },
+  "rings": {
+    "OML": [
+      {
+        "id": "ST0",
+        "shell": "OML",
+        "x": 69.5,
+        "zFromStem": 0,
+        "vertIds": [
+          "OML.ST0.D-P",
+          "OML.ST0.D-S",
+          "OML.ST0.S-U",
+          "OML.ST0.S-L",
+          "OML.ST0.V-S",
+          "OML.ST0.V-P",
+          "OML.ST0.P-L",
+          "OML.ST0.P-U"
+        ],
+        "halfBeam": 1.75,
+        "halfHeight": 2
+      },
+      {
+        "id": "ST1",
+        "shell": "OML",
+        "x": 66.25,
+        "zFromStem": 3.25,
+        "vertIds": [
+          "OML.ST1.D-P",
+          "OML.ST1.D-S",
+          "OML.ST1.S-U",
+          "OML.ST1.S-L",
+          "OML.ST1.V-S",
+          "OML.ST1.V-P",
+          "OML.ST1.P-L",
+          "OML.ST1.P-U"
+        ],
+        "halfBeam": 5,
+        "halfHeight": 3.75
+      },
+      {
+        "id": "ST2",
+        "shell": "OML",
+        "x": 59.5,
+        "zFromStem": 10,
+        "vertIds": [
+          "OML.ST2.D-P",
+          "OML.ST2.D-S",
+          "OML.ST2.S-U",
+          "OML.ST2.S-L",
+          "OML.ST2.V-S",
+          "OML.ST2.V-P",
+          "OML.ST2.P-L",
+          "OML.ST2.P-U"
+        ],
+        "halfBeam": 8.5,
+        "halfHeight": 5.25
+      },
+      {
+        "id": "ST3",
+        "shell": "OML",
+        "x": 52.5,
+        "zFromStem": 17,
+        "vertIds": [
+          "OML.ST3.D-P",
+          "OML.ST3.D-S",
+          "OML.ST3.S-U",
+          "OML.ST3.S-L",
+          "OML.ST3.V-S",
+          "OML.ST3.V-P",
+          "OML.ST3.P-L",
+          "OML.ST3.P-U"
+        ],
+        "halfBeam": 10,
+        "halfHeight": 6
+      },
+      {
+        "id": "MB1",
+        "shell": "OML",
+        "x": 28.5,
+        "zFromStem": 41,
+        "vertIds": [
+          "OML.MB1.D-P",
+          "OML.MB1.D-S",
+          "OML.MB1.S-U",
+          "OML.MB1.S-L",
+          "OML.MB1.V-S",
+          "OML.MB1.V-P",
+          "OML.MB1.P-L",
+          "OML.MB1.P-U"
+        ],
+        "halfBeam": 10,
+        "halfHeight": 6
+      },
+      {
+        "id": "MB2",
+        "shell": "OML",
+        "x": 4.5,
+        "zFromStem": 65,
+        "vertIds": [
+          "OML.MB2.D-P",
+          "OML.MB2.D-S",
+          "OML.MB2.S-U",
+          "OML.MB2.S-L",
+          "OML.MB2.V-S",
+          "OML.MB2.V-P",
+          "OML.MB2.P-L",
+          "OML.MB2.P-U"
+        ],
+        "halfBeam": 10,
+        "halfHeight": 6
+      },
+      {
+        "id": "AFT",
+        "shell": "OML",
+        "x": 0.5,
+        "zFromStem": 69,
+        "vertIds": [
+          "OML.AFT.D-P",
+          "OML.AFT.D-S",
+          "OML.AFT.S-U",
+          "OML.AFT.S-L",
+          "OML.AFT.V-S",
+          "OML.AFT.V-P",
+          "OML.AFT.P-L",
+          "OML.AFT.P-U"
+        ],
+        "halfBeam": 10,
+        "halfHeight": 6
+      }
+    ],
+    "IML": [
+      {
+        "id": "ST0",
+        "shell": "IML",
+        "x": 69.492,
+        "zFromStem": 0,
+        "vertIds": [
+          "IML.ST0.D-P",
+          "IML.ST0.D-S",
+          "IML.ST0.S-U",
+          "IML.ST0.S-L",
+          "IML.ST0.V-S",
+          "IML.ST0.V-P",
+          "IML.ST0.P-L",
+          "IML.ST0.P-U"
+        ],
+        "halfBeam": 1.742,
+        "halfHeight": 1.992
+      },
+      {
+        "id": "ST1",
+        "shell": "IML",
+        "x": 66.25,
+        "zFromStem": 3.25,
+        "vertIds": [
+          "IML.ST1.D-P",
+          "IML.ST1.D-S",
+          "IML.ST1.S-U",
+          "IML.ST1.S-L",
+          "IML.ST1.V-S",
+          "IML.ST1.V-P",
+          "IML.ST1.P-L",
+          "IML.ST1.P-U"
+        ],
+        "halfBeam": 4.992,
+        "halfHeight": 3.742
+      },
+      {
+        "id": "ST2",
+        "shell": "IML",
+        "x": 59.5,
+        "zFromStem": 10,
+        "vertIds": [
+          "IML.ST2.D-P",
+          "IML.ST2.D-S",
+          "IML.ST2.S-U",
+          "IML.ST2.S-L",
+          "IML.ST2.V-S",
+          "IML.ST2.V-P",
+          "IML.ST2.P-L",
+          "IML.ST2.P-U"
+        ],
+        "halfBeam": 8.492,
+        "halfHeight": 5.242
+      },
+      {
+        "id": "ST3",
+        "shell": "IML",
+        "x": 52.5,
+        "zFromStem": 17,
+        "vertIds": [
+          "IML.ST3.D-P",
+          "IML.ST3.D-S",
+          "IML.ST3.S-U",
+          "IML.ST3.S-L",
+          "IML.ST3.V-S",
+          "IML.ST3.V-P",
+          "IML.ST3.P-L",
+          "IML.ST3.P-U"
+        ],
+        "halfBeam": 9.992,
+        "halfHeight": 5.992
+      },
+      {
+        "id": "MB1",
+        "shell": "IML",
+        "x": 28.5,
+        "zFromStem": 41,
+        "vertIds": [
+          "IML.MB1.D-P",
+          "IML.MB1.D-S",
+          "IML.MB1.S-U",
+          "IML.MB1.S-L",
+          "IML.MB1.V-S",
+          "IML.MB1.V-P",
+          "IML.MB1.P-L",
+          "IML.MB1.P-U"
+        ],
+        "halfBeam": 9.992,
+        "halfHeight": 5.992
+      },
+      {
+        "id": "MB2",
+        "shell": "IML",
+        "x": 4.5,
+        "zFromStem": 65,
+        "vertIds": [
+          "IML.MB2.D-P",
+          "IML.MB2.D-S",
+          "IML.MB2.S-U",
+          "IML.MB2.S-L",
+          "IML.MB2.V-S",
+          "IML.MB2.V-P",
+          "IML.MB2.P-L",
+          "IML.MB2.P-U"
+        ],
+        "halfBeam": 9.992,
+        "halfHeight": 5.992
+      },
+      {
+        "id": "AFT",
+        "shell": "IML",
+        "x": 0.508,
+        "zFromStem": 69,
+        "vertIds": [
+          "IML.AFT.D-P",
+          "IML.AFT.D-S",
+          "IML.AFT.S-U",
+          "IML.AFT.S-L",
+          "IML.AFT.V-S",
+          "IML.AFT.V-P",
+          "IML.AFT.P-L",
+          "IML.AFT.P-U"
+        ],
+        "halfBeam": 9.992,
+        "halfHeight": 5.992
+      }
+    ]
+  },
+  "points": [
+    {
+      "id": "O",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "group": "origo",
+      "note": "ventral-aft-port outside AABB"
+    },
+    {
+      "id": "OML.ST0.D-P",
+      "x": 69.5,
+      "y": 9.188,
+      "z": 8.5,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.D-S",
+      "x": 69.5,
+      "y": 11.813,
+      "z": 8.5,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.S-U",
+      "x": 69.5,
+      "y": 12.25,
+      "z": 7.667,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.S-L",
+      "x": 69.5,
+      "y": 12.25,
+      "z": 5.333,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.V-S",
+      "x": 69.5,
+      "y": 11.813,
+      "z": 4.5,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.V-P",
+      "x": 69.5,
+      "y": 9.188,
+      "z": 4.5,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.P-L",
+      "x": 69.5,
+      "y": 8.75,
+      "z": 5.333,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST0.P-U",
+      "x": 69.5,
+      "y": 8.75,
+      "z": 7.667,
+      "group": "oml",
+      "note": "stem OML"
+    },
+    {
+      "id": "OML.ST1.D-P",
+      "x": 66.25,
+      "y": 6.75,
+      "z": 10.25,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.D-S",
+      "x": 66.25,
+      "y": 14.25,
+      "z": 10.25,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.S-U",
+      "x": 66.25,
+      "y": 15.5,
+      "z": 8.688,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.S-L",
+      "x": 66.25,
+      "y": 15.5,
+      "z": 4.313,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.V-S",
+      "x": 66.25,
+      "y": 14.25,
+      "z": 2.75,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.V-P",
+      "x": 66.25,
+      "y": 6.75,
+      "z": 2.75,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.P-L",
+      "x": 66.25,
+      "y": 5.5,
+      "z": 4.313,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST1.P-U",
+      "x": 66.25,
+      "y": 5.5,
+      "z": 8.688,
+      "group": "oml",
+      "note": "fore-1 OML"
+    },
+    {
+      "id": "OML.ST2.D-P",
+      "x": 59.5,
+      "y": 4.125,
+      "z": 11.75,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.D-S",
+      "x": 59.5,
+      "y": 16.875,
+      "z": 11.75,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.S-U",
+      "x": 59.5,
+      "y": 19,
+      "z": 9.563,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.S-L",
+      "x": 59.5,
+      "y": 19,
+      "z": 3.438,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.V-S",
+      "x": 59.5,
+      "y": 16.875,
+      "z": 1.25,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.V-P",
+      "x": 59.5,
+      "y": 4.125,
+      "z": 1.25,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.P-L",
+      "x": 59.5,
+      "y": 2,
+      "z": 3.438,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST2.P-U",
+      "x": 59.5,
+      "y": 2,
+      "z": 9.563,
+      "group": "oml",
+      "note": "fore-2 OML"
+    },
+    {
+      "id": "OML.ST3.D-P",
+      "x": 52.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.D-S",
+      "x": 52.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.S-U",
+      "x": 52.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.S-L",
+      "x": 52.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.V-S",
+      "x": 52.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.V-P",
+      "x": 52.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.P-L",
+      "x": 52.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.ST3.P-U",
+      "x": 52.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "oml",
+      "note": "shoulder OML"
+    },
+    {
+      "id": "OML.MB1.D-P",
+      "x": 28.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.D-S",
+      "x": 28.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.S-U",
+      "x": 28.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.S-L",
+      "x": 28.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.V-S",
+      "x": 28.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.V-P",
+      "x": 28.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.P-L",
+      "x": 28.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB1.P-U",
+      "x": 28.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "oml",
+      "note": "MB1 OML"
+    },
+    {
+      "id": "OML.MB2.D-P",
+      "x": 4.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.D-S",
+      "x": 4.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.S-U",
+      "x": 4.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.S-L",
+      "x": 4.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.V-S",
+      "x": 4.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.V-P",
+      "x": 4.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.P-L",
+      "x": 4.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.MB2.P-U",
+      "x": 4.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "oml",
+      "note": "MB2 OML"
+    },
+    {
+      "id": "OML.AFT.D-P",
+      "x": 0.5,
+      "y": 3,
+      "z": 12.5,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.D-S",
+      "x": 0.5,
+      "y": 18,
+      "z": 12.5,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.S-U",
+      "x": 0.5,
+      "y": 20.5,
+      "z": 10,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.S-L",
+      "x": 0.5,
+      "y": 20.5,
+      "z": 3,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.V-S",
+      "x": 0.5,
+      "y": 18,
+      "z": 0.5,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.V-P",
+      "x": 0.5,
+      "y": 3,
+      "z": 0.5,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.P-L",
+      "x": 0.5,
+      "y": 0.5,
+      "z": 3,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "OML.AFT.P-U",
+      "x": 0.5,
+      "y": 0.5,
+      "z": 10,
+      "group": "oml",
+      "note": "AFT OML"
+    },
+    {
+      "id": "IML.ST0.D-P",
+      "x": 69.492,
+      "y": 9.192,
+      "z": 8.492,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.D-S",
+      "x": 69.492,
+      "y": 11.808,
+      "z": 8.492,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.S-U",
+      "x": 69.492,
+      "y": 12.242,
+      "z": 7.665,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.S-L",
+      "x": 69.492,
+      "y": 12.242,
+      "z": 5.335,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.V-S",
+      "x": 69.492,
+      "y": 11.808,
+      "z": 4.508,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.V-P",
+      "x": 69.492,
+      "y": 9.192,
+      "z": 4.508,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.P-L",
+      "x": 69.492,
+      "y": 8.758,
+      "z": 5.335,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST0.P-U",
+      "x": 69.492,
+      "y": 8.758,
+      "z": 7.665,
+      "group": "iml",
+      "note": "stem IML"
+    },
+    {
+      "id": "IML.ST1.D-P",
+      "x": 66.25,
+      "y": 6.752,
+      "z": 10.242,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.D-S",
+      "x": 66.25,
+      "y": 14.248,
+      "z": 10.242,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.S-U",
+      "x": 66.25,
+      "y": 15.492,
+      "z": 8.688,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.S-L",
+      "x": 66.25,
+      "y": 15.492,
+      "z": 4.312,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.V-S",
+      "x": 66.25,
+      "y": 14.248,
+      "z": 2.758,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.V-P",
+      "x": 66.25,
+      "y": 6.752,
+      "z": 2.758,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.P-L",
+      "x": 66.25,
+      "y": 5.508,
+      "z": 4.312,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST1.P-U",
+      "x": 66.25,
+      "y": 5.508,
+      "z": 8.688,
+      "group": "iml",
+      "note": "fore-1 IML"
+    },
+    {
+      "id": "IML.ST2.D-P",
+      "x": 59.5,
+      "y": 4.124,
+      "z": 11.742,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.D-S",
+      "x": 59.5,
+      "y": 16.876,
+      "z": 11.742,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.S-U",
+      "x": 59.5,
+      "y": 18.992,
+      "z": 9.565,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.S-L",
+      "x": 59.5,
+      "y": 18.992,
+      "z": 3.435,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.V-S",
+      "x": 59.5,
+      "y": 16.876,
+      "z": 1.258,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.V-P",
+      "x": 59.5,
+      "y": 4.124,
+      "z": 1.258,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.P-L",
+      "x": 59.5,
+      "y": 2.008,
+      "z": 3.435,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST2.P-U",
+      "x": 59.5,
+      "y": 2.008,
+      "z": 9.565,
+      "group": "iml",
+      "note": "fore-2 IML"
+    },
+    {
+      "id": "IML.ST3.D-P",
+      "x": 52.5,
+      "y": 2.998,
+      "z": 12.492,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.D-S",
+      "x": 52.5,
+      "y": 18.002,
+      "z": 12.492,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.S-U",
+      "x": 52.5,
+      "y": 20.492,
+      "z": 10.003,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.S-L",
+      "x": 52.5,
+      "y": 20.492,
+      "z": 2.997,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.V-S",
+      "x": 52.5,
+      "y": 18.002,
+      "z": 0.508,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.V-P",
+      "x": 52.5,
+      "y": 2.998,
+      "z": 0.508,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.P-L",
+      "x": 52.5,
+      "y": 0.508,
+      "z": 2.997,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.ST3.P-U",
+      "x": 52.5,
+      "y": 0.508,
+      "z": 10.003,
+      "group": "iml",
+      "note": "shoulder IML"
+    },
+    {
+      "id": "IML.MB1.D-P",
+      "x": 28.5,
+      "y": 2.998,
+      "z": 12.492,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.D-S",
+      "x": 28.5,
+      "y": 18.002,
+      "z": 12.492,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.S-U",
+      "x": 28.5,
+      "y": 20.492,
+      "z": 10.003,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.S-L",
+      "x": 28.5,
+      "y": 20.492,
+      "z": 2.997,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.V-S",
+      "x": 28.5,
+      "y": 18.002,
+      "z": 0.508,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.V-P",
+      "x": 28.5,
+      "y": 2.998,
+      "z": 0.508,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.P-L",
+      "x": 28.5,
+      "y": 0.508,
+      "z": 2.997,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB1.P-U",
+      "x": 28.5,
+      "y": 0.508,
+      "z": 10.003,
+      "group": "iml",
+      "note": "MB1 IML"
+    },
+    {
+      "id": "IML.MB2.D-P",
+      "x": 4.5,
+      "y": 2.998,
+      "z": 12.492,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.D-S",
+      "x": 4.5,
+      "y": 18.002,
+      "z": 12.492,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.S-U",
+      "x": 4.5,
+      "y": 20.492,
+      "z": 10.003,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.S-L",
+      "x": 4.5,
+      "y": 20.492,
+      "z": 2.997,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.V-S",
+      "x": 4.5,
+      "y": 18.002,
+      "z": 0.508,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.V-P",
+      "x": 4.5,
+      "y": 2.998,
+      "z": 0.508,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.P-L",
+      "x": 4.5,
+      "y": 0.508,
+      "z": 2.997,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.MB2.P-U",
+      "x": 4.5,
+      "y": 0.508,
+      "z": 10.003,
+      "group": "iml",
+      "note": "MB2 IML"
+    },
+    {
+      "id": "IML.AFT.D-P",
+      "x": 0.508,
+      "y": 2.998,
+      "z": 12.492,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.D-S",
+      "x": 0.508,
+      "y": 18.002,
+      "z": 12.492,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.S-U",
+      "x": 0.508,
+      "y": 20.492,
+      "z": 10.003,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.S-L",
+      "x": 0.508,
+      "y": 20.492,
+      "z": 2.997,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.V-S",
+      "x": 0.508,
+      "y": 18.002,
+      "z": 0.508,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.V-P",
+      "x": 0.508,
+      "y": 2.998,
+      "z": 0.508,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.P-L",
+      "x": 0.508,
+      "y": 0.508,
+      "z": 2.997,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "IML.AFT.P-U",
+      "x": 0.508,
+      "y": 0.508,
+      "z": 10.003,
+      "group": "iml",
+      "note": "AFT IML"
+    },
+    {
+      "id": "OML.DOOR.P-V",
+      "x": 0.5,
+      "y": 3.5,
+      "z": 0.75,
+      "group": "door",
+      "note": "OML door clear"
+    },
+    {
+      "id": "OML.DOOR.S-V",
+      "x": 0.5,
+      "y": 17.5,
+      "z": 0.75,
+      "group": "door",
+      "note": "OML door clear"
+    },
+    {
+      "id": "OML.DOOR.S-D",
+      "x": 0.5,
+      "y": 17.5,
+      "z": 9.25,
+      "group": "door",
+      "note": "OML door clear"
+    },
+    {
+      "id": "OML.DOOR.P-D",
+      "x": 0.5,
+      "y": 3.5,
+      "z": 9.25,
+      "group": "door",
+      "note": "OML door clear"
+    },
+    {
+      "id": "IML.DOOR.P-V",
+      "x": 0.508,
+      "y": 3.5,
+      "z": 0.75,
+      "group": "door",
+      "note": "IML door clear"
+    },
+    {
+      "id": "IML.DOOR.S-V",
+      "x": 0.508,
+      "y": 17.5,
+      "z": 0.75,
+      "group": "door",
+      "note": "IML door clear"
+    },
+    {
+      "id": "IML.DOOR.S-D",
+      "x": 0.508,
+      "y": 17.5,
+      "z": 9.25,
+      "group": "door",
+      "note": "IML door clear"
+    },
+    {
+      "id": "IML.DOOR.P-D",
+      "x": 0.508,
+      "y": 3.5,
+      "z": 9.25,
+      "group": "door",
+      "note": "IML door clear"
+    }
+  ],
+  "edges": [
+    {
+      "a": "OML.ST0.D-P",
+      "b": "OML.ST0.D-S",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.D-S",
+      "b": "OML.ST0.S-U",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.S-U",
+      "b": "OML.ST0.S-L",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.S-L",
+      "b": "OML.ST0.V-S",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.V-S",
+      "b": "OML.ST0.V-P",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.V-P",
+      "b": "OML.ST0.P-L",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.P-L",
+      "b": "OML.ST0.P-U",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST0.P-U",
+      "b": "OML.ST0.D-P",
+      "group": "oml-ring:ST0"
+    },
+    {
+      "a": "OML.ST1.D-P",
+      "b": "OML.ST1.D-S",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.D-S",
+      "b": "OML.ST1.S-U",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.S-U",
+      "b": "OML.ST1.S-L",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.S-L",
+      "b": "OML.ST1.V-S",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.V-S",
+      "b": "OML.ST1.V-P",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.V-P",
+      "b": "OML.ST1.P-L",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.P-L",
+      "b": "OML.ST1.P-U",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST1.P-U",
+      "b": "OML.ST1.D-P",
+      "group": "oml-ring:ST1"
+    },
+    {
+      "a": "OML.ST2.D-P",
+      "b": "OML.ST2.D-S",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.D-S",
+      "b": "OML.ST2.S-U",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.S-U",
+      "b": "OML.ST2.S-L",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.S-L",
+      "b": "OML.ST2.V-S",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.V-S",
+      "b": "OML.ST2.V-P",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.V-P",
+      "b": "OML.ST2.P-L",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.P-L",
+      "b": "OML.ST2.P-U",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST2.P-U",
+      "b": "OML.ST2.D-P",
+      "group": "oml-ring:ST2"
+    },
+    {
+      "a": "OML.ST3.D-P",
+      "b": "OML.ST3.D-S",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.D-S",
+      "b": "OML.ST3.S-U",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.S-U",
+      "b": "OML.ST3.S-L",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.S-L",
+      "b": "OML.ST3.V-S",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.V-S",
+      "b": "OML.ST3.V-P",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.V-P",
+      "b": "OML.ST3.P-L",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.P-L",
+      "b": "OML.ST3.P-U",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.ST3.P-U",
+      "b": "OML.ST3.D-P",
+      "group": "oml-ring:ST3"
+    },
+    {
+      "a": "OML.MB1.D-P",
+      "b": "OML.MB1.D-S",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.D-S",
+      "b": "OML.MB1.S-U",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.S-U",
+      "b": "OML.MB1.S-L",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.S-L",
+      "b": "OML.MB1.V-S",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.V-S",
+      "b": "OML.MB1.V-P",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.V-P",
+      "b": "OML.MB1.P-L",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.P-L",
+      "b": "OML.MB1.P-U",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB1.P-U",
+      "b": "OML.MB1.D-P",
+      "group": "oml-ring:MB1"
+    },
+    {
+      "a": "OML.MB2.D-P",
+      "b": "OML.MB2.D-S",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.D-S",
+      "b": "OML.MB2.S-U",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.S-U",
+      "b": "OML.MB2.S-L",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.S-L",
+      "b": "OML.MB2.V-S",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.V-S",
+      "b": "OML.MB2.V-P",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.V-P",
+      "b": "OML.MB2.P-L",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.P-L",
+      "b": "OML.MB2.P-U",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.MB2.P-U",
+      "b": "OML.MB2.D-P",
+      "group": "oml-ring:MB2"
+    },
+    {
+      "a": "OML.AFT.D-P",
+      "b": "OML.AFT.D-S",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.D-S",
+      "b": "OML.AFT.S-U",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.S-U",
+      "b": "OML.AFT.S-L",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.S-L",
+      "b": "OML.AFT.V-S",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.V-S",
+      "b": "OML.AFT.V-P",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.V-P",
+      "b": "OML.AFT.P-L",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.P-L",
+      "b": "OML.AFT.P-U",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.AFT.P-U",
+      "b": "OML.AFT.D-P",
+      "group": "oml-ring:AFT"
+    },
+    {
+      "a": "OML.ST0.D-P",
+      "b": "OML.ST1.D-P",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.D-S",
+      "b": "OML.ST1.D-S",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.S-U",
+      "b": "OML.ST1.S-U",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.S-L",
+      "b": "OML.ST1.S-L",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.V-S",
+      "b": "OML.ST1.V-S",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.V-P",
+      "b": "OML.ST1.V-P",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.P-L",
+      "b": "OML.ST1.P-L",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST0.P-U",
+      "b": "OML.ST1.P-U",
+      "group": "oml-loft:ST0->ST1"
+    },
+    {
+      "a": "OML.ST1.D-P",
+      "b": "OML.ST2.D-P",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.D-S",
+      "b": "OML.ST2.D-S",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.S-U",
+      "b": "OML.ST2.S-U",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.S-L",
+      "b": "OML.ST2.S-L",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.V-S",
+      "b": "OML.ST2.V-S",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.V-P",
+      "b": "OML.ST2.V-P",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.P-L",
+      "b": "OML.ST2.P-L",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST1.P-U",
+      "b": "OML.ST2.P-U",
+      "group": "oml-loft:ST1->ST2"
+    },
+    {
+      "a": "OML.ST2.D-P",
+      "b": "OML.ST3.D-P",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.D-S",
+      "b": "OML.ST3.D-S",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.S-U",
+      "b": "OML.ST3.S-U",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.S-L",
+      "b": "OML.ST3.S-L",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.V-S",
+      "b": "OML.ST3.V-S",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.V-P",
+      "b": "OML.ST3.V-P",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.P-L",
+      "b": "OML.ST3.P-L",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST2.P-U",
+      "b": "OML.ST3.P-U",
+      "group": "oml-loft:ST2->ST3"
+    },
+    {
+      "a": "OML.ST3.D-P",
+      "b": "OML.MB1.D-P",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.D-S",
+      "b": "OML.MB1.D-S",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.S-U",
+      "b": "OML.MB1.S-U",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.S-L",
+      "b": "OML.MB1.S-L",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.V-S",
+      "b": "OML.MB1.V-S",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.V-P",
+      "b": "OML.MB1.V-P",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.P-L",
+      "b": "OML.MB1.P-L",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.ST3.P-U",
+      "b": "OML.MB1.P-U",
+      "group": "oml-loft:ST3->MB1"
+    },
+    {
+      "a": "OML.MB1.D-P",
+      "b": "OML.MB2.D-P",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.D-S",
+      "b": "OML.MB2.D-S",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.S-U",
+      "b": "OML.MB2.S-U",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.S-L",
+      "b": "OML.MB2.S-L",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.V-S",
+      "b": "OML.MB2.V-S",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.V-P",
+      "b": "OML.MB2.V-P",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.P-L",
+      "b": "OML.MB2.P-L",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB1.P-U",
+      "b": "OML.MB2.P-U",
+      "group": "oml-loft:MB1->MB2"
+    },
+    {
+      "a": "OML.MB2.D-P",
+      "b": "OML.AFT.D-P",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.D-S",
+      "b": "OML.AFT.D-S",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.S-U",
+      "b": "OML.AFT.S-U",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.S-L",
+      "b": "OML.AFT.S-L",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.V-S",
+      "b": "OML.AFT.V-S",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.V-P",
+      "b": "OML.AFT.V-P",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.P-L",
+      "b": "OML.AFT.P-L",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.MB2.P-U",
+      "b": "OML.AFT.P-U",
+      "group": "oml-loft:MB2->AFT"
+    },
+    {
+      "a": "OML.ST0.D-P",
+      "b": "IML.ST0.D-P",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.D-S",
+      "b": "IML.ST0.D-S",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.S-U",
+      "b": "IML.ST0.S-U",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.S-L",
+      "b": "IML.ST0.S-L",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.V-S",
+      "b": "IML.ST0.V-S",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.V-P",
+      "b": "IML.ST0.V-P",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.P-L",
+      "b": "IML.ST0.P-L",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST0.P-U",
+      "b": "IML.ST0.P-U",
+      "group": "thickness:ST0"
+    },
+    {
+      "a": "OML.ST1.D-P",
+      "b": "IML.ST1.D-P",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.D-S",
+      "b": "IML.ST1.D-S",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.S-U",
+      "b": "IML.ST1.S-U",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.S-L",
+      "b": "IML.ST1.S-L",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.V-S",
+      "b": "IML.ST1.V-S",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.V-P",
+      "b": "IML.ST1.V-P",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.P-L",
+      "b": "IML.ST1.P-L",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST1.P-U",
+      "b": "IML.ST1.P-U",
+      "group": "thickness:ST1"
+    },
+    {
+      "a": "OML.ST2.D-P",
+      "b": "IML.ST2.D-P",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.D-S",
+      "b": "IML.ST2.D-S",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.S-U",
+      "b": "IML.ST2.S-U",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.S-L",
+      "b": "IML.ST2.S-L",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.V-S",
+      "b": "IML.ST2.V-S",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.V-P",
+      "b": "IML.ST2.V-P",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.P-L",
+      "b": "IML.ST2.P-L",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST2.P-U",
+      "b": "IML.ST2.P-U",
+      "group": "thickness:ST2"
+    },
+    {
+      "a": "OML.ST3.D-P",
+      "b": "IML.ST3.D-P",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.D-S",
+      "b": "IML.ST3.D-S",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.S-U",
+      "b": "IML.ST3.S-U",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.S-L",
+      "b": "IML.ST3.S-L",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.V-S",
+      "b": "IML.ST3.V-S",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.V-P",
+      "b": "IML.ST3.V-P",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.P-L",
+      "b": "IML.ST3.P-L",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.ST3.P-U",
+      "b": "IML.ST3.P-U",
+      "group": "thickness:ST3"
+    },
+    {
+      "a": "OML.MB1.D-P",
+      "b": "IML.MB1.D-P",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.D-S",
+      "b": "IML.MB1.D-S",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.S-U",
+      "b": "IML.MB1.S-U",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.S-L",
+      "b": "IML.MB1.S-L",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.V-S",
+      "b": "IML.MB1.V-S",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.V-P",
+      "b": "IML.MB1.V-P",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.P-L",
+      "b": "IML.MB1.P-L",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB1.P-U",
+      "b": "IML.MB1.P-U",
+      "group": "thickness:MB1"
+    },
+    {
+      "a": "OML.MB2.D-P",
+      "b": "IML.MB2.D-P",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.D-S",
+      "b": "IML.MB2.D-S",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.S-U",
+      "b": "IML.MB2.S-U",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.S-L",
+      "b": "IML.MB2.S-L",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.V-S",
+      "b": "IML.MB2.V-S",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.V-P",
+      "b": "IML.MB2.V-P",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.P-L",
+      "b": "IML.MB2.P-L",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.MB2.P-U",
+      "b": "IML.MB2.P-U",
+      "group": "thickness:MB2"
+    },
+    {
+      "a": "OML.AFT.D-P",
+      "b": "IML.AFT.D-P",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.D-S",
+      "b": "IML.AFT.D-S",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.S-U",
+      "b": "IML.AFT.S-U",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.S-L",
+      "b": "IML.AFT.S-L",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.V-S",
+      "b": "IML.AFT.V-S",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.V-P",
+      "b": "IML.AFT.V-P",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.P-L",
+      "b": "IML.AFT.P-L",
+      "group": "thickness:AFT"
+    },
+    {
+      "a": "OML.AFT.P-U",
+      "b": "IML.AFT.P-U",
+      "group": "thickness:AFT"
+    }
+  ],
+  "faces": [
+    {
+      "id": "OML.F.ST0.D-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.D-P",
+        "OML.ST0.D-S",
+        "OML.ST1.D-S",
+        "OML.ST1.D-P"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.D-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.D-S",
+        "OML.ST0.S-U",
+        "OML.ST1.S-U",
+        "OML.ST1.D-S"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.S-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.S-U",
+        "OML.ST0.S-L",
+        "OML.ST1.S-L",
+        "OML.ST1.S-U"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.S-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.S-L",
+        "OML.ST0.V-S",
+        "OML.ST1.V-S",
+        "OML.ST1.S-L"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.V-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.V-S",
+        "OML.ST0.V-P",
+        "OML.ST1.V-P",
+        "OML.ST1.V-S"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.V-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.V-P",
+        "OML.ST0.P-L",
+        "OML.ST1.P-L",
+        "OML.ST1.V-P"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.P-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.P-L",
+        "OML.ST0.P-U",
+        "OML.ST1.P-U",
+        "OML.ST1.P-L"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST0.P-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST0.P-U",
+        "OML.ST0.D-P",
+        "OML.ST1.D-P",
+        "OML.ST1.P-U"
+      ],
+      "group": "loft:ST0->ST1"
+    },
+    {
+      "id": "OML.F.ST1.D-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.D-P",
+        "OML.ST1.D-S",
+        "OML.ST2.D-S",
+        "OML.ST2.D-P"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.D-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.D-S",
+        "OML.ST1.S-U",
+        "OML.ST2.S-U",
+        "OML.ST2.D-S"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.S-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.S-U",
+        "OML.ST1.S-L",
+        "OML.ST2.S-L",
+        "OML.ST2.S-U"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.S-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.S-L",
+        "OML.ST1.V-S",
+        "OML.ST2.V-S",
+        "OML.ST2.S-L"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.V-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.V-S",
+        "OML.ST1.V-P",
+        "OML.ST2.V-P",
+        "OML.ST2.V-S"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.V-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.V-P",
+        "OML.ST1.P-L",
+        "OML.ST2.P-L",
+        "OML.ST2.V-P"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.P-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.P-L",
+        "OML.ST1.P-U",
+        "OML.ST2.P-U",
+        "OML.ST2.P-L"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST1.P-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST1.P-U",
+        "OML.ST1.D-P",
+        "OML.ST2.D-P",
+        "OML.ST2.P-U"
+      ],
+      "group": "loft:ST1->ST2"
+    },
+    {
+      "id": "OML.F.ST2.D-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.D-P",
+        "OML.ST2.D-S",
+        "OML.ST3.D-S",
+        "OML.ST3.D-P"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.D-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.D-S",
+        "OML.ST2.S-U",
+        "OML.ST3.S-U",
+        "OML.ST3.D-S"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.S-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.S-U",
+        "OML.ST2.S-L",
+        "OML.ST3.S-L",
+        "OML.ST3.S-U"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.S-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.S-L",
+        "OML.ST2.V-S",
+        "OML.ST3.V-S",
+        "OML.ST3.S-L"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.V-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.V-S",
+        "OML.ST2.V-P",
+        "OML.ST3.V-P",
+        "OML.ST3.V-S"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.V-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.V-P",
+        "OML.ST2.P-L",
+        "OML.ST3.P-L",
+        "OML.ST3.V-P"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.P-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.P-L",
+        "OML.ST2.P-U",
+        "OML.ST3.P-U",
+        "OML.ST3.P-L"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST2.P-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST2.P-U",
+        "OML.ST2.D-P",
+        "OML.ST3.D-P",
+        "OML.ST3.P-U"
+      ],
+      "group": "loft:ST2->ST3"
+    },
+    {
+      "id": "OML.F.ST3.D-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.D-P",
+        "OML.ST3.D-S",
+        "OML.MB1.D-S",
+        "OML.MB1.D-P"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.D-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.D-S",
+        "OML.ST3.S-U",
+        "OML.MB1.S-U",
+        "OML.MB1.D-S"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.S-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.S-U",
+        "OML.ST3.S-L",
+        "OML.MB1.S-L",
+        "OML.MB1.S-U"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.S-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.S-L",
+        "OML.ST3.V-S",
+        "OML.MB1.V-S",
+        "OML.MB1.S-L"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.V-S",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.V-S",
+        "OML.ST3.V-P",
+        "OML.MB1.V-P",
+        "OML.MB1.V-S"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.V-P",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.V-P",
+        "OML.ST3.P-L",
+        "OML.MB1.P-L",
+        "OML.MB1.V-P"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.P-L",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.P-L",
+        "OML.ST3.P-U",
+        "OML.MB1.P-U",
+        "OML.MB1.P-L"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.ST3.P-U",
+      "shell": "OML",
+      "verts": [
+        "OML.ST3.P-U",
+        "OML.ST3.D-P",
+        "OML.MB1.D-P",
+        "OML.MB1.P-U"
+      ],
+      "group": "loft:ST3->MB1"
+    },
+    {
+      "id": "OML.F.MB1.D-P",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.D-P",
+        "OML.MB1.D-S",
+        "OML.MB2.D-S",
+        "OML.MB2.D-P"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.D-S",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.D-S",
+        "OML.MB1.S-U",
+        "OML.MB2.S-U",
+        "OML.MB2.D-S"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.S-U",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.S-U",
+        "OML.MB1.S-L",
+        "OML.MB2.S-L",
+        "OML.MB2.S-U"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.S-L",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.S-L",
+        "OML.MB1.V-S",
+        "OML.MB2.V-S",
+        "OML.MB2.S-L"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.V-S",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.V-S",
+        "OML.MB1.V-P",
+        "OML.MB2.V-P",
+        "OML.MB2.V-S"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.V-P",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.V-P",
+        "OML.MB1.P-L",
+        "OML.MB2.P-L",
+        "OML.MB2.V-P"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.P-L",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.P-L",
+        "OML.MB1.P-U",
+        "OML.MB2.P-U",
+        "OML.MB2.P-L"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB1.P-U",
+      "shell": "OML",
+      "verts": [
+        "OML.MB1.P-U",
+        "OML.MB1.D-P",
+        "OML.MB2.D-P",
+        "OML.MB2.P-U"
+      ],
+      "group": "loft:MB1->MB2"
+    },
+    {
+      "id": "OML.F.MB2.D-P",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.D-P",
+        "OML.MB2.D-S",
+        "OML.AFT.D-S",
+        "OML.AFT.D-P"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.D-S",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.D-S",
+        "OML.MB2.S-U",
+        "OML.AFT.S-U",
+        "OML.AFT.D-S"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.S-U",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.S-U",
+        "OML.MB2.S-L",
+        "OML.AFT.S-L",
+        "OML.AFT.S-U"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.S-L",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.S-L",
+        "OML.MB2.V-S",
+        "OML.AFT.V-S",
+        "OML.AFT.S-L"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.V-S",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.V-S",
+        "OML.MB2.V-P",
+        "OML.AFT.V-P",
+        "OML.AFT.V-S"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.V-P",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.V-P",
+        "OML.MB2.P-L",
+        "OML.AFT.P-L",
+        "OML.AFT.V-P"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.P-L",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.P-L",
+        "OML.MB2.P-U",
+        "OML.AFT.P-U",
+        "OML.AFT.P-L"
+      ],
+      "group": "loft:MB2->AFT"
+    },
+    {
+      "id": "OML.F.MB2.P-U",
+      "shell": "OML",
+      "verts": [
+        "OML.MB2.P-U",
+        "OML.MB2.D-P",
+        "OML.AFT.D-P",
+        "OML.AFT.P-U"
+      ],
+      "group": "loft:MB2->AFT"
+    }
+  ],
+  "doorVerts": {
+    "OML": [
+      "OML.DOOR.P-V",
+      "OML.DOOR.S-V",
+      "OML.DOOR.S-D",
+      "OML.DOOR.P-D"
+    ],
+    "IML": [
+      "IML.DOOR.P-V",
+      "IML.DOOR.S-V",
+      "IML.DOOR.S-D",
+      "IML.DOOR.P-D"
+    ]
+  }
+}

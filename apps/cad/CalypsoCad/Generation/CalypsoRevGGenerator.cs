@@ -86,37 +86,8 @@ internal static class CalypsoRevGGenerator
     public static string DefaultOutputDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Novolis", "CalypsoCad", "generated");
 
-    public static string Generate(string? outputDirectory = null)
-    {
-        var dir = outputDirectory ?? DefaultOutputDirectory;
-        var stamp = DateTime.UtcNow.ToString("o");
-        // Hand-authored exterior solids/meshes (Draft Studio / Cad Studio Save) survive regenerate.
-        List<CadEntity>? preservedExterior = null;
-        var existingCad = Path.Combine(dir, "calypso.cadjson");
-        if (File.Exists(existingCad))
-        {
-            try
-            {
-                var prev = JsonSerializer.Deserialize<CadDocument>(File.ReadAllText(existingCad), CadJson.Options);
-                preservedExterior = prev?.Entities
-                    .Where(Novolis.Avalonia.Cad.Ship.Services.CadShipExterior.IsPreservedExterior)
-                    .Select(CloneEntity)
-                    .ToList();
-            }
-            catch
-            {
-                // Corrupt prior file — regenerate decks only.
-            }
-        }
-
-        var layers = BuildLayers(stamp);
-        var shapes = BuildShapes(stamp);
-        var cad = BuildCad(stamp);
-        if (preservedExterior is { Count: > 0 })
-            cad.Entities.AddRange(preservedExterior);
-        CadDocumentStore.WriteAll(dir, layers, shapes, cad);
-        return dir;
-    }
+    public static string Generate(string? outputDirectory = null) =>
+        CalypsoLockGenerator.Generate(outputDirectory);
 
     private static CadLayersDocument BuildLayers(string stamp) => new()
     {
