@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>CalypsoInternalsCad</RootNamespace>
+    <ApplicationTitle>Calypso Internals CAD</ApplicationTitle>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <!-- Lock → CAD SoT lives in CalypsoCad; this app owns CAD + 3D export / view for the internals pack. -->
+  <ItemGroup>
+    <Compile Include="..\CalypsoCad\Generation\CalypsoLockGenerator.cs" Link="Generation\CalypsoLockGenerator.cs" />
+    <Compile Include="..\CalypsoCad\Models\CadModels.cs" Link="Models\CadModels.cs" />
+    <Compile Include="..\CalypsoCad\Services\CadDocumentStore.cs" Link="Services\CadDocumentStore.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Novolis.Avalonia.Cad.Ship" />
+    <PackageReference Include="Novolis.Cad.Primitives" />
+    <PackageReference Include="Novolis.Cad.SceneBridge" />
+    <PackageReference Include="Novolis.Math.Geometry" />
+    <PackageReference Include="Novolis.Raylib" />
+    <PackageReference Include="Novolis.Raylib.Bindings" />
+    <PackageReference Include="Novolis.Raylib.Runtime" />
+    <PackageReference Include="Novolis.Ship.Primitives" />
+    <PackageReference Include="Novolis.Ship.Structure" />
+    <PackageReference Include="Novolis.Ship.Topology" />
+    <PackageReference Include="Novolis.Ship.Validation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\CalypsoCad\docs\internals\CAL-INT-GA-001.json" Link="lock\CAL-INT-GA-001.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\CalypsoCad\docs\manufacturer\CAL-HULL-CAD-001.json" Link="lock\CAL-HULL-CAD-001.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

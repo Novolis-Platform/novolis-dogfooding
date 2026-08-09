@@ -93,34 +93,41 @@ internal static class HeadlessWalkthroughExporter
                     CaptureFrame(renderer, capture, framesDir, ref frameIndex, frames);
                 }
 
-                // --- Act 2: cutaway orbit ---
+                // --- Act 2: cutaway orbit (slide invisible plane along beam) ---
                 session.WireMeshMode = CalypsoWireMeshMode.CutawayPartial;
-                const int cutFrames = 28;
+                session.CutPlaneLongitudinal = true;
+                session.CutPlaneUserDriven = true;
+                const int cutFrames = 36;
                 for (var i = 0; i < cutFrames; i++)
                 {
                     var t = i / (float)(cutFrames - 1);
+                    session.CutPlaneOffset = -8f + t * 16f;
                     var yaw = MathF.PI * 0.45f + t * 0.55f;
                     renderer.SetOrbitPose(new Vector3(0f, 4f, 0f), 82f, yaw, 0.28f);
-                    session.StatusText = $"walkthrough:cutaway:{i + 1}/{cutFrames}";
+                    session.StatusText = $"walkthrough:cutaway:{i + 1}/{cutFrames} off={session.CutPlaneOffset:0.0}";
                     CaptureFrame(renderer, capture, framesDir, ref frameIndex, frames);
                 }
 
-                // --- Act 3: interior rooms ---
+                session.CutPlaneOffset = 0f;
+                session.CutPlaneUserDriven = false;
+
+                // --- Act 3: interior rooms (CAL-INT-DK-001 Rev F names) ---
                 session.WireMeshMode = CalypsoWireMeshMode.None;
                 foreach (var (spaceName, deckHint, steps) in new (string, int?, int)[]
                          {
-                             ("Bridge", 0, 10),
-                             ("Crossing Hallway", 0, 14),
-                             ("Port Corridor", 0, 14),
-                             ("Galley", 0, 8),
-                             ("Engineering", -1, 12),
-                             ("Cargo Void", -1, 14),
+                             ("BRIDGE", 0, 10),
+                             ("CROSSING", 0, 14),
+                             ("CORR_P", 0, 14),
+                             ("GALLEY", 0, 8),
+                             ("ENG", 0, 12),
+                             ("HOLD", 0, 14),
+                             ("CREW_1", 0, 8),
+                             ("PAX_1", 1, 8),
                          })
                 {
                     var space = session.Spaces.FirstOrDefault(s =>
                         string.Equals(s.Name, spaceName, StringComparison.OrdinalIgnoreCase)
-                        && (deckHint is null || s.Deck == deckHint)
-                        && (spaceName != "Cargo Void" || s.Flags?.Hollow == true));
+                        && (deckHint is null || s.Deck == deckHint));
                     if (space is null)
                         continue;
 

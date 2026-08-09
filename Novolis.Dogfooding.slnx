@@ -120,6 +120,7 @@
   </Folder>
   <Folder Name="/cad/">
     <Project Path="apps/cad/CalypsoCad/CalypsoCad.csproj" />
+    <Project Path="apps/cad/CalypsoInternalsCad/CalypsoInternalsCad.csproj" />
   </Folder>
   <Folder Name="/workspaces/">
     <Project Path="apps/workspaces/MinimalWorkspaceTimeline/MinimalWorkspaceTimeline.csproj" />

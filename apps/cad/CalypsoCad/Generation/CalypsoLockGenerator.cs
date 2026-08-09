@@ -109,13 +109,15 @@ internal static class CalypsoLockGenerator
             || name.StartsWith("ext-hull", StringComparison.OrdinalIgnoreCase)
             || name.StartsWith("int-iml", StringComparison.OrdinalIgnoreCase))
             return false;
-        if (name.StartsWith("ext-acceptance", StringComparison.OrdinalIgnoreCase)
-            || name.StartsWith("ext-user-", StringComparison.OrdinalIgnoreCase))
+        // Acceptance probe: only with handAuthored (stripped after the test so it does not stick as a bow blob).
+        if (name.StartsWith("ext-user-", StringComparison.OrdinalIgnoreCase))
             return true;
         if (entity.Properties is not null
             && entity.Properties.TryGetValue("handAuthored", out var el)
             && el.ValueKind is JsonValueKind.True)
             return true;
+        if (name.StartsWith("ext-acceptance", StringComparison.OrdinalIgnoreCase))
+            return false;
         // Draft Studio meshes with exterior=true but not generator names.
         if (string.Equals(entity.Kind, "mesh", StringComparison.OrdinalIgnoreCase)
             && !name.StartsWith("ext-oml", StringComparison.OrdinalIgnoreCase)
@@ -265,7 +267,7 @@ internal static class CalypsoLockGenerator
                 var key = SpaceKey(comp.Id!, deck);
                 var (layer, shape) = Classify(comp.Id!);
                 var clipped = ClipCompartmentToIml(comp, up0Raw, up1Raw, shellOnOuter: false);
-                var space = MakeSpace(comp.Id!, deck, clipped, loa, layer, shape, shellOnOuter: false);
+                var space = MakeSpace(comp.Id!, deck, clipped, loa, layer, shape, shellOnOuter: false, comp);
                 entities.Add(space);
                 spaceByKey[key] = space;
                 AddRoomWalls(entities, space, deck, clipped.Up0, clipped.Up1 - clipped.Up0, loa);
@@ -287,7 +289,7 @@ internal static class CalypsoLockGenerator
             };
             // Airlock outer face rides the OML; clip only to OML half-extents (not IML inset).
             var clipped = ClipCompartmentToIml(fake, (float)al.Up0, (float)al.Up1, shellOnOuter: true);
-            var space = MakeSpace(al.Id!, deck, clipped, loa, LayerWall, ShapeLining, shellOnOuter: true);
+            var space = MakeSpace(al.Id!, deck, clipped, loa, LayerWall, ShapeLining, shellOnOuter: true, fake);
             entities.Add(space);
             spaceByKey[SpaceKey(al.Id!, deck)] = space;
             AddRoomWalls(entities, space, deck, clipped.Up0, clipped.Up1 - clipped.Up0, loa);
@@ -370,7 +372,7 @@ internal static class CalypsoLockGenerator
 
         var cad = new CadDocument
         {
-            Name = "Calypso — Rev H (lock LOA 69)",
+            Name = "Calypso — Rev F (CAL-INT-DK-001 / LOA 69)",
             Generator = new CadGenerator { Name = "CalypsoCad.Lock", Version = "2026.1.0" },
             CreatedAt = stamp,
             ModifiedAt = stamp,
@@ -393,14 +395,19 @@ internal static class CalypsoLockGenerator
         };
 
         ShipDocumentMetrics.SetShipEnvelope(cad, loa, beam, oah, DeckSpacing);
-        cad.Properties!["canon"] = JsonSerializer.SerializeToElement("CAL-INT-GA-001 lock Rev H");
+        cad.Properties!["canon"] = JsonSerializer.SerializeToElement("CAL-INT-DK-001 Rev F deck plans");
         cad.Properties["source"] = JsonSerializer.SerializeToElement("docs/internals/CAL-INT-GA-001.json");
+        cad.Properties["deckDrawing"] = JsonSerializer.SerializeToElement("docs/internals/CAL-INT-DK-001.html");
         cad.Properties["outerHull"] = JsonSerializer.SerializeToElement(
             "docs/manufacturer/CAL-HULL-CAD-001.json OML (scaled to lock envelope if needed)");
         cad.Properties["interiorNest"] = JsonSerializer.SerializeToElement(
-            "lock clears clipped to IML / fore taper — interiors fit inside manufacturer hull");
+            "DK-001 clears / planRings nested inside manufacturer IML");
         cad.Properties["crewCabinCount"] = JsonSerializer.SerializeToElement(
             lockDoc.Stations?.CrewCabinCount ?? 5);
+        cad.Properties["cabinClearD"] = JsonSerializer.SerializeToElement(
+            lockDoc.Stations?.CabinClearD is > 0 ? lockDoc.Stations.CabinClearD : 7.2);
+        cad.Properties["cabinClearW"] = JsonSerializer.SerializeToElement(
+            lockDoc.Stations?.CabinClearW is > 0 ? lockDoc.Stations.CabinClearW : 1.92);
 
         AssertInteriorsInsideManufacturerHull(entities, loa, beam, oah);
 
@@ -476,6 +483,9 @@ internal static class CalypsoLockGenerator
         if (id is "HOLD")
             return (LayerCargo, ShapeCargo);
         if (id.StartsWith("CABIN", StringComparison.OrdinalIgnoreCase)
+            || id.StartsWith("CREW_", StringComparison.OrdinalIgnoreCase)
+            || id.StartsWith("PAX_", StringComparison.OrdinalIgnoreCase)
+            || id.StartsWith("VEST_", StringComparison.OrdinalIgnoreCase)
             || id is "CREW" or "INFIRMARY" or "GALLEY" or "LOUNGE" or "STORE_P1")
             return (LayerHab, ShapeHab);
         if (id is "FUEL" or "UTILITY_M1")
@@ -490,11 +500,14 @@ internal static class CalypsoLockGenerator
         float loa,
         Guid layer,
         Guid shape,
-        bool shellOnOuter)
+        bool shellOnOuter,
+        LockCompartment? source = null)
     {
         var up0 = clear.Up0;
         var up1 = clear.Up1;
-        var points = FootprintPlanRing(clear, loa, up0, yInset: shellOnOuter ? 0f : TShell);
+        // Prefer CAL-INT-DK-001 planRing (y, zFromStem) when present — exact deck-plan footprint.
+        var points = TryFootprintFromPlanRing(source, clear, loa, up0)
+                     ?? FootprintPlanRing(clear, loa, up0, yInset: shellOnOuter ? 0f : TShell);
         float cx = 0f, cz = 0f;
         foreach (var p in points)
         {
@@ -523,15 +536,43 @@ internal static class CalypsoLockGenerator
                 },
             ],
         };
+        space.Properties ??= new Dictionary<string, JsonElement>();
         if (clear.WasClipped)
-        {
-            space.Properties ??= new Dictionary<string, JsonElement>();
             space.Properties["clippedToManufacturerHull"] = JsonSerializer.SerializeToElement(true);
+        space.Properties["planRing"] = JsonSerializer.SerializeToElement(source?.PlanRing is { Count: >= 3 });
+        space.Properties["drawing"] = JsonSerializer.SerializeToElement("CAL-INT-DK-001");
+        return space;
+    }
+
+    /// <summary>
+    /// Map lock/JSON planRing [y, zFromStem] → Cad floor points, trimmed to the clipped Z band.
+    /// </summary>
+    private static List<float[]>? TryFootprintFromPlanRing(
+        LockCompartment? source,
+        ClippedClear clear,
+        float loa,
+        float up0)
+    {
+        if (source?.PlanRing is not { Count: >= 3 } ring)
+            return null;
+
+        var pts = new List<float[]>(ring.Count);
+        foreach (var p in ring)
+        {
+            if (p is null || p.Length < 2)
+                continue;
+            var y = (float)p[0];
+            var zStem = (float)p[1];
+            // Drop vertices outside the vertical-fit Z band (fore taper trim).
+            if (zStem < clear.Z0 - 1e-3f || zStem > clear.Z1 + 1e-3f)
+                continue;
+            // Keep athwartships clear inside the clipped Y band.
+            y = Math.Clamp(y, clear.Y0, clear.Y1);
+            var w = LockToWorld(y, up0, zStem, loa);
+            pts.Add([w.X, up0, w.Z]);
         }
 
-        space.Properties ??= new Dictionary<string, JsonElement>();
-        space.Properties["planRing"] = JsonSerializer.SerializeToElement(true);
-        return space;
+        return pts.Count >= 3 ? pts : null;
     }
 
     /// <summary>
@@ -1298,6 +1339,12 @@ internal static class CalypsoLockGenerator
                     ],
                     Height = c40H,
                     Thickness = c40W,
+                    Properties = new Dictionary<string, JsonElement>
+                    {
+                        // Hold cargo — visible in cutaway/interior, not as a sealed-exterior orange blob.
+                        ["interiorOnly"] = JsonSerializer.SerializeToElement(true),
+                        ["exterior"] = JsonSerializer.SerializeToElement(false),
+                    },
                 });
             }
         }
@@ -1431,6 +1478,8 @@ internal static class CalypsoLockGenerator
         public double Y1 { get; set; }
         public double Up0 { get; set; }
         public double Up1 { get; set; }
+        /// <summary>Optional [y, zFromStem] ring from CAL-INT-DK-001 / lock planRing (authoritative footprint).</summary>
+        public List<double[]>? PlanRing { get; set; }
     }
 
     private sealed class LockAirlock
@@ -1463,5 +1512,11 @@ internal static class CalypsoLockGenerator
     {
         [JsonPropertyName("CREW_CABIN_COUNT")]
         public int CrewCabinCount { get; set; }
+        [JsonPropertyName("CABIN_CLEAR_D")]
+        public double CabinClearD { get; set; }
+        [JsonPropertyName("CABIN_CLEAR_W")]
+        public double CabinClearW { get; set; }
+        [JsonPropertyName("CABIN_MODULE_W")]
+        public double CabinModuleW { get; set; }
     }
 }

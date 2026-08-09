@@ -75,13 +75,18 @@ export const Z_VERT_AFT = Z_VERT_FORE + L_VERT; // 19
 export const L_CROSS = 4;
 export const Z_CROSS_FORE = Z_VERT_AFT;
 export const Z_CROSS_AFT = Z_CROSS_FORE + L_CROSS; // 23
-export const L_CREW = 12;
+/** CAL-INT-DK-001 Rev F: cabin clear F–A 7.2 m; leftover extends INF/GAL/STORE. */
+export const CABIN_MODULE_W = 2; // O/A athwartships (= clear 1.92 + wall 0.08)
+export const CABIN_CLEAR_W = 1.92;
+export const CABIN_WALL_T = 0.08;
+export const CABIN_CLEAR_D = 7.2;
+export const L_CREW = CABIN_CLEAR_D + CABIN_WALL_T; // 7.28 — module band incl. end walls
 export const Z_CREW_FORE = Z_CROSS_AFT;
-export const Z_CREW_AFT = Z_CREW_FORE + L_CREW; // 35
+export const Z_CREW_AFT = Z_CREW_FORE + L_CREW; // 30.28
 export const CREW_CABIN_COUNT = 5;
-export const L_MED = 6;
 export const Z_MED_FORE = Z_CREW_AFT;
-export const Z_MED_AFT = Z_MED_FORE + L_MED; // 41
+export const Z_MED_AFT = 41; // eng face locked; INF/GAL clear F–A 10.64
+export const L_MED = Z_MED_AFT - Z_MED_FORE; // 10.72
 export const L_ENG = 8.25;
 export const Z_ENG_FORE = Z_MED_AFT;
 export const Z_ENG_AFT = Z_ENG_FORE + L_ENG; // 49.25
@@ -101,8 +106,8 @@ export const GAP_AFT = GAP_FORE + GAP_CATWALK_C40;
 
 // ─── Athwartships / circulation ──────────────────────────────────────────────
 export const CORR_INNER = 5;
-export const CORR_W = 2;
-export const CORR_OUTER = CORR_INNER + CORR_W; // 7
+export const CORR_W = 3; // spine clear — widened outboard (was 2)
+export const CORR_OUTER = CORR_INNER + CORR_W; // 8
 export const STACK = CORR_INNER; // |y| ≤ 5 center stack
 export const ACCESS_W = 2;
 export const SHAFT_W = 3.4;
@@ -393,7 +398,7 @@ export function compartments() {
       y1: -CORR_INNER,
       up0: Z_DK0,
       up1: Z_DK0 + ROOM_H,
-      note: "port spine corridor clear 2 m; same track −1/+1",
+      note: "port spine corridor clear 3 m; same track −1/+1 (CAL-INT-DK-001)",
     },
     {
       id: "CORR_S",
@@ -404,36 +409,29 @@ export function compartments() {
       y1: CORR_OUTER,
       up0: Z_DK0,
       up1: Z_DK0 + ROOM_H,
-      note: "starboard spine corridor",
-    },
-    {
-      id: "CREW",
-      deck: 0,
-      z0: Z_CREW_FORE + T_BH / 2,
-      z1: Z_CREW_AFT - T_BH / 2,
-      ...mid,
-      up0: Z_DK0,
-      up1: Z_DK0 + ROOM_H,
+      note: "starboard spine corridor clear 3 m",
     },
     {
       id: "INFIRMARY",
       deck: 0,
-      z0: Z_MED_FORE + T_BH / 2,
-      z1: Z_MED_AFT - T_BH / 2,
-      y0: -STACK + T_BH / 2,
-      y1: -T_BH / 2,
+      z0: Z_MED_FORE + CABIN_WALL_T / 2,
+      z1: Z_MED_AFT - CABIN_WALL_T / 2,
+      y0: -STACK + CABIN_WALL_T / 2,
+      y1: -CABIN_WALL_T / 2,
       up0: Z_DK0,
       up1: Z_DK0 + ROOM_H,
+      note: "infirmary — clear F–A 10.64 m (DK-001 leftover aft of cabins)",
     },
     {
       id: "GALLEY",
       deck: 0,
-      z0: Z_MED_FORE + T_BH / 2,
-      z1: Z_MED_AFT - T_BH / 2,
-      y0: T_BH / 2,
-      y1: STACK - T_BH / 2,
+      z0: Z_MED_FORE + CABIN_WALL_T / 2,
+      z1: Z_MED_AFT - CABIN_WALL_T / 2,
+      y0: CABIN_WALL_T / 2,
+      y1: STACK - CABIN_WALL_T / 2,
       up0: Z_DK0,
       up1: Z_DK0 + ROOM_H,
+      note: "galley — clear F–A 10.64 m",
     },
     {
       id: "ENG",
@@ -464,42 +462,51 @@ export function compartments() {
       up0: Z_DK_M1,
       up1: Z_DK_M1 + ROOM_H,
     },
-    ...crewCabinsP1(mid),
+    ...modularCabins(0, "CREW", "crew bunks"),
+    ...modularCabins(1, "PAX", "passenger bunks — same module as crew"),
     {
       id: "STORE_P1",
       deck: 1,
-      z0: Z_MED_FORE + T_BH / 2,
-      z1: Z_MED_AFT - T_BH / 2,
+      z0: Z_MED_FORE + CABIN_WALL_T / 2,
+      z1: Z_MED_AFT - CABIN_WALL_T / 2,
       ...mid,
       up0: Z_DK1,
       up1: Z_DK1 + ROOM_H,
+      note: "store — same F–A leftover as INF/GAL (DK-001)",
     },
   ].map(withPlanRing);
 }
 
-/** Five equal clear cabins on deck +1 inside the crew band (partitions absorb T_BH). */
-export function crewCabinsP1(mid = { y0: -STACK + T_BH / 2, y1: STACK - T_BH / 2 }) {
-  const zClear0 = Z_CREW_FORE + T_BH / 2;
-  const zClear1 = Z_CREW_AFT - T_BH / 2;
-  const span = zClear1 - zClear0;
-  const slot = span / CREW_CABIN_COUNT;
+/** Five C0n modules abreast (P→S), clear 1.92×7.2; O/A 2 m. Same plan DK0 CREW / DK+1 PAX. */
+export const CABIN_VEST_D = 0; // unused — doors on fore face
+export function modularCabins(deck, prefix, bunkNote, mid = { y0: -STACK, y1: STACK }) {
+  const up0 = deck === 0 ? Z_DK0 : Z_DK1;
+  const z0 = Z_CREW_FORE + CABIN_WALL_T / 2;
+  const z1 = Z_CREW_AFT - CABIN_WALL_T / 2;
   const rooms = [];
   for (let i = 0; i < CREW_CABIN_COUNT; i++) {
-    const z0 = zClear0 + i * slot + (i === 0 ? 0 : T_BH / 2);
-    const z1 = zClear0 + (i + 1) * slot - (i === CREW_CABIN_COUNT - 1 ? 0 : T_BH / 2);
+    const slot0 = mid.y0 + i * CABIN_MODULE_W;
+    const y0 = slot0 + CABIN_WALL_T / 2;
+    const y1 = slot0 + CABIN_MODULE_W - CABIN_WALL_T / 2;
+    const n = i + 1;
     rooms.push({
-      id: `CABIN_${i + 1}`,
-      deck: 1,
+      id: `${prefix}_${n}`,
+      deck,
       z0,
       z1,
-      y0: mid.y0,
-      y1: mid.y1,
-      up0: Z_DK1,
-      up1: Z_DK1 + ROOM_H,
-      note: `crew cabin ${i + 1} of ${CREW_CABIN_COUNT}`,
+      y0,
+      y1,
+      up0,
+      up1: up0 + ROOM_H,
+      note: `C0n ${prefix.toLowerCase()} cell ${n}/${CREW_CABIN_COUNT}: clear ${CABIN_CLEAR_W}×${CABIN_CLEAR_D} m; module ${CABIN_MODULE_W} m with walls; entrance fore; ${bunkNote}`,
     });
   }
   return rooms;
+}
+
+/** @deprecated */
+export function crewCabinsP1(mid = { y0: -STACK + T_BH / 2, y1: STACK - T_BH / 2 }) {
+  return modularCabins(1, "PAX", "passenger bunks — same module as crew", mid);
 }
 
 /** Hatch openings = holes in bulkheads (clear opening, not symbols). */
@@ -554,63 +561,34 @@ export function hatches() {
     });
   }
 
-  // Crew fore-facing (deck 0 common CREW space)
-  for (const [tag, y] of [
-    ["CAB-P", -STACK / 2],
-    ["CAB-S", STACK / 2],
-  ]) {
-    add({
-      id: tag,
-      deck: 0,
-      clearW: DOOR_PASS,
-      clearH: DOOR_H_PASS,
-      y,
-      z: Z_CREW_FORE,
-      up: Z_DK0 + DOOR_H_PASS / 2,
-      normal: "-Zfore",
-      from: "CROSSING_LOBBY",
-      to: "CREW",
-      faces: "fore",
-    });
-  }
-
-  // Deck +1: each cabin opens to port and starboard corridors
-  {
-    const zClear0 = Z_CREW_FORE + T_BH / 2;
-    const zClear1 = Z_CREW_AFT - T_BH / 2;
-    const span = zClear1 - zClear0;
-    const slot = span / CREW_CABIN_COUNT;
-    for (let i = 0; i < CREW_CABIN_COUNT; i++) {
-      const zMid = zClear0 + (i + 0.5) * slot;
-      const cabinId = `CABIN_${i + 1}`;
-      add({
-        id: `CAB${i + 1}-P`,
-        deck: 1,
-        clearW: DOOR_PASS,
-        clearH: DOOR_H_PASS,
-        y: -STACK,
-        z: zMid,
-        up: Z_DK1 + DOOR_H_PASS / 2,
-        normal: "-Y",
-        from: cabinId,
-        to: "CORR_P",
-        faces: "port",
-      });
-      add({
-        id: `CAB${i + 1}-S`,
-        deck: 1,
-        clearW: DOOR_PASS,
-        clearH: DOOR_H_PASS,
-        y: STACK,
-        z: zMid,
-        up: Z_DK1 + DOOR_H_PASS / 2,
-        normal: "+Y",
-        from: cabinId,
-        to: "CORR_S",
-        faces: "starboard",
-      });
-    }
-  }
+  // Modular cabins: fore lobby from crossing + vestibule↔corridor + cabin fore entrance
+  // (authoritative hatch list is rebuilt by InternalsLockCabinPatch in C#).
+  add({
+    id: "CAB-P",
+    deck: 0,
+    clearW: DOOR_PASS,
+    clearH: DOOR_H_PASS,
+    y: -STACK / 2,
+    z: Z_CREW_FORE,
+    up: Z_DK0 + DOOR_H_PASS / 2,
+    normal: "-Zfore",
+    from: "CROSSING",
+    to: "VEST_CREW_1",
+    faces: "fore",
+  });
+  add({
+    id: "CAB-S",
+    deck: 0,
+    clearW: DOOR_PASS,
+    clearH: DOOR_H_PASS,
+    y: STACK / 2,
+    z: Z_CREW_FORE,
+    up: Z_DK0 + DOOR_H_PASS / 2,
+    normal: "-Zfore",
+    from: "CROSSING",
+    to: "VEST_CREW_1",
+    faces: "fore",
+  });
 
   add({
     id: "INF-P",
@@ -746,7 +724,10 @@ export function airlockVolumes() {
 export function assertLock() {
   const errors = [];
   if (Math.abs(LOA - (L_FORE + L_MID + L_AFT)) > 1e-9) errors.push("LOA ≠ L_fore+L_mid+L_aft");
-  if (CORR_W + 1e-9 < 2) errors.push("corridor clear < 2 m");
+  if (CORR_W + 1e-9 < 3) errors.push("corridor clear < 3 m (CAL-INT-DK-001)");
+  if (Math.abs(CABIN_CLEAR_D - 7.2) > 1e-6) errors.push("cabin clear F–A != 7.2");
+  if (Math.abs(CABIN_CLEAR_W - 1.92) > 1e-6) errors.push("cabin clear W != 1.92");
+  if (Math.abs(Z_CREW_AFT - 30.28) > 1e-6) errors.push("Z_CREW_AFT != 30.28");
   if (Math.abs(HOLD_L - (CATWALK_D + GAP_CATWALK_C40 + C40_L + RAMP_GAP)) > 1e-9)
     errors.push("hold pack length mismatch");
   if (Math.abs(AIR_OUTER - BEAM / 2) > 1e-9) errors.push("D3 not on outer hull");

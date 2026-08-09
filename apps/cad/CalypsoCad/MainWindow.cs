@@ -370,6 +370,30 @@ internal sealed class MainWindow : Window
                     _renderer.SyncInteriorFromSelection();
                 UpdateStatus();
                 break;
+            case Key.OemOpenBrackets:
+            case Key.OemComma:
+                _session.WireMeshMode = CalypsoWireMeshMode.CutawayPartial;
+                _session.CutPlaneUserDriven = true;
+                _session.CutPlaneOffset -= 1f;
+                UpdateStatus();
+                break;
+            case Key.OemCloseBrackets:
+            case Key.OemPeriod:
+                _session.WireMeshMode = CalypsoWireMeshMode.CutawayPartial;
+                _session.CutPlaneUserDriven = true;
+                _session.CutPlaneOffset += 1f;
+                UpdateStatus();
+                break;
+            case Key.L:
+                _session.WireMeshMode = CalypsoWireMeshMode.CutawayPartial;
+                _session.CutPlaneLongitudinal = true;
+                UpdateStatus();
+                break;
+            case Key.B:
+                _session.WireMeshMode = CalypsoWireMeshMode.CutawayPartial;
+                _session.CutPlaneLongitudinal = false;
+                UpdateStatus();
+                break;
             case Key.E:
                 _ = ExportCurrentPngAsync();
                 break;

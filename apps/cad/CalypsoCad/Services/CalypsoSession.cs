@@ -45,6 +45,15 @@ internal sealed class CalypsoSession
     /// <summary>Longitudinal (YZ cut, ±X normal) vs beam (XY cut, ±Z normal) for orbit cutaway.</summary>
     public bool CutPlaneLongitudinal { get; set; } = true;
 
+    /// <summary>
+    /// Slide the invisible cut plane along its axis from midship (meters).
+    /// Longitudinal: ±beam/2; beam cut: ±LOA/2. Bound in the renderer.
+    /// </summary>
+    public float CutPlaneOffset { get; set; }
+
+    /// <summary>When true, orbit cutaway keeps the user offset (keys [ ] / - =) instead of snapping to CL.</summary>
+    public bool CutPlaneUserDriven { get; set; }
+
     public IEnumerable<CadEntity> Spaces =>
         Document.Entities.Where(e => e.Kind == "space");
 
@@ -76,7 +85,7 @@ internal sealed class CalypsoSession
         GeneratedDirectory = CalypsoRevGGenerator.Generate();
         (LayersCatalog, Shapes, Document) = CadDocumentStore.ReadAll(GeneratedDirectory);
         ShapeById = Shapes.Shapes.ToDictionary(s => s.Id);
-        SelectedSpaceId = Spaces.FirstOrDefault(s => s.Name == "Bridge" && s.Deck == 0)?.Id
+        SelectedSpaceId = Spaces.FirstOrDefault(s => s.Name == "BRIDGE" && s.Deck == 0)?.Id
                           ?? Spaces.FirstOrDefault()?.Id;
         StatusText = $"Generated → {GeneratedDirectory}";
     }

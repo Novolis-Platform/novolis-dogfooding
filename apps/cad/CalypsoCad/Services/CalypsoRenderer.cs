@@ -523,20 +523,25 @@ internal sealed class CalypsoRenderer
         var solidOrbit = _session.ViewMode == CalypsoViewMode.Orbit &&
                          _session.WireMeshMode == CalypsoWireMeshMode.None;
         SyncCutPlane(cutaway);
+        GetCutPlane(cutaway, out var frameCutPt, out var frameCutN);
         if (cutaway)
             DrawCutFaceCue();
 
         // Solid orbit: sealed exterior hull/meshes.
-        // Cutaway / wire / interior: deck CAD + still draw exterior rim so the freighter silhouette remains.
+        // Cutaway: exterior triangles on the camera side of the invisible plane are culled.
         if (solidOrbit)
         {
             CadShipExterior.Draw(_session.Document);
         }
         else
         {
-            // Keep faceted OML / nacelles visible under cutaway so it does not read as floating rooms.
             if (cutaway || _session.ViewMode == CalypsoViewMode.Orbit)
-                CadShipExterior.Draw(_session.Document);
+            {
+                if (cutaway)
+                    CadShipExterior.Draw(_session.Document, frameCutPt, frameCutN);
+                else
+                    CadShipExterior.Draw(_session.Document);
+            }
 
             foreach (var entity in _session.Document.Entities)
             {
@@ -580,6 +585,11 @@ internal sealed class CalypsoRenderer
                             DrawOpeningFrame(entity);
                         break;
                     case "box":
+                        // C40 stack is hold cargo — fine in interior; in orbit cutaway it reads as one giant orange slab.
+                        if (cutaway
+                            && _session.ViewMode == CalypsoViewMode.Orbit
+                            && (entity.Name?.StartsWith("C40", StringComparison.OrdinalIgnoreCase) ?? false))
+                            break;
                         DrawSolidBox(entity);
                         break;
                     case "sphere":
@@ -587,7 +597,10 @@ internal sealed class CalypsoRenderer
                     case "cone":
                     case "wedge":
                     case "mesh":
-                        CadShipExterior.DrawOne(entity);
+                        if (cutaway)
+                            CadShipExterior.DrawOne(entity, frameCutPt, frameCutN);
+                        else
+                            CadShipExterior.DrawOne(entity);
                         break;
                 }
             }
@@ -601,11 +614,16 @@ internal sealed class CalypsoRenderer
         var spaceName = _session.SelectedSpace?.Name ?? "(none)";
         var hookTag = _session.SelectedHook?.Tag ?? "(no-hook)";
         var wire = _session.WireMeshMode.ToString();
+        var cutHint = _session.WireMeshMode == CalypsoWireMeshMode.CutawayPartial
+            ? $" | cut={(_session.CutPlaneLongitudinal ? "long" : "beam")}@{_session.CutPlaneOffset:0.0}m"
+            : "";
         Graphics.DrawText(
-            $"{_session.ViewMode} | {wire} | deck={(_session.DeckFilter?.ToString() ?? "all")} | space={spaceName} | hook={hookTag}",
+            $"{_session.ViewMode} | {wire}{cutHint} | deck={(_session.DeckFilter?.ToString() ?? "all")} | space={spaceName} | hook={hookTag}",
             8, 8, 14, Hud);
         Graphics.DrawText(_session.StatusText, 8, 28, 12, Hud);
-        Graphics.DrawText("P plan  O orbit  I interior  W wire  C cutaway  S solid  1/2/3 decks  0 all  F fit  E export", 8, 48, 12, Hud);
+        Graphics.DrawText(
+            "P plan  O orbit  I interior  W wire  C cutaway  S solid  [ ] slide cut  L/B cut axis  1/2/3 decks  0 all  F fit  E export",
+            8, 48, 12, Hud);
     }
 
     private static void DrawGrid()
@@ -1641,10 +1659,17 @@ internal sealed class CalypsoRenderer
         }
 
         // Orbit / plan: world longitudinal (default) or beam cut; normal faces camera.
-        var mid = new Vector3(0f, 4f, 0f);
+        // Offset slides the invisible plane; user keys mark CutPlaneUserDriven.
         var axis = _session.CutPlaneLongitudinal ? Vector3.UnitX : Vector3.UnitZ;
-        if (Vector3.Dot(eye - mid, axis) < 0f)
+        if (Vector3.Dot(eye - new Vector3(0f, 4f, 0f), axis) < 0f)
             axis = -axis;
+        var maxOff = _session.CutPlaneLongitudinal ? 10f : 34f;
+        var offset = Math.Clamp(_session.CutPlaneOffset, -maxOff, maxOff);
+        _session.CutPlaneOffset = offset;
+        // Origin sits on the cut axis; normal points at the camera (culled half-space).
+        var mid = new Vector3(0f, 4f, 0f) + (_session.CutPlaneLongitudinal
+            ? new Vector3(offset, 0f, 0f)
+            : new Vector3(0f, 0f, offset));
         _session.CutPlaneOrigin = mid;
         _session.CutPlaneNormal = axis;
     }

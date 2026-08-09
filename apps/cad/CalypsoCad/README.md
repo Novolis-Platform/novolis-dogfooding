@@ -1,6 +1,6 @@
 # Calypso CAD
 
-Dogfood app that generates **Calypso** Rev H lock companions (from `docs/internals/CAL-INT-GA-001.json`) and explores plan / orbit / interior. **Author freighters in [Ship Designer](https://github.com/Novolis-Platform/novolis-apps)** (`d:\novolis\novolis-apps\src\ShipDesigner`) — Open/Save `.cadjson`, hatches, airtight validation. This app stays generate / headless PNG / walkthrough / Ship.* API dogfood.
+Dogfood app that generates **Calypso** Rev F lock companions from `docs/internals/CAL-INT-GA-001.json` (deck authority **`CAL-INT-DK-001.html`**) and explores plan / orbit / interior. **Author freighters in [Ship Designer](https://github.com/Novolis-Platform/novolis-apps)** (`d:\novolis\novolis-apps\src\ShipDesigner`) — Open/Save `.cadjson`, hatches, airtight validation. This app stays generate / headless PNG / walkthrough / Ship.* API dogfood.
 
 ## Canon lock
 
@@ -12,10 +12,10 @@ Dogfood app that generates **Calypso** Rev H lock companions (from `docs/interna
 | Hold | HILS-C40 **5×1×3** · pack length **19.692 m** · aft door **14×8.5** |
 | Engineering | Full-height atrium **8.25 m** F–A |
 | Decks | **−1 @ 0.5 · 0 @ 4.0 · +1 @ 8.0** · room clear ~3.2 m |
-| Corridors | Twin port/stbd clear **2.0 m** (inner edge ±5 from CL) |
-| Cabins | **5** discrete crew cabins on deck +1 (`CABIN_1`…`CABIN_5`) |
+| Corridors | Twin port/stbd clear **3.0 m** (inner ±5; stack ±5 = 10) — `CAL-INT-DK-001` |
+| Cabins | **5× C0n** DK0 `CREW_1…5` + DK+1 `PAX_1…5` — clear **1.92×7.2**, module O/A **2 m** |
 | Airlocks | Port/stbd L-airlocks DK0 · D3 vacuum-assisted (pressure-assist seal) |
-| Source | Manufacturer hull + `docs/internals/calypso-lock.mjs` / `CAL-INT-GA-001.json` interiors |
+| Deck SoT | `docs/internals/CAL-INT-DK-001.html` Rev F + `CAL-INT-GA-001.json` |
 
 Out of scope for this dogfood: inventing a second exterior hull (no nacelle/blister placeholders), uniform isotropic rescale (midbody stretch only), full Boolean ring/sill BREP.
 
@@ -106,7 +106,7 @@ Exports land in `generated/exports/` as **stable overwrite names** (`{kind}.png`
 - [ ] DK0 catwalk POV: `catwalk-containers.png` / `catwalk-containers-quarter.png` / `catwalk-span.png` / `catwalk-passage-port.png` / `catwalk-passage-stbd.png`
 - [ ] Walkthrough: `walkthrough/frame-*.png`, optional `walkthrough.mp4` / `walkthrough.gif`, keyframes `walkthrough-*.png`
 
-**Cutaway (C):** world slicing plane; geometry on the camera side of the plane is not drawn. Orbit default is longitudinal (YZ cut). Interior cut is a vertical plane through the selected space center facing the eye.
+**Cutaway (C):** invisible slicing plane — exterior mesh triangles on the camera side are culled so interiors read through. Slide with **[ ]** (or `,` `.`); **L** = longitudinal (default), **B** = beam cut. HUD shows `cut=long|beam@±m`.
 
 **Catwalk presets:** standing eye on mid-deck (DK0) cargo catwalk; ensemble draws hold + C40 stack + twin corridors so you can look aft at containers or forward down a passageway.
 
@@ -118,6 +118,8 @@ Exports land in `generated/exports/` as **stable overwrite names** (`{kind}.png`
 | O / Orbit | Exterior orbit (drag / wheel) |
 | I / Interior | Camera inside selected space |
 | W / C / S | Wire / cutaway / solid |
+| [ ] or , . | Slide cutaway plane |
+| L / B | Longitudinal / beam cut axis |
 | 1 / 2 / 3 | Deck −1 / 0 / +1 filter |
 | 0 | All decks |
 | F | Fit orbit camera |

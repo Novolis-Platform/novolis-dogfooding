@@ -19,6 +19,13 @@ internal static class Program
         var walkthrough = args.Any(a => string.Equals(a, "--walkthrough", StringComparison.OrdinalIgnoreCase));
         var jsonOnly = args.Any(a => string.Equals(a, "--json-only", StringComparison.OrdinalIgnoreCase));
         var acceptance = args.Any(a => string.Equals(a, "--acceptance", StringComparison.OrdinalIgnoreCase));
+        var blueprints = args.Any(a => string.Equals(a, "--blueprints", StringComparison.OrdinalIgnoreCase));
+
+        if (blueprints)
+        {
+            Environment.ExitCode = RunBlueprints();
+            return;
+        }
 
         if (acceptance)
         {
@@ -55,6 +62,20 @@ internal static class Program
         finally
         {
             ApplicationHost.StopAsync().GetAwaiter().GetResult();
+        }
+    }
+
+    private static int RunBlueprints()
+    {
+        try
+        {
+            CalypsoCad.Generation.Blueprints.InternalsBlueprintEmitter.Emit();
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
+            return 1;
         }
     }
 
@@ -118,12 +139,36 @@ internal static class Program
             && doc.Properties.TryGetValue("outerHull", out var oh)
             && oh.GetString()?.Contains("manufacturer", StringComparison.OrdinalIgnoreCase) == true);
 
-        var cabins = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
-            .Where(s => s.Name is not null && s.Name.StartsWith("CABIN_", StringComparison.OrdinalIgnoreCase))
+        var crew = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
+            .Where(s => s.Name is not null && s.Name.StartsWith("CREW_", StringComparison.OrdinalIgnoreCase) && s.Deck == 0)
+            .Select(s => s.Name!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Check("five CREW_1..5 (DK-001 C1–C5)", crew.Count == 5, string.Join(",", crew));
+
+        var pax = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
+            .Where(s => s.Name is not null && s.Name.StartsWith("PAX_", StringComparison.OrdinalIgnoreCase) && s.Deck == 1)
             .Select(s => s.Name!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        Check("five crew cabins", cabins.Count == 5, string.Join(",", cabins));
+        Check("five PAX_1..5 (DK-001 P1–P5)", pax.Count == 5, string.Join(",", pax));
+
+        var crew1 = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
+            .FirstOrDefault(s => s.Name == "CREW_1" && s.Deck == 0);
+        if (crew1?.Points is { Count: >= 4 } cpts)
+        {
+            var ys = cpts.Select(p => p[0]).ToList();
+            var zs = cpts.Select(p => p[2]).ToList();
+            var clearW = ys.Max() - ys.Min();
+            var clearD = zs.Max() - zs.Min();
+            Check("CREW_1 clear W ≈ 1.92", clearW is >= 1.85f and <= 2.05f, $"got {clearW:0.###}");
+            Check("CREW_1 clear F–A ≈ 7.2", clearD is >= 7.0f and <= 7.4f, $"got {clearD:0.###}");
+        }
+        else
+        {
+            Check("CREW_1 present", false);
+        }
 
         var corrP = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
             .FirstOrDefault(s => s.Name == "CORR_P" && s.Deck == 0);
@@ -131,12 +176,18 @@ internal static class Program
         {
             var xs = pts.Select(p => p[0]).ToList();
             var clear = xs.Max() - xs.Min();
-            Check("CORR_P clear ≥ 2 m", clear >= 1.99f, $"got {clear:0.###}");
+            Check("CORR_P clear ≥ 3 m (DK-001)", clear >= 2.95f, $"got {clear:0.###}");
         }
         else
         {
             Check("CORR_P present", false);
         }
+
+        Check(
+            "deck drawing property",
+            doc.Properties is not null
+            && doc.Properties.TryGetValue("deckDrawing", out var dd)
+            && dd.GetString()?.Contains("CAL-INT-DK-001", StringComparison.OrdinalIgnoreCase) == true);
 
         Check("structure mass attached", Novolis.Ship.Structure.ShipStructureDocument.TryGetMass(doc, out var mass)
                                          && mass is not null && mass.MassKg > 240_000f);
@@ -166,6 +217,7 @@ internal static class Program
             Properties = new Dictionary<string, System.Text.Json.JsonElement>
             {
                 ["exterior"] = System.Text.Json.JsonSerializer.SerializeToElement(true),
+                ["handAuthored"] = System.Text.Json.JsonSerializer.SerializeToElement(true),
             },
         });
         File.WriteAllText(cadPath, System.Text.Json.JsonSerializer.Serialize(doc, CadJson.Options));
@@ -177,6 +229,18 @@ internal static class Program
         Check(
             "regenerate preserves exterior",
             after.Entities.Any(e => string.Equals(e.Name, "ext-acceptance-hull", StringComparison.OrdinalIgnoreCase)));
+
+        // Strip the acceptance probe so the user's generated ship is not left with a bow blob.
+        after.Entities.RemoveAll(e =>
+            string.Equals(e.Name, "ext-acceptance-hull", StringComparison.OrdinalIgnoreCase));
+        File.WriteAllText(cadPath, System.Text.Json.JsonSerializer.Serialize(after, CadJson.Options));
+        CalypsoLockGenerator.Generate();
+        var clean = System.Text.Json.JsonSerializer.Deserialize<Novolis.Cad.Primitives.CadDocument>(
+            File.ReadAllText(cadPath), CadJson.Options)
+            ?? throw new InvalidOperationException("Failed to deserialize clean regenerate");
+        Check(
+            "acceptance probe stripped",
+            !clean.Entities.Any(e => string.Equals(e.Name, "ext-acceptance-hull", StringComparison.OrdinalIgnoreCase)));
 
         Console.WriteLine(failures == 0 ? "CalypsoCad acceptance OK" : $"CalypsoCad acceptance FAILED ({failures})");
         return failures == 0 ? 0 : 1;

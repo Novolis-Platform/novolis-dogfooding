@@ -110,6 +110,7 @@ If restore returns 401, re-run `configure-gpr-user-nuget.ps1` (credentials live 
 | `KatoriLab.Tests` | `apps/avalonia/KatoriLab.Tests` | Kata correctness (timeline, holds, walk hang) |
 | `FriendLab` | `apps/avalonia/FriendLab` | Find-a-Friend prototype — multi-window users, 3-of-5 interests + geo |
 | `CalypsoCad` | `apps/cad/CalypsoCad` | CAD deckplan generation |
+| `CalypsoInternalsCad` | `apps/cad/CalypsoInternalsCad` | CAL-INT drawings → CAD + OBJ 3D |
 | `AstroSmoke` | `apps/astro/AstroSmoke` | Astro catalog/routing/assessment/overlay/plotting |
 | `StarMapLab` | `apps/astro/StarMapLab` | Avalonia.StarMap + Astro route planner |
 | `EconomyBoard` | `apps/economy/EconomyBoard` | Economy kernel — Avalonia board |

@@ -40,6 +40,15 @@ dotnet run --project apps/cad/CalypsoCad
 dotnet run --project apps/cad/CalypsoCad -- --generate-only
 ```
 
+## Calypso Internals CAD
+
+CAL-INT lock + manufacturer hull → Novolis CAD companions + Wavefront OBJ (optional Raylib orbit view).
+
+```powershell
+dotnet run --project d:\novolis\novolis-dogfooding\apps\cad\CalypsoInternalsCad\CalypsoInternalsCad.csproj -p:NovolisUseProjectReferences=true
+dotnet run --project d:\novolis\novolis-dogfooding\apps\cad\CalypsoInternalsCad\CalypsoInternalsCad.csproj -p:NovolisUseProjectReferences=true -- --view
+```
+
 ## FreightWing
 
 X-Wing Alliance–inspired dual-role campaign (freighter → X-wing transfer). Bake content from a local Steam install via the **local-only** `novolis-experimental` `Xwa.Cli` tree (not on GitHub), then run the app (no Steam/experimental at runtime).
