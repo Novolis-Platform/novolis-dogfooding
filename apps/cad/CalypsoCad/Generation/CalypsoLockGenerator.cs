@@ -102,6 +102,13 @@ internal static class CalypsoLockGenerator
         if (!Novolis.Avalonia.Cad.Ship.Services.CadShipExterior.IsPreservedExterior(entity))
             return false;
         var name = entity.Name ?? "";
+        if (name.Contains("nacelle", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("airlock-blister", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("ext-aft-cargo", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("ext-oml", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("ext-hull", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("int-iml", StringComparison.OrdinalIgnoreCase))
+            return false;
         if (name.StartsWith("ext-acceptance", StringComparison.OrdinalIgnoreCase)
             || name.StartsWith("ext-user-", StringComparison.OrdinalIgnoreCase))
             return true;
@@ -235,20 +242,21 @@ internal static class CalypsoLockGenerator
         var spaceByKey = new Dictionary<string, CadEntity>(StringComparer.OrdinalIgnoreCase);
         var openingById = new Dictionary<string, CadEntity>(StringComparer.OrdinalIgnoreCase);
 
-        // Prefer manufacturer OML/IML; else loft from lock hullLoft (never AABB box silhouette).
+        // Manufacturer folder = outer hull SoT. Interiors nest inside IML (same meter frame).
+        // Lock hullLoft is fallback only when manufacturer JSON is missing from the tree.
         if (!TryBuildManufacturerHullMeshes(loa, beam, oah, out var oml, out var iml)
             && !TryBuildHullMeshesFromLockLoft(lockDoc, loa, oah, out oml, out iml))
         {
             throw new InvalidOperationException(
-                "Need manufacturer CAL-HULL-CAD-001.json or lock hullLoft stations — no box silhouette fallback.");
+                "Manufacturer CAL-HULL-CAD-001.json OML required — docs/manufacturer is the outer hull.");
         }
 
         entities.Add(oml);
         if (iml is not null)
             entities.Add(iml);
 
+        // Cargo peek only — never invent a second exterior (no nacelles / blister shells).
         AddInteriorCargoDetails(entities, lockDoc, loa);
-        AddExteriorFromLock(entities, lockDoc, loa, beam, oah);
 
         foreach (var comp in lockDoc.Compartments ?? [])
         {
@@ -1235,7 +1243,10 @@ internal static class CalypsoLockGenerator
         ];
     }
 
-    /// <summary>Orbit silhouette details from lock exterior{} (nacelles, aft door, airlock blisters).</summary>
+    /// <summary>
+    /// Intentionally empty: manufacturer OML is the only outer hull.
+    /// Lock exterior.nacelles / airlockBlisters are silhouette hints for drawings — not CAD solids.
+    /// </summary>
     private static void AddExteriorFromLock(
         List<CadEntity> entities,
         CalypsoLockDocument lockDoc,
@@ -1243,121 +1254,11 @@ internal static class CalypsoLockGenerator
         float beam,
         float oah)
     {
-        var ext = lockDoc.Exterior;
-        if (ext?.Nacelles is { Count: > 0 })
-        {
-            foreach (var n in ext.Nacelles)
-            {
-                var c = LockToWorld((float)n.Y, (float)n.Up, (float)n.ZFromStem, loa);
-                entities.Add(new CadEntity
-                {
-                    Kind = "cylinder",
-                    Name = n.Id ?? "nacelle",
-                    LayerId = LayerHull,
-                    ShapeId = ShapeHullExt,
-                    Color = [0.38f, 0.42f, 0.48f],
-                    Center = [c.X, c.Y, c.Z],
-                    Radius = (float)n.Radius,
-                    Height = (float)n.Length,
-                    Properties = new Dictionary<string, JsonElement>
-                    {
-                        [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
-                    },
-                });
-            }
-        }
-        else
-        {
-            foreach (var side in new[] { -1f, 1f })
-            {
-                entities.Add(new CadEntity
-                {
-                    Kind = "cylinder",
-                    Name = side < 0 ? "nacelle-port" : "nacelle-stbd",
-                    LayerId = LayerHull,
-                    ShapeId = ShapeHullExt,
-                    Color = [0.38f, 0.42f, 0.48f],
-                    Center = [side * (beam * 0.5f + 1.2f), oah * 0.35f, -loa * 0.12f],
-                    Radius = 1.35f,
-                    Height = 9f,
-                    Properties = new Dictionary<string, JsonElement>
-                    {
-                        [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
-                    },
-                });
-            }
-        }
-
-        if (ext?.AftDoor is { } door)
-        {
-            var c = LockToWorld((float)door.Y, (float)door.Up, (float)door.ZFromStem, loa);
-            entities.Add(new CadEntity
-            {
-                Kind = "box",
-                Name = door.Id ?? "ext-aft-cargo-door",
-                LayerId = LayerCargo,
-                ShapeId = ShapeCargo,
-                Color = [0.22f, 0.24f, 0.26f],
-                Points =
-                [
-                    [c.X, c.Y, c.Z],
-                    [(float)door.HalfW, (float)door.HalfH, (float)door.HalfD],
-                ],
-                Properties = new Dictionary<string, JsonElement>
-                {
-                    [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
-                },
-            });
-        }
-        else
-        {
-            var hold = lockDoc.Hold;
-            var doorW = hold?.DoorW is > 0 ? (float)hold.DoorW : 14f;
-            var doorH = hold?.DoorH is > 0 ? (float)hold.DoorH : 8.5f;
-            var sill = hold?.Sill is >= 0 ? (float)hold.Sill : 0.25f;
-            entities.Add(new CadEntity
-            {
-                Kind = "box",
-                Name = "ext-aft-cargo-door",
-                LayerId = LayerCargo,
-                ShapeId = ShapeCargo,
-                Color = [0.22f, 0.24f, 0.26f],
-                Points =
-                [
-                    [0f, sill + doorH * 0.5f, -loa * 0.5f + 0.15f],
-                    [doorW * 0.5f, doorH * 0.5f, 0.2f],
-                ],
-                Properties = new Dictionary<string, JsonElement>
-                {
-                    [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
-                },
-            });
-        }
-
-        if (ext?.AirlockBlisters is { Count: > 0 })
-        {
-            foreach (var b in ext.AirlockBlisters)
-            {
-                var c = LockToWorld((float)b.Y, (float)b.Up, (float)b.ZFromStem, loa);
-                entities.Add(new CadEntity
-                {
-                    Kind = "box",
-                    Name = b.Id ?? "ext-airlock-blister",
-                    LayerId = LayerHull,
-                    ShapeId = ShapeHullExt,
-                    Color = [0.55f, 0.58f, 0.62f],
-                    Points =
-                    [
-                        [c.X, c.Y, c.Z],
-                        [(float)b.HalfY, (float)b.HalfUp, (float)b.HalfZ],
-                    ],
-                    Properties = new Dictionary<string, JsonElement>
-                    {
-                        [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
-                    },
-                });
-            }
-        }
+        _ = entities;
+        _ = lockDoc;
+        _ = loa;
+        _ = beam;
+        _ = oah;
     }
 
     /// <summary>C40 stacks in the hold — interior cargo, not a second exterior hull.</summary>
