@@ -1,6 +1,6 @@
 using Novolis.Math.Geometry;
-using Novolis.Modeling.Import;
-using Novolis.Modeling.Scene;
+using Novolis._3D;
+using Novolis._3D;
 
 namespace CorellianFreighterBuilder;
 

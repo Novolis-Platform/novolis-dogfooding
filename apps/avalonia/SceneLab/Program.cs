@@ -11,7 +11,7 @@ using Novolis.Avalonia._3D;
 using Novolis.Avalonia._3D.Services;
 using Novolis.Avalonia._3D.Session;
 using Novolis.Avalonia._3D.Ui;
-using Novolis.Modeling.Scene;
+using Novolis._3D;
 
 namespace SceneLab;
 

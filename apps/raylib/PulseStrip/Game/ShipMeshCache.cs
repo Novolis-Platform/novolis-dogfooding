@@ -2,7 +2,7 @@ namespace PulseStrip.Game;
 
 using System.Numerics;
 using Novolis.Math.Geometry;
-using Novolis.Modeling.Import;
+using Novolis._3D;
 
 /// <summary>
 /// Loads MIT-licensed AG ship meshes from Synert/WipeoutClone

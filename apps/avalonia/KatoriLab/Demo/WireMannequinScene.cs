@@ -1,7 +1,7 @@
 using System.Numerics;
 using Novolis.Avalonia._3D.Session;
 using Novolis.Math.Geometry;
-using Novolis.Modeling.Scene;
+using Novolis._3D;
 using Novolis.Simulation.Humanoid;
 
 namespace KatoriLab.Demo;

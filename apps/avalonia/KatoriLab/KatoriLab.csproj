@@ -20,7 +20,7 @@
     <PackageReference Include="Novolis.Avalonia.3D" />
     <PackageReference Include="Novolis.Game.Humanoid" />
     <PackageReference Include="Novolis.Math.Geometry" />
-    <PackageReference Include="Novolis.Modeling.Scene" />
+    <PackageReference Include="Novolis.3D.Scene" />
     <PackageReference Include="Novolis.Simulation.Humanoid" />
     <PackageReference Include="Silk.NET.OpenGL" />
   </ItemGroup>

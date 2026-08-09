@@ -1,6 +1,6 @@
 using System.Numerics;
 using Novolis.Math.Geometry;
-using Novolis.Modeling.Scene;
+using Novolis._3D;
 
 namespace CorellianFreighterBuilder;
 

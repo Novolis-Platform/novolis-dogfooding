@@ -2,8 +2,8 @@ using System.Numerics;
 using Novolis.Avalonia._3D.Session;
 using Novolis.Game.Humanoid;
 using Novolis.Math.Geometry;
-using Novolis.Modeling.Import;
-using Novolis.Modeling.Scene;
+using Novolis._3D;
+using Novolis._3D;
 using Novolis.Simulation.Humanoid;
 using Novolis.Simulation.Humanoid.Skinning;
 

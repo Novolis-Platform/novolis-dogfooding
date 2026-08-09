@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Novolis.Agent.Core;
 using Novolis.Avalonia._3D.Session;
-using Novolis.Modeling.Scene;
+using Novolis._3D;
 
 namespace SceneLab;
 
