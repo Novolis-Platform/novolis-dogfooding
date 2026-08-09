@@ -8,6 +8,7 @@ using Novolis.Raylib.Logging;
 using Novolis.Raylib.Rendering;
 using Novolis.Raylib.Timing;
 using Novolis.Raylib.Windowing;
+using Novolis.Ship.Topology;
 
 namespace CalypsoCad.Services;
 
@@ -111,84 +112,40 @@ internal static class HeadlessWalkthroughExporter
                 session.CutPlaneOffset = 0f;
                 session.CutPlaneUserDriven = false;
 
-                // --- Act 3: interior rooms (CAL-INT-DK-001 Rev F names) ---
+                // --- Act 3: walking camera — HOLD aft (DK−1) through every open hatch ---
                 session.WireMeshMode = CalypsoWireMeshMode.None;
-                foreach (var (spaceName, deckHint, steps) in new (string, int?, int)[]
-                         {
-                             ("BRIDGE", 0, 10),
-                             ("CROSSING", 0, 14),
-                             ("CORR_P", 0, 14),
-                             ("GALLEY", 0, 8),
-                             ("ENG", 0, 12),
-                             ("HOLD", 0, 14),
-                             ("CREW_1", 0, 8),
-                             ("PAX_1", 1, 8),
-                         })
+                session.ViewMode = CalypsoViewMode.Interior;
+                session.SelectedHookId = null;
+                var walkPath = ShipWalk.BuildDeckMinusOneAftTour(session.Document);
+                var byId = session.Document.Entities.ToDictionary(e => e.Id);
+                // Subsample dense waypoints so the reel stays watchable (~2–3 min at 15 fps).
+                var stride = Math.Max(1, walkPath.Count / 180);
+                for (var i = 0; i < walkPath.Count; i += stride)
                 {
-                    var space = session.Spaces.FirstOrDefault(s =>
-                        string.Equals(s.Name, spaceName, StringComparison.OrdinalIgnoreCase)
-                        && (deckHint is null || s.Deck == deckHint));
-                    if (space is null)
-                        continue;
+                    var wp = walkPath[i];
+                    byId.TryGetValue(wp.SpaceId, out var space);
+                    if (space is not null)
+                        session.SelectedSpaceId = space.Id;
+                    renderer.SetInteriorWalkPose(wp.Eye, wp.Look, space);
+                    session.StatusText = $"walkthrough:walk:{wp.Label}:{i + 1}/{walkPath.Count}";
+                    CaptureFrame(renderer, capture, framesDir, ref frameIndex, frames);
+                }
 
-                    session.ViewMode = CalypsoViewMode.Interior;
-                    session.SelectedSpaceId = space.Id;
-                    session.SelectedHookId = null;
-                    session.DeckFilter = space.Deck;
-                    renderer.SyncInteriorFromSelection();
-                    var (eye0, look0) = renderer.GetInteriorPose();
-
-                    if (space.Points is not { Count: >= 3 } pts)
+                if (walkPath.Count == 0)
+                {
+                    // Fallback: short HOLD standing beat if graph is empty.
+                    var hold = session.Spaces.FirstOrDefault(s =>
+                        string.Equals(s.Name, "HOLD", StringComparison.OrdinalIgnoreCase));
+                    if (hold is not null)
                     {
-                        for (var i = 0; i < steps; i++)
+                        session.SelectedSpaceId = hold.Id;
+                        session.DeckFilter = hold.Deck;
+                        renderer.SyncInteriorFromSelection();
+                        for (var i = 0; i < 12; i++)
                         {
-                            session.StatusText = $"walkthrough:{spaceName}:{i + 1}/{steps}";
+                            session.StatusText = $"walkthrough:hold-fallback:{i + 1}/12";
                             CaptureFrame(renderer, capture, framesDir, ref frameIndex, frames);
                         }
-                        continue;
-                    }
-
-                    BoundsOfPts(pts, out var min, out var max);
-                    var center = (min + max) * 0.5f;
-                    var size = max - min;
-                    var alongZ = size.Z >= size.X;
-                    var along = alongZ ? Vector3.UnitZ : Vector3.UnitX;
-                    if (Vector3.Dot(center, along) < 0f)
-                        along = -along;
-
-                    var half = Math.Max(size.X, size.Z) * 0.35f;
-                    var eyeStart = center - along * half;
-                    var eyeEnd = center + along * half * 0.55f;
-                    eyeStart.Y = eye0.Y;
-                    eyeEnd.Y = eye0.Y;
-                    var inset = Math.Min(size.X, size.Z) < 2.6f ? 0.65f : 0.4f;
-                    eyeStart.X = Math.Clamp(eyeStart.X, min.X + inset, max.X - inset);
-                    eyeStart.Z = Math.Clamp(eyeStart.Z, min.Z + inset, max.Z - inset);
-                    eyeEnd.X = Math.Clamp(eyeEnd.X, min.X + inset, max.X - inset);
-                    eyeEnd.Z = Math.Clamp(eyeEnd.Z, min.Z + inset, max.Z - inset);
-
-                    if (space.Flags?.Hollow == true
-                        && string.Equals(space.Name, "Cargo Void", StringComparison.OrdinalIgnoreCase))
-                    {
-                        eyeStart = new Vector3(min.X + 1.25f, min.Y + 8.25f, max.Z - 0.7f);
-                        eyeEnd = new Vector3(min.X + 1.25f, min.Y + 7.6f, max.Z - 2.8f);
-                        look0 = new Vector3(min.X + 1.25f, min.Y + 1.4f, min.Z + 1.8f);
-                    }
-
-                    for (var i = 0; i < steps; i++)
-                    {
-                        var t = i / (float)Math.Max(1, steps - 1);
-                        var eye = Vector3.Lerp(eyeStart, eyeEnd, Smooth(t));
-                        var look = space.Flags?.Hollow == true
-                                   && string.Equals(space.Name, "Cargo Void", StringComparison.OrdinalIgnoreCase)
-                            ? look0
-                            : eye + along * 8f;
-                        if (!(space.Flags?.Hollow == true
-                              && string.Equals(space.Name, "Cargo Void", StringComparison.OrdinalIgnoreCase)))
-                            look.Y = eye.Y;
-                        renderer.SetInteriorPose(eye, look);
-                        session.StatusText = $"walkthrough:{spaceName}:{i + 1}/{steps}";
-                        CaptureFrame(renderer, capture, framesDir, ref frameIndex, frames);
                     }
                 }
 
@@ -220,6 +177,7 @@ internal static class HeadlessWalkthroughExporter
                 CopyKeyframe(frames, exportsDir, Math.Min(orbitFrames / 2, frames.Count - 1), "walkthrough-orbit-mid.png", outputs);
                 CopyKeyframe(frames, exportsDir, Math.Min(orbitFrames + detailFrames / 2, frames.Count - 1), "walkthrough-ramp-pods.png", outputs);
                 CopyKeyframe(frames, exportsDir, Math.Min(orbitFrames + detailFrames + cutFrames / 2, frames.Count - 1), "walkthrough-cutaway.png", outputs);
+                CopyKeyframe(frames, exportsDir, Math.Min(orbitFrames + detailFrames + cutFrames + 8, frames.Count - 1), "walkthrough-walk-start.png", outputs);
                 CopyKeyframe(frames, exportsDir, frames.Count - 1, "walkthrough-catwalk-end.png", outputs);
 
                 return outputs;
@@ -233,20 +191,6 @@ internal static class HeadlessWalkthroughExporter
         {
             AudioDevice.Close();
             RaylibDebug.Reset();
-        }
-    }
-
-    private static float Smooth(float t) => t * t * (3f - 2f * t);
-
-    private static void BoundsOfPts(List<float[]> pts, out Vector3 min, out Vector3 max)
-    {
-        min = new Vector3(float.MaxValue);
-        max = new Vector3(float.MinValue);
-        foreach (var p in pts)
-        {
-            var v = SvgCoords.FromArray(p);
-            min = Vector3.Min(min, v);
-            max = Vector3.Max(max, v);
         }
     }
 

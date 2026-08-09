@@ -1,3 +1,4 @@
+using System.Numerics;
 using Avalonia;
 using CalypsoCad.Generation;
 using CalypsoCad.Models;
@@ -195,6 +196,33 @@ internal static class Program
         var d3 = Novolis.Ship.Primitives.ShipCad.Openings(doc)
             .FirstOrDefault(o => o.Name is not null && o.Name.StartsWith("D3-", StringComparison.OrdinalIgnoreCase));
         Check("D3 vacuum-assisted", d3 is not null && Novolis.Ship.Primitives.ShipCad.IsVacuumAssisted(d3!));
+        Check(
+            "D3 closed under vacuum",
+            d3 is not null
+            && Novolis.Ship.Primitives.ShipCad.GetLeafState(d3!) == Novolis.Ship.Primitives.ShipLeafState.Closed);
+
+        var holdHatch = Novolis.Ship.Primitives.ShipCad.Openings(doc)
+            .FirstOrDefault(o => string.Equals(o.Name, "HOLD-P-DKM1", StringComparison.OrdinalIgnoreCase));
+        Check(
+            "HOLD-P-DKM1 standard open hatch",
+            holdHatch is not null
+            && Novolis.Ship.Primitives.ShipCad.IsStandardHatch(holdHatch!)
+            && Novolis.Ship.Primitives.ShipCad.GetLeafState(holdHatch!) == Novolis.Ship.Primitives.ShipLeafState.Open
+            && Novolis.Ship.Primitives.ShipCad.GetOpeningConnects(holdHatch!).Count >= 2);
+
+        var walk = Novolis.Ship.Topology.ShipWalk.BuildDeckMinusOneAftTour(doc);
+        Check("walk tour from HOLD aft", walk.Count >= 8, $"waypoints={walk.Count}");
+        Check(
+            "walk eyes clamped (no wall pass-through)",
+            walk.All(wp =>
+            {
+                var space = doc.Entities.FirstOrDefault(e => e.Id == wp.SpaceId);
+                if (space is null)
+                    return false;
+                var clamped = Novolis.Ship.Topology.ShipWalk.ClampToSpace(space, wp.Eye, Novolis.Ship.Topology.ShipWalk.DefaultInset);
+                return Vector3.Distance(wp.Eye, clamped) < 0.05f;
+            }),
+            $"waypoints={walk.Count}");
 
         var topo = Novolis.Ship.Topology.ShipTopology.Analyze(doc);
         Check("topology has spaces", topo.SpaceIds.Count > 0, $"count={topo.SpaceIds.Count}");

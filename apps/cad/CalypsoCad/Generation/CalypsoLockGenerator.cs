@@ -327,13 +327,30 @@ internal static class CalypsoLockGenerator
                 ConnectsSides = ["A", "B"],
             };
 
-            var isOuterVacuum = string.Equals(hatch.To, "SPACE", StringComparison.OrdinalIgnoreCase)
+            var fromSpace = hatch.From ?? "A";
+            var toSpace = hatch.To ?? "B";
+            ShipCad.TagOpeningConnects(opening, fromSpace, toSpace);
+
+            var isOuterVacuum = string.Equals(toSpace, "SPACE", StringComparison.OrdinalIgnoreCase)
                                || string.Equals(hatch.Faces, "outer hull", StringComparison.OrdinalIgnoreCase)
                                || hatch.Id!.StartsWith("D3-", StringComparison.OrdinalIgnoreCase);
             if (isOuterVacuum)
+            {
+                // Vacuum-assisted shell hatch: closed under exterior vacuum.
                 ShipCad.TagVacuumAssistedHatch(opening, clearW, clearH, leafState: ShipLeafState.Closed);
+            }
             else
-                ShipCad.TagOpeningPressure(opening, ShipPressureClass.Habitable, clearW, clearH);
+            {
+                // Standard personnel hatch. Airlock D1/D2 stay Closed (double-barrier);
+                // all other schedule hatches Open for walkable circulation.
+                var airlockBarrier = hatch.Id!.StartsWith("D1-", StringComparison.OrdinalIgnoreCase)
+                                     || hatch.Id.StartsWith("D2-", StringComparison.OrdinalIgnoreCase);
+                ShipCad.TagStandardHatch(
+                    opening,
+                    clearW,
+                    clearH,
+                    leafState: airlockBarrier ? ShipLeafState.Closed : ShipLeafState.Open);
+            }
 
             entities.Add(opening);
             openingById[hatch.Id!] = opening;
@@ -393,6 +410,11 @@ internal static class CalypsoLockGenerator
             Entities = entities,
             Camera = new CadCamera { Distance = 100f, Target = [0f, 6f, 0f], Yaw = 0.85f, Pitch = 0.38f },
         };
+
+        // Exterior vacuum seats every vacuum-class leaf Closed.
+        var vacuumClosed = ShipCad.ApplyVacuumSeal(cad, cabinKPa: 101.3f, exteriorKPa: 0f);
+        cad.Properties ??= new Dictionary<string, JsonElement>();
+        cad.Properties["vacuumSealedHatches"] = JsonSerializer.SerializeToElement(vacuumClosed);
 
         ShipDocumentMetrics.SetShipEnvelope(cad, loa, beam, oah, DeckSpacing);
         cad.Properties!["canon"] = JsonSerializer.SerializeToElement("CAL-INT-DK-001 Rev F deck plans");

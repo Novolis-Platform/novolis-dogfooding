@@ -5,6 +5,8 @@ using Novolis.Avalonia.Raylib;
 using Novolis.Cad.Primitives;
 using Novolis.Raylib.Colors;
 using Novolis.Raylib.Rendering;
+using Novolis.Ship.Primitives;
+using Novolis.Ship.Topology;
 using Novolis.Simulation.View;
 using RayCamera = Novolis.Raylib.Rendering.Camera;
 
@@ -140,6 +142,29 @@ internal sealed class CalypsoRenderer
         _interiorEye = eye;
         _interiorTarget = target;
         SanitizeInteriorCamera(_session.SelectedSpace);
+    }
+
+    /// <summary>
+    /// Walking-camera pose: clamp eye into the active space (or union of walk ensemble spaces)
+    /// so the camera never passes through walls. Open hatch leaves are not drawn.
+    /// </summary>
+    public void SetInteriorWalkPose(Vector3 eye, Vector3 target, CadEntity? space)
+    {
+        _interiorEnsemble = "walk";
+        if (space is not null)
+        {
+            _session.SelectedSpaceId = space.Id;
+            _session.DeckFilter = space.Deck;
+            _interiorEye = ShipWalk.ClampToSpace(space, eye, ShipWalk.DefaultInset);
+        }
+        else
+        {
+            _interiorEye = eye;
+        }
+
+        _interiorTarget = target;
+        if (Vector3.DistanceSquared(_interiorEye, _interiorTarget) < 0.25f)
+            _interiorTarget = _interiorEye + new Vector3(0f, 0f, 3f);
     }
 
     public (Vector3 Eye, Vector3 Target) GetInteriorPose() => (_interiorEye, _interiorTarget);
@@ -856,17 +881,28 @@ internal sealed class CalypsoRenderer
     {
         if (selected)
             return true;
+
+        if (_interiorEnsemble == "walk")
+        {
+            var selDeck = _session.SelectedSpace?.Deck ?? space.Deck;
+            var name = space.Name ?? "";
+            // Adjacent walkable volumes on the same deck + continuous voids (hold / eng atrium).
+            if (space.Deck == selDeck)
+                return true;
+            return name is "HOLD" or "ENG";
+        }
+
         if (_interiorEnsemble != "catwalk-dk0")
             return false;
 
-        var name = space.Name ?? "";
-        if (string.Equals(name, "Cargo Void", StringComparison.OrdinalIgnoreCase) && space.Flags?.Hollow == true)
+        var nm = space.Name ?? "";
+        if (string.Equals(nm, "Cargo Void", StringComparison.OrdinalIgnoreCase) && space.Flags?.Hollow == true)
             return true;
-        if (string.Equals(name, "Cargo Catwalk", StringComparison.OrdinalIgnoreCase) && space.Deck == 0)
+        if (string.Equals(nm, "Cargo Catwalk", StringComparison.OrdinalIgnoreCase) && space.Deck == 0)
             return true;
         if (space.Deck != 0)
             return false;
-        return name is "Port Corridor" or "Starboard Corridor" or "Crossing Hallway"
+        return nm is "Port Corridor" or "Starboard Corridor" or "Crossing Hallway"
             or "VEST-P" or "VEST-S" or "VEST-BR" or "Engineering";
     }
 
@@ -1492,6 +1528,10 @@ internal sealed class CalypsoRenderer
             }
             return;
         }
+
+        // Open leaves: frame/lintel only — walkable clear opening (no slab through the hatch).
+        if (ShipCad.GetLeafState(opening) == ShipLeafState.Open)
+            return;
 
         // Door / hatch leaf: thickness always on the short footprint axis so mis-oriented
         // schedules can't fill a 2 m corridor with a face-on slab.
