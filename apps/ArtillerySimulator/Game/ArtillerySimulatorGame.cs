@@ -44,6 +44,10 @@ internal sealed class ArtillerySimulatorGame
 
     public void Initialize(RayGameContext ctx)
     {
+        // Raylib default font is ASCII-ish; keep F3 diagnostics off so it doesn't sit on the title.
+        if (_diagnostics.Visible)
+            _diagnostics.Toggle();
+
         ctx.DisableCursor();
         _terrain.Rebuild(_terrainSeed, _flatTerrain, _terrainStyle);
         _shot.Reset();

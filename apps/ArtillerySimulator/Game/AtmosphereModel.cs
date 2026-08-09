@@ -49,6 +49,6 @@ internal sealed class AtmosphereModel
         var rho = DensityKgPerM3At(sampleAltitudeMeters);
         var wind = SurfaceWindMetersPerSecond;
         var speed = wind.Length();
-        return $"ρ {rho:F3} kg/m³  RH {RelativeHumidity * 100:F0}%  wind {speed:F0} m/s ({wind.X:F0}, {wind.Z:F0})";
+        return $"rho {rho:F3} kg/m3  RH {RelativeHumidity * 100:F0}%  wind {speed:F0} m/s ({wind.X:F0}, {wind.Z:F0})";
     }
 }

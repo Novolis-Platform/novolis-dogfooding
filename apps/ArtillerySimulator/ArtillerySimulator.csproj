@@ -4,9 +4,7 @@
     <RootNamespace>ArtillerySimulator</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Novolis.Raylib">
-      <ExcludeAssets>buildTransitive</ExcludeAssets>
-    </PackageReference>
+    <PackageReference Include="Novolis.Raylib" />
     <PackageReference Include="Novolis.Physics.Ballistics" />
     <PackageReference Include="Novolis.Physics.Collision.Simple" />
     <PackageReference Include="Novolis.Simulation.World" />
