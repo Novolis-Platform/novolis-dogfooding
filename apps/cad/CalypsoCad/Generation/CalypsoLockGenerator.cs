@@ -61,7 +61,7 @@ internal static class CalypsoLockGenerator
             {
                 var prev = JsonSerializer.Deserialize<CadDocument>(File.ReadAllText(existingCad), CadJson.Options);
                 preservedExterior = prev?.Entities
-                    .Where(Novolis.Avalonia.Cad.Ship.Services.CadShipExterior.IsPreservedExterior)
+                    .Where(IsHandAuthoredExterior)
                     .Select(CloneEntity)
                     .ToList();
             }
@@ -79,6 +79,30 @@ internal static class CalypsoLockGenerator
             cad.Entities.AddRange(preservedExterior);
         CadDocumentStore.WriteAll(dir, layers, shapes, cad);
         return dir;
+    }
+
+    /// <summary>
+    /// Keep only hand-authored exterior (e.g. acceptance / Draft Studio saves).
+    /// Generator-owned hull/nacelle/C40 must be rebuilt each regenerate — otherwise the old OML blob sticks.
+    /// </summary>
+    private static bool IsHandAuthoredExterior(CadEntity entity)
+    {
+        if (!Novolis.Avalonia.Cad.Ship.Services.CadShipExterior.IsPreservedExterior(entity))
+            return false;
+        var name = entity.Name ?? "";
+        if (name.StartsWith("ext-acceptance", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("ext-user-", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (entity.Properties is not null
+            && entity.Properties.TryGetValue("handAuthored", out var el)
+            && el.ValueKind is JsonValueKind.True)
+            return true;
+        // Draft Studio meshes with exterior=true but not generator names.
+        if (string.Equals(entity.Kind, "mesh", StringComparison.OrdinalIgnoreCase)
+            && !name.StartsWith("ext-oml", StringComparison.OrdinalIgnoreCase)
+            && !name.StartsWith("ext-hull", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
     }
 
     private static CalypsoLockDocument LoadLock()
@@ -199,23 +223,13 @@ internal static class CalypsoLockGenerator
         var spaceByKey = new Dictionary<string, CadEntity>(StringComparer.OrdinalIgnoreCase);
         var openingById = new Dictionary<string, CadEntity>(StringComparer.OrdinalIgnoreCase);
 
-        // Exterior OML box (analytic stand-in; manufacturer OBJ remains pepakura SoT).
-        entities.Add(new CadEntity
-        {
-            Kind = "box",
-            Name = "ext-oml-hull",
-            LayerId = LayerHull,
-            ShapeId = ShapeHullExt,
-            Points =
-            [
-                [0f, oah * 0.5f, 0f],
-                [beam * 0.5f, oah * 0.5f, loa * 0.5f],
-            ],
-            Properties = new Dictionary<string, JsonElement>
-            {
-                [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
-            },
-        });
+        // Faceted OML from manufacturer pepakura (not a solid blob).
+        if (TryBuildManufacturerHullMesh(loa, beam, oah, out var hullMesh))
+            entities.Add(hullMesh);
+        else
+            entities.AddRange(BuildSteppedHullBoxes(loa, beam, oah));
+
+        AddExteriorDetails(entities, lockDoc, loa, beam, oah);
 
         foreach (var comp in lockDoc.Compartments ?? [])
         {
@@ -547,14 +561,296 @@ internal static class CalypsoLockGenerator
         };
     }
 
+    /// <summary>
+    /// Manufacturer CAD JSON uses ventral-aft-port AABB (X aft→stem, Y port→stbd, Z keel→crown with PAD).
+    /// Map into Cad (+X stbd, +Y up from keel, +Z bow).
+    /// </summary>
+    private static bool TryBuildManufacturerHullMesh(float loa, float beam, float oah, out CadEntity mesh)
+    {
+        mesh = null!;
+        string? path = null;
+        foreach (var p in CandidateHullCadPaths())
+        {
+            if (File.Exists(p))
+            {
+                path = p;
+                break;
+            }
+        }
+
+        if (path is null)
+            return false;
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        var root = doc.RootElement;
+        if (!root.TryGetProperty("points", out var pointsEl) || !root.TryGetProperty("faces", out var facesEl))
+            return false;
+
+        const float pad = 0.5f;
+        var byId = new Dictionary<string, Vector3>(StringComparer.Ordinal);
+        foreach (var p in pointsEl.EnumerateArray())
+        {
+            var id = p.GetProperty("id").GetString();
+            if (id is null || id == "O")
+                continue;
+            var mx = p.GetProperty("x").GetSingle();
+            var my = p.GetProperty("y").GetSingle();
+            var mz = p.GetProperty("z").GetSingle();
+            // Manufacturer → Cad
+            var x = my - pad - beam * 0.5f;
+            var y = mz - pad;
+            var z = (mx - pad) - loa * 0.5f;
+            byId[id] = new Vector3(x, y, z);
+        }
+
+        var verts = new List<float[]>();
+        var inds = new List<int>();
+        var indexOf = new Dictionary<(int, int, int), int>();
+
+        int AddVert(Vector3 v)
+        {
+            var key = (
+                (int)MathF.Round(v.X * 1000f),
+                (int)MathF.Round(v.Y * 1000f),
+                (int)MathF.Round(v.Z * 1000f));
+            if (indexOf.TryGetValue(key, out var existing))
+                return existing;
+            var i = verts.Count;
+            indexOf[key] = i;
+            verts.Add([v.X, v.Y, v.Z]);
+            return i;
+        }
+
+        foreach (var face in facesEl.EnumerateArray())
+        {
+            if (!face.TryGetProperty("shell", out var shell) ||
+                !string.Equals(shell.GetString(), "OML", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!face.TryGetProperty("verts", out var vids))
+                continue;
+            var ids = vids.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).Cast<string>().ToList();
+            if (ids.Count < 3)
+                continue;
+            var poly = new List<Vector3>();
+            foreach (var id in ids)
+            {
+                if (!byId.TryGetValue(id, out var v))
+                {
+                    poly.Clear();
+                    break;
+                }
+
+                poly.Add(v);
+            }
+
+            if (poly.Count < 3)
+                continue;
+
+            // Fan triangulate CCW as stored
+            var i0 = AddVert(poly[0]);
+            for (var i = 1; i + 1 < poly.Count; i++)
+            {
+                inds.Add(i0);
+                inds.Add(AddVert(poly[i]));
+                inds.Add(AddVert(poly[i + 1]));
+            }
+        }
+
+        if (inds.Count < 3)
+            return false;
+
+        mesh = new CadEntity
+        {
+            Kind = "mesh",
+            Name = "ext-oml-hull",
+            LayerId = LayerHull,
+            ShapeId = ShapeHullExt,
+            Color = [0.42f, 0.50f, 0.58f],
+            MeshVertices = verts,
+            MeshIndices = inds,
+            Properties = new Dictionary<string, JsonElement>
+            {
+                [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
+                ["source"] = JsonSerializer.SerializeToElement("CAL-HULL-CAD-001.json OML faces"),
+                ["triangleCount"] = JsonSerializer.SerializeToElement(inds.Count / 3),
+            },
+        };
+        return true;
+    }
+
+    private static IEnumerable<string> CandidateHullCadPaths()
+    {
+        yield return Path.Combine(AppContext.BaseDirectory, "lock", "CAL-HULL-CAD-001.json");
+        var proj = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+        yield return Path.Combine(proj, "docs", "manufacturer", "CAL-HULL-CAD-001.json");
+        yield return Path.Combine(
+            @"d:\novolis\novolis-dogfooding\apps\cad\CalypsoCad\docs\manufacturer",
+            "CAL-HULL-CAD-001.json");
+    }
+
+    /// <summary>Fallback stepped AABB silhouette when manufacturer JSON is missing.</summary>
+    private static List<CadEntity> BuildSteppedHullBoxes(float loa, float beam, float oah)
+    {
+        // Fore stations from lock (z from stem → half extents).
+        (float z0, float z1, float hb, float hh)[] bays =
+        [
+            (0f, 3.25f, 1.75f, 2f),
+            (3.25f, 10f, 5f, 3.75f),
+            (10f, 17f, 8.5f, 5.25f),
+            (17f, loa - 4f, beam * 0.5f, oah * 0.5f),
+            (loa - 4f, loa, beam * 0.5f, oah * 0.5f),
+        ];
+        var list = new List<CadEntity>();
+        for (var i = 0; i < bays.Length; i++)
+        {
+            var (z0, z1, hb, hh) = bays[i];
+            var zMid = (LockToWorld(0, 0, z0, loa).Z + LockToWorld(0, 0, z1, loa).Z) * 0.5f;
+            var depth = MathF.Abs(LockToWorld(0, 0, z0, loa).Z - LockToWorld(0, 0, z1, loa).Z) * 0.5f;
+            list.Add(new CadEntity
+            {
+                Kind = "box",
+                Name = $"ext-hull-bay-{i}",
+                LayerId = LayerHull,
+                ShapeId = ShapeHullExt,
+                Color = [0.42f, 0.50f, 0.58f],
+                Points =
+                [
+                    [0f, hh, zMid],
+                    [hb, hh, depth],
+                ],
+                Properties = new Dictionary<string, JsonElement>
+                {
+                    [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
+                },
+            });
+        }
+
+        return list;
+    }
+
+    private static void AddExteriorDetails(List<CadEntity> entities, CalypsoLockDocument lockDoc, float loa, float beam, float oah)
+    {
+        // Port / stbd nacelle pods (orbit silhouette).
+        foreach (var side in new[] { -1f, 1f })
+        {
+            entities.Add(new CadEntity
+            {
+                Kind = "cylinder",
+                Name = side < 0 ? "nacelle-port" : "nacelle-stbd",
+                LayerId = LayerHull,
+                ShapeId = ShapeHullExt,
+                Color = [0.38f, 0.42f, 0.48f],
+                Center = [side * (beam * 0.5f + 1.2f), oah * 0.35f, -loa * 0.12f],
+                Radius = 1.35f,
+                Height = 9f,
+                Properties = new Dictionary<string, JsonElement>
+                {
+                    [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
+                },
+            });
+        }
+
+        // Aft cargo door coaming (recess cue on stern face).
+        var hold = lockDoc.Hold;
+        var doorW = hold?.DoorW is > 0 ? (float)hold.DoorW : 14f;
+        var doorH = hold?.DoorH is > 0 ? (float)hold.DoorH : 8.5f;
+        var sill = hold?.Sill is >= 0 ? (float)hold.Sill : 0.25f;
+        entities.Add(new CadEntity
+        {
+            Kind = "box",
+            Name = "ext-aft-cargo-door",
+            LayerId = LayerCargo,
+            ShapeId = ShapeCargo,
+            Color = [0.22f, 0.24f, 0.26f],
+            Points =
+            [
+                [0f, sill + doorH * 0.5f, -loa * 0.5f + 0.15f],
+                [doorW * 0.5f, doorH * 0.5f, 0.2f],
+            ],
+            Properties = new Dictionary<string, JsonElement>
+            {
+                [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
+            },
+        });
+
+        // HILS-C40 peek (5×1×3) in hold — visible in sealed exterior pass by name.
+        var c40L = 12.192f;
+        var c40W = 2.438f;
+        var c40H = 2.591f;
+        var cell = 0.2f;
+        var gridW = 5 * c40W + 4 * cell;
+        var c40Fore = hold?.C40Fore is > 0 ? (float)hold.C40Fore : loa - 1f - c40L;
+        var zMid = LockToWorld(0, 0, c40Fore + c40L * 0.5f, loa).Z;
+        var left = -gridW * 0.5f;
+        for (var col = 0; col < 5; col++)
+        {
+            var x = left + col * (c40W + cell) + c40W * 0.5f;
+            for (var tier = 0; tier < 3; tier++)
+            {
+                var y = 1f + c40H * (tier + 0.5f);
+                entities.Add(new CadEntity
+                {
+                    Kind = "box",
+                    Name = $"C40-c{col}-t{tier}",
+                    LayerId = LayerCargo,
+                    ShapeId = ShapeCargo,
+                    Color = [0.66f, 0.50f, 0.24f],
+                    Points =
+                    [
+                        [x, y, zMid],
+                        [c40W * 0.5f, c40H * 0.5f, c40L * 0.5f],
+                    ],
+                    Height = c40H,
+                    Thickness = c40W,
+                });
+            }
+        }
+
+        // Exterior airlock blister boxes at shell (D3 stations).
+        foreach (var side in new[] { -1f, 1f })
+        {
+            var z = LockToWorld(0, 0, 24.25f, loa).Z;
+            entities.Add(new CadEntity
+            {
+                Kind = "box",
+                Name = side < 0 ? "ext-airlock-blister-port" : "ext-airlock-blister-stbd",
+                LayerId = LayerHull,
+                ShapeId = ShapeHullExt,
+                Color = [0.55f, 0.58f, 0.62f],
+                Points =
+                [
+                    [side * (beam * 0.5f - 0.4f), 4f + 1.05f, z],
+                    [0.8f, 1.05f, 1.25f],
+                ],
+                Properties = new Dictionary<string, JsonElement>
+                {
+                    [ShipPropertyKeys.Exterior] = JsonSerializer.SerializeToElement(true),
+                },
+            });
+        }
+    }
+
     private sealed class CalypsoLockDocument
     {
         public LockEnvelope? Envelope { get; set; }
         public LockDecks? Decks { get; set; }
+        public LockHold? Hold { get; set; }
         public List<LockCompartment>? Compartments { get; set; }
         public List<LockAirlock>? Airlocks { get; set; }
         public List<LockHatch>? Hatches { get; set; }
         public LockStations? Stations { get; set; }
+    }
+
+    private sealed class LockHold
+    {
+        [JsonPropertyName("DOOR_W")]
+        public double DoorW { get; set; }
+        [JsonPropertyName("DOOR_H")]
+        public double DoorH { get; set; }
+        [JsonPropertyName("SILL")]
+        public double Sill { get; set; }
+        [JsonPropertyName("C40_FORE")]
+        public double C40Fore { get; set; }
     }
 
     private sealed class LockEnvelope

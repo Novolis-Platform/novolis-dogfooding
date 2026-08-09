@@ -526,20 +526,29 @@ internal sealed class CalypsoRenderer
         if (cutaway)
             DrawCutFaceCue();
 
-        // Solid orbit: authored CAD solids/meshes from the document (Draft Studio / Cad Studio Save).
-        // No hardcoded freighter shell — empty until exterior geometry exists in .cadjson.
+        // Solid orbit: sealed exterior hull/meshes.
+        // Cutaway / wire / interior: deck CAD + still draw exterior rim so the freighter silhouette remains.
         if (solidOrbit)
         {
             CadShipExterior.Draw(_session.Document);
         }
         else
         {
+            // Keep faceted OML / nacelles visible under cutaway so it does not read as floating rooms.
+            if (cutaway || _session.ViewMode == CalypsoViewMode.Orbit)
+                CadShipExterior.Draw(_session.Document);
+
             foreach (var entity in _session.Document.Entities)
             {
                 if (entity.Kind == "wall" && deckForWalls is { } walls && !WallVisibleOnDecks(entity, walls))
                     continue;
 
                 if (entity.Kind == "space" && deckForSpaces is { } spacesDeck && !SpaceVisibleOnDeck(entity, spacesDeck))
+                    continue;
+
+                // Exterior solids/meshes already drawn above — skip duplicate in cutaway orbit.
+                if ((cutaway || _session.ViewMode == CalypsoViewMode.Orbit)
+                    && CadShipExterior.IsExteriorDrawable(entity))
                     continue;
 
                 switch (entity.Kind)

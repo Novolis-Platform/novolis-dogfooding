@@ -33,7 +33,7 @@ internal sealed class CalypsoSession
     public int? DeckFilter { get; set; } // null = all
     public Guid? SelectedSpaceId { get; set; }
     public Guid? SelectedHookId { get; set; }
-    public CalypsoWireMeshMode WireMeshMode { get; set; } = CalypsoWireMeshMode.None;
+    public CalypsoWireMeshMode WireMeshMode { get; set; } = CalypsoWireMeshMode.CutawayPartial;
     public string StatusText { get; set; } = "";
 
     /// <summary>World cutaway plane origin (used when <see cref="WireMeshMode"/> is CutawayPartial).</summary>

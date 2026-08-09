@@ -86,6 +86,15 @@ internal static class Program
         var loa = Novolis.Ship.Primitives.ShipDocumentMetrics.GetLoaMeters(doc);
         Check("LOA 69", Math.Abs(loa - 69f) < 0.01f, $"got {loa}");
 
+        var hull = doc.Entities.FirstOrDefault(e =>
+            string.Equals(e.Name, "ext-oml-hull", StringComparison.OrdinalIgnoreCase));
+        Check(
+            "faceted OML mesh (not blob box)",
+            hull is { Kind: var k }
+            && string.Equals(k, "mesh", StringComparison.OrdinalIgnoreCase)
+            && hull.MeshIndices is { Count: >= 90 },
+            hull is null ? "missing" : $"kind={hull.Kind} inds={hull.MeshIndices?.Count ?? 0}");
+
         var cabins = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
             .Where(s => s.Name is not null && s.Name.StartsWith("CABIN_", StringComparison.OrdinalIgnoreCase))
             .Select(s => s.Name!)
