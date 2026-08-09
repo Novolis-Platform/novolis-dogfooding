@@ -6,7 +6,8 @@ Dogfood app that generates **Calypso** Rev H lock companions (from `docs/interna
 
 | Spec | Value |
 |------|-------|
-| Hull | **69 m LOA · 20 m beam · 12 m OAH** (midbody stretch; `L_fore=17` / `L_aft=4` fixed) |
+| **Outer hull** | **`docs/manufacturer/CAL-HULL-CAD-001.json` OML** (scaled to lock envelope if needed). Interiors nest **inside IML**. |
+| Hull envelope | **69 m LOA · 20 m beam · 12 m OAH** (midbody stretch; `L_fore=17` / `L_aft=4` fixed) |
 | Shell | **AISI 316L · t=8 mm** flat-plate pepakura (`Novolis.Ship.Structure` BOM/mass ~243 t skin) |
 | Hold | HILS-C40 **5×1×3** · pack length **19.692 m** · aft door **14×8.5** |
 | Engineering | Full-height atrium **8.25 m** F–A |
@@ -14,9 +15,9 @@ Dogfood app that generates **Calypso** Rev H lock companions (from `docs/interna
 | Corridors | Twin port/stbd clear **2.0 m** (inner edge ±5 from CL) |
 | Cabins | **5** discrete crew cabins on deck +1 (`CABIN_1`…`CABIN_5`) |
 | Airlocks | Port/stbd L-airlocks DK0 · D3 vacuum-assisted (pressure-assist seal) |
-| Source | `docs/internals/calypso-lock.mjs` + `CAL-INT-GA-001.json` |
+| Source | Manufacturer hull + `docs/internals/calypso-lock.mjs` / `CAL-INT-GA-001.json` interiors |
 
-Out of scope for this dogfood: uniform isotropic rescale (midbody stretch only), full Boolean ring/sill BREP, replacing manufacturer HTML/OBJ generators.
+Out of scope for this dogfood: inventing a second exterior hull (no nacelle/blister placeholders), uniform isotropic rescale (midbody stretch only), full Boolean ring/sill BREP.
 
 ## Arrangement (engineering)
 
@@ -37,9 +38,8 @@ FP ── hab stack (−1/0/+1) ── WT-BH eng (38.8) ── Engineering OAH �
 - **HILS-C40** stow: 15 `box` entities (`C40-c{col}-t{tier}`), 5 abreast × 1 deep × 3 high
 - Vestibules + tagged opening schedule (PD-*/AH-*/CD-*/RAMP) with **wall baseline splits** (`OpeningDerivation`)
 - Lore hooks: `Bridge`, `OwnerLock`, `PhotoWallBridge`, `ArmoryCrossing`, `GalleyGrowthChart`, `EngCore`, `CargoVoidEye`, `AftRamp`, airlocks, etc.
-- Exterior nacelle pods for orbit silhouette
+- **Outer hull** = manufacturer OML mesh; **IML** loft for nest; lock clears clipped to fit inside
 - Aft: large cargo **hatch-ramp** (no stern thruster bank)
-- Side pods: main **engines** (aft nozzles) + **FTL graviton field manipulators** (mid-fore emitters)
 
 ## Detail pass (renderer)
 
@@ -47,7 +47,7 @@ Immediate-mode cubes/lines/cylinders (no DrawTriangle3D):
 
 - Door / hatch **leaves** + aft **ramp steps**; armored tint on CD-*
 - Module prop kits: cabin UI/webbing, galley appliance run, airlock dual hatches + hooks, triple corridor trunks, eng tanks/conduits, lounge bar/stools, cargo gantry/cleats/handrails
-- Orbit: hull **panel seams + rivets**; nacelle **end caps**; C40 containers in orbit + cargo interior
+- Orbit: manufacturer hull panel mesh + C40 containers in cutaway / cargo interior
 
 ## Run
 

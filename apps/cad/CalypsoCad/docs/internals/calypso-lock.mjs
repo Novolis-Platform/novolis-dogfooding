@@ -156,6 +156,150 @@ export function hullBeamAt(z) {
   return BEAM;
 }
 
+export function stationChamfer(halfBeam, halfHeight) {
+  const kx = (halfBeam * 2) / BEAM;
+  const ky = (halfHeight * 2) / OAH;
+  return {
+    cx: Math.min(CHAMFER * kx, halfBeam * 0.45),
+    cy: Math.min(CHAMFER * ky, halfHeight * 0.45),
+  };
+}
+
+/** Soft-chamfer octagon at a station — verts in lock frame (y CL→stbd, up from keel). */
+export function octagonVerts(halfBeam, halfHeight) {
+  const { cx, cy } = stationChamfer(halfBeam, halfHeight);
+  const mid = OAH / 2;
+  return [
+    { y: -halfBeam + cx, up: mid + halfHeight },
+    { y: halfBeam - cx, up: mid + halfHeight },
+    { y: halfBeam, up: mid + halfHeight - cy },
+    { y: halfBeam, up: mid - halfHeight + cy },
+    { y: halfBeam - cx, up: mid - halfHeight },
+    { y: -halfBeam + cx, up: mid - halfHeight },
+    { y: -halfBeam, up: mid - halfHeight + cy },
+    { y: -halfBeam, up: mid + halfHeight - cy },
+  ];
+}
+
+/**
+ * Faceted OML loft stations (fore taper + midbody + aft face).
+ * Enough for render/manufacture without falling back to AABB boxes.
+ */
+export function hullLoft() {
+  const stations = FORE_STATIONS.map((s) => ({
+    id: s.id,
+    zFromStem: s.z,
+    halfBeam: s.halfBeam,
+    halfHeight: s.halfHeight,
+    verts: octagonVerts(s.halfBeam, s.halfHeight),
+  }));
+  for (const m of [
+    { id: "MB1", z: L_FORE + L_MID / 2 },
+    { id: "MB2", z: L_FORE + L_MID },
+    { id: "AFT", z: LOA },
+  ]) {
+    stations.push({
+      id: m.id,
+      zFromStem: m.z,
+      halfBeam: BEAM / 2,
+      halfHeight: OAH / 2,
+      verts: octagonVerts(BEAM / 2, OAH / 2),
+    });
+  }
+  return { shell: "OML", material: MATERIAL, t: T_SHELL, stations };
+}
+
+/**
+ * Plan footprint ring [y, zFromStem] for a clear rectangle clipped to hull beam.
+ * CCW when viewed from above (stbd-aft → port-aft → port-fore → stbd-fore walk).
+ */
+export function planRingRect(y0, y1, z0, z1, samples = 16) {
+  const ring = [];
+  const clipY = (y, z) => {
+    const hb = hullBeamAt(z) / 2 - T_SHELL - 0.02;
+    return Math.max(-hb, Math.min(hb, y));
+  };
+  for (let i = 0; i <= samples; i++) {
+    const z = z0 + ((z1 - z0) * i) / samples;
+    ring.push([clipY(y1, z), Number(z.toFixed(4))]);
+  }
+  for (let i = samples; i >= 0; i--) {
+    const z = z0 + ((z1 - z0) * i) / samples;
+    ring.push([clipY(y0, z), Number(z.toFixed(4))]);
+  }
+  return ring;
+}
+
+function withPlanRing(c) {
+  return {
+    ...c,
+    planRing: planRingRect(c.y0, c.y1, c.z0, c.z1),
+  };
+}
+
+/** Exterior features in lock coords (for orbit silhouette / render). */
+export function exterior() {
+  const blisterZ = Z_CROSS_AFT + L_AIR_JOG / 2;
+  return {
+    nacelles: [
+      {
+        id: "nacelle-port",
+        y: -(BEAM / 2 + 1.2),
+        up: OAH * 0.35,
+        zFromStem: LOA * 0.62,
+        radius: 1.35,
+        length: 9,
+      },
+      {
+        id: "nacelle-stbd",
+        y: BEAM / 2 + 1.2,
+        up: OAH * 0.35,
+        zFromStem: LOA * 0.62,
+        radius: 1.35,
+        length: 9,
+      },
+    ],
+    aftDoor: {
+      id: "ext-aft-cargo-door",
+      y: 0,
+      up: SILL + DOOR_H / 2,
+      zFromStem: LOA,
+      halfW: DOOR_W / 2,
+      halfH: DOOR_H / 2,
+      halfD: 0.2,
+    },
+    airlockBlisters: [
+      {
+        id: "ext-airlock-blister-port",
+        y: -(AIR_OUTER - 0.4),
+        up: Z_DK0 + DOOR_H_PASS / 2,
+        zFromStem: blisterZ,
+        halfY: 0.8,
+        halfUp: 1.05,
+        halfZ: 1.25,
+      },
+      {
+        id: "ext-airlock-blister-stbd",
+        y: AIR_OUTER - 0.4,
+        up: Z_DK0 + DOOR_H_PASS / 2,
+        zFromStem: blisterZ,
+        halfY: 0.8,
+        halfUp: 1.05,
+        halfZ: 1.25,
+      },
+    ],
+    c40: {
+      fore: C40_FORE,
+      cols: COLS,
+      tiers: TIERS,
+      L: C40_L,
+      W: C40_W,
+      H: C40_H,
+      cell: CELL,
+    },
+  };
+}
+
 /**
  * Clear AABB in ship coords: z from stem forward→aft, y CL→stbd+, up from keel.
  * Rooms are clear inside BH faces (T_BH already outside these boxes for midbody stacks).
@@ -330,7 +474,7 @@ export function compartments() {
       up0: Z_DK1,
       up1: Z_DK1 + ROOM_H,
     },
-  ];
+  ].map(withPlanRing);
 }
 
 /** Five equal clear cabins on deck +1 inside the crew band (partitions absorb T_BH). */
@@ -595,7 +739,7 @@ export function airlockVolumes() {
       up1: Z_DK0 + ROOM_H,
     });
   }
-  return out;
+  return out.map(withPlanRing);
 }
 
 /** Run fabrication asserts; throws on failure. */

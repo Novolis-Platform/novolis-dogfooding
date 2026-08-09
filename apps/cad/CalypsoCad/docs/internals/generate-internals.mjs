@@ -83,7 +83,7 @@ const {
   hullHeightAt,
 } = L;
 
-const REV = "A";
+const REV = "B";
 const C = {
   ink: "#1a1a1a",
   mute: "#444",
@@ -529,7 +529,7 @@ ${pills([`LOA ${fmt(LOA)}`, `beam ${fmt(BEAM)}`, `OAH ${fmt(OAH)}`, `L_mid ${fmt
 <tr><td>CAL-INT-SEC-001</td><td>Sections — eng / hold / airlock</td></tr>
 <tr><td>CAL-INT-HTC-001</td><td>Hatch schedule + L-airlock detail</td></tr>
 <tr><td>CAL-INT-HOLD-001</td><td>Hold packing + aft door</td></tr>
-<tr><td>CAL-INT-GA-001.json</td><td>Machine compartments, hatches, corridor CLs</td></tr>
+<tr><td>CAL-INT-GA-001.json</td><td>Machine compartments (planRing), hullLoft, exterior, hatches</td></tr>
 </table>
 <h2>Fabrication rules</h2>
 <ul>
@@ -681,6 +681,8 @@ const json = {
   airlocks: L.airlockVolumes(),
   hatches: L.hatches(),
   corridorCenterlines: L.corridorCenterlines(),
+  hullLoft: L.hullLoft(),
+  exterior: L.exterior(),
   stations: {
     Z_BRIDGE_AFT,
     Z_VERT_FORE,

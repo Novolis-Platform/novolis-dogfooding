@@ -95,6 +95,29 @@ internal static class Program
             && hull.MeshIndices is { Count: >= 90 },
             hull is null ? "missing" : $"kind={hull.Kind} inds={hull.MeshIndices?.Count ?? 0}");
 
+        Check(
+            "IML nest shell present",
+            doc.Entities.Any(e => string.Equals(e.Name, "int-iml-hull", StringComparison.OrdinalIgnoreCase)));
+
+        Check(
+            "no fake exterior pods",
+            !doc.Entities.Any(e =>
+                (e.Name?.Contains("nacelle", StringComparison.OrdinalIgnoreCase) ?? false)
+                || (e.Name?.Contains("airlock-blister", StringComparison.OrdinalIgnoreCase) ?? false)));
+
+        var clipped = doc.Entities.Count(e =>
+            string.Equals(e.Kind, "space", StringComparison.OrdinalIgnoreCase)
+            && e.Properties is not null
+            && e.Properties.TryGetValue("clippedToManufacturerHull", out var c)
+            && c.ValueKind == System.Text.Json.JsonValueKind.True);
+        Check("fore interiors clipped into hull", clipped >= 1, $"clipped={clipped}");
+
+        Check(
+            "outerHull property = manufacturer",
+            doc.Properties is not null
+            && doc.Properties.TryGetValue("outerHull", out var oh)
+            && oh.GetString()?.Contains("manufacturer", StringComparison.OrdinalIgnoreCase) == true);
+
         var cabins = Novolis.Ship.Primitives.ShipCad.Spaces(doc)
             .Where(s => s.Name is not null && s.Name.StartsWith("CABIN_", StringComparison.OrdinalIgnoreCase))
             .Select(s => s.Name!)
